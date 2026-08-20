@@ -1,0 +1,8 @@
+{
+  "name": "Cipher Files Intelligence",
+  "description": "A community-driven investigative platform to decode evidence, connect rabbit holes, debate theories, and examine declassified dossiers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

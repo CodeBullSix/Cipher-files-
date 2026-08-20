@@ -1,0 +1,245 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered investigator user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "callsign": { "type": "string", "maxLength": 50 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["admin", "moderator", "archivist", "operative"], "maxLength": 30 },
+        "tier": { "type": "string", "enum": ["FREE", "VIP_MAJESTIC", "BENEFACTOR"], "maxLength": 30 },
+        "xp": { "type": "number" },
+        "rank": { "type": "string", "maxLength": 50 },
+        "clearanceLevel": { "type": "string", "maxLength": 50 },
+        "isBanned": { "type": "boolean" },
+        "savedCaseIds": { "type": "array" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email", "displayName", "callsign", "role", "tier", "xp", "createdAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Admin authorization mapping document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "addedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email"]
+    },
+    "ModeratorRecord": {
+      "title": "ModeratorRecord",
+      "description": "Moderator authorization mapping document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "addedBy": { "type": "string", "maxLength": 128 },
+        "addedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email"]
+    },
+    "CaseFile": {
+      "title": "CaseFile",
+      "description": "Investigative conspiracy dossier or community theory post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "caseNumber": { "type": "string", "maxLength": 50 },
+        "title": { "type": "string", "maxLength": 200 },
+        "subtitle": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "maxLength": 50 },
+        "claim": { "type": "string", "maxLength": 2000 },
+        "summary": { "type": "string", "maxLength": 5000 },
+        "coverImage": { "type": "string", "maxLength": 500000 },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorCallsign": { "type": "string", "maxLength": 50 },
+        "upvotes": { "type": "number" },
+        "downvotes": { "type": "number" },
+        "beliefScore": { "type": "number" },
+        "commentCount": { "type": "number" },
+        "views": { "type": "number" },
+        "isOfficialDossier": { "type": "boolean" },
+        "isVipExclusive": { "type": "boolean" },
+        "tags": { "type": "array" },
+        "whatWeKnow": { "type": "array" },
+        "speculations": { "type": "array" },
+        "evidenceList": { "type": "array" },
+        "timeline": { "type": "array" },
+        "documents": { "type": "array" },
+        "entities": { "type": "array" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "caseNumber", "title", "category", "status", "claim", "summary", "authorUid", "authorName", "createdAt"]
+    },
+    "CaseComment": {
+      "title": "CaseComment",
+      "description": "Discussion debate comment on a theory dossier",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "caseId": { "type": "string", "maxLength": 128 },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorCallsign": { "type": "string", "maxLength": 50 },
+        "authorRole": { "type": "string", "maxLength": 50 },
+        "authorAvatar": { "type": "string", "maxLength": 500000 },
+        "content": { "type": "string", "maxLength": 4000 },
+        "imageUrl": { "type": "string", "maxLength": 500000 },
+        "stance": { "type": "string", "maxLength": 50 },
+        "upvotes": { "type": "number" },
+        "downvotes": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "caseId", "authorUid", "authorName", "content", "stance", "createdAt"]
+    },
+    "DiscussionThread": {
+      "title": "DiscussionThread",
+      "description": "Forum research inquiry or debate topic",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "caseId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 300 },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorCallsign": { "type": "string", "maxLength": 50 },
+        "authorRank": { "type": "string", "maxLength": 50 },
+        "authorAvatar": { "type": "string", "maxLength": 500000 },
+        "imageUrl": { "type": "string", "maxLength": 500000 },
+        "videoUrl": { "type": "string", "maxLength": 500000 },
+        "initialComment": { "type": "string", "maxLength": 8000 },
+        "tags": { "type": "array" },
+        "upvotes": { "type": "number" },
+        "commentCount": { "type": "number" },
+        "viewCount": { "type": "number" },
+        "isPinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "authorName", "initialComment", "createdAt"]
+    },
+    "DiscussionComment": {
+      "title": "DiscussionComment",
+      "description": "Reply or critique on a forum inquiry thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "caseId": { "type": "string", "maxLength": 128 },
+        "threadId": { "type": "string", "maxLength": 128 },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorCallsign": { "type": "string", "maxLength": 50 },
+        "authorRank": { "type": "string", "maxLength": 50 },
+        "authorAvatar": { "type": "string", "maxLength": 500000 },
+        "content": { "type": "string", "maxLength": 6000 },
+        "imageUrl": { "type": "string", "maxLength": 500000 },
+        "videoUrl": { "type": "string", "maxLength": 500000 },
+        "stance": { "type": "string", "maxLength": 50 },
+        "upvotes": { "type": "number" },
+        "downvotes": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "authorName", "content", "createdAt"]
+    },
+    "SupporterRecord": {
+      "title": "SupporterRecord",
+      "description": "Public donor and community backer record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "donorName": { "type": "string", "maxLength": 100 },
+        "callsign": { "type": "string", "maxLength": 50 },
+        "amount": { "type": "number" },
+        "tierName": { "type": "string", "maxLength": 50 },
+        "message": { "type": "string", "maxLength": 500 },
+        "badge": { "type": "string", "maxLength": 50 },
+        "isTopDonor": { "type": "boolean" },
+        "timestamp": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "donorName", "amount", "timestamp"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct message thread between investigators",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "participants": { "type": "array" },
+        "participantNames": { "type": "object" },
+        "participantCallsigns": { "type": "object" },
+        "lastMessage": { "type": "string", "maxLength": 500 },
+        "lastSenderUid": { "type": "string", "maxLength": 128 },
+        "lastTimestamp": { "type": "string", "maxLength": 64 },
+        "isEncrypted": { "type": "boolean" }
+      },
+      "required": ["id", "participants", "lastMessage", "lastTimestamp"]
+    },
+    "DirectMessage": {
+      "title": "DirectMessage",
+      "description": "Secure encrypted direct message packet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "conversationId": { "type": "string", "maxLength": 128 },
+        "senderUid": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "senderCallsign": { "type": "string", "maxLength": 50 },
+        "content": { "type": "string", "maxLength": 4000 },
+        "ciphertext": { "type": "string", "maxLength": 8000 },
+        "isEncrypted": { "type": "boolean" },
+        "attachmentUrl": { "type": "string", "maxLength": 500000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "conversationId", "senderUid", "senderName", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "Public investigator profile record"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "AdminRecord" },
+      "description": "Designated administrator permissions record"
+    },
+    "/moderators/{moderatorId}": {
+      "schema": { "$ref": "ModeratorRecord" },
+      "description": "Designated moderator permissions record"
+    },
+    "/cases/{caseId}": {
+      "schema": { "$ref": "CaseFile" },
+      "description": "Conspiracy theory dossiers and community investigations"
+    },
+    "/cases/{caseId}/comments/{commentId}": {
+      "schema": { "$ref": "CaseComment" },
+      "description": "Community debate comments on a dossier"
+    },
+    "/discussions/{threadId}": {
+      "schema": { "$ref": "DiscussionThread" },
+      "description": "Public research inquiry discussion threads"
+    },
+    "/discussions/{threadId}/comments/{commentId}": {
+      "schema": { "$ref": "DiscussionComment" },
+      "description": "Peer reviews and replies on inquiry threads"
+    },
+    "/supporters/{supporterId}": {
+      "schema": { "$ref": "SupporterRecord" },
+      "description": "Public supporters and declassification donors"
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "Conversation" },
+      "description": "Direct message channels"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "DirectMessage" },
+      "description": "Encrypted direct messages within a conversation"
+    }
+  }
+}

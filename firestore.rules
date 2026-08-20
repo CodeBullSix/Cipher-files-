@@ -1,0 +1,194 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email != null && request.auth.token.email == 'ajsteptoe123@gmail.com')
+      );
+    }
+
+    function isModerator() {
+      return isAdmin() || (
+        isSignedIn() && exists(/databases/$(database)/documents/moderators/$(request.auth.uid))
+      );
+    }
+
+    // Entity Validations
+    function isValidUserProfile(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.callsign is string && data.callsign.size() <= 50 &&
+             data.role in ['admin', 'moderator', 'archivist', 'operative'] &&
+             data.tier in ['FREE', 'VIP_MAJESTIC', 'BENEFACTOR'] &&
+             data.xp is number;
+    }
+
+    function isValidCaseFile(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.category is string && data.category.size() <= 50 &&
+             data.status is string && data.status.size() <= 50 &&
+             data.claim is string && data.claim.size() <= 2000 &&
+             data.summary is string && data.summary.size() <= 5000 &&
+             data.authorUid is string && data.authorUid.size() <= 128;
+    }
+
+    function isValidCaseComment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.caseId is string && data.caseId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             data.content is string && data.content.size() <= 6000;
+    }
+
+    function isValidDiscussionThread(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 300 &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             data.initialComment is string && data.initialComment.size() <= 10000;
+    }
+
+    function isValidDiscussionComment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             data.content is string && data.content.size() <= 8000;
+    }
+
+    function isValidConversation(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.participants is list && data.participants.size() >= 1 && data.participants.size() <= 10 &&
+             data.lastMessage is string && data.lastMessage.size() <= 500;
+    }
+
+    function isValidDirectMessage(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.conversationId is string && data.conversationId.size() <= 128 &&
+             data.senderUid is string && data.senderUid.size() <= 128 &&
+             data.content is string && data.content.size() <= 4000;
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if (isOwner(userId) || isAdmin() || isModerator()) && isValidUserProfile(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // 2. Admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 3. Moderators collection
+    match /moderators/{moderatorId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 4. Cases & Theories
+    match /cases/{caseId} {
+      allow get, list: if true; // Public view for reading dossiers
+      allow create: if isSignedIn() && isValidCaseFile(incoming()) && (incoming().authorUid == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        isModerator() ||
+        (existing().authorUid == request.auth.uid && isValidCaseFile(incoming())) ||
+        // Allow community upvotes/downvotes/views/commentsCount increment
+        incoming().diff(existing()).affectedKeys().hasAny(['upvotes', 'downvotes', 'beliefScore', 'commentCount', 'views', 'communityVerdictVote'])
+      );
+      allow delete: if isAdmin() || isModerator() || (isSignedIn() && existing().authorUid == request.auth.uid);
+
+      // 4a. Case Comments Subcollection
+      match /comments/{commentId} {
+        allow get, list: if true;
+        allow create: if isValidCaseComment(incoming());
+        allow update: if (
+          isAdmin() ||
+          isModerator() ||
+          (isSignedIn() && existing().authorUid == request.auth.uid && isValidCaseComment(incoming())) ||
+          incoming().diff(existing()).affectedKeys().hasAny(['upvotes', 'downvotes'])
+        );
+        allow delete: if isAdmin() || isModerator() || (isSignedIn() && existing().authorUid == request.auth.uid);
+      }
+    }
+
+    // 5. Discussion Threads (Forum)
+    match /discussions/{threadId} {
+      allow get, list: if true;
+      allow create: if isValidDiscussionThread(incoming());
+      allow update: if (
+        isAdmin() ||
+        isModerator() ||
+        (isSignedIn() && existing().authorUid == request.auth.uid && isValidDiscussionThread(incoming())) ||
+        incoming().diff(existing()).affectedKeys().hasAny(['upvotes', 'commentCount', 'viewCount', 'isPinned'])
+      );
+      allow delete: if isAdmin() || isModerator() || (isSignedIn() && existing().authorUid == request.auth.uid);
+
+      // 5a. Discussion Comments / Forum Replies
+      match /comments/{commentId} {
+        allow get, list: if true;
+        allow create: if isValidDiscussionComment(incoming());
+        allow update: if (
+          isAdmin() ||
+          isModerator() ||
+          (isSignedIn() && existing().authorUid == request.auth.uid && isValidDiscussionComment(incoming())) ||
+          incoming().diff(existing()).affectedKeys().hasAny(['upvotes', 'downvotes', 'content'])
+        );
+        allow delete: if isAdmin() || isModerator() || (isSignedIn() && existing().authorUid == request.auth.uid);
+      }
+    }
+
+    // 6. Direct Message Conversations
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidConversation(incoming()) && (request.auth.uid in incoming().participants || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid in existing().participants || isAdmin()) && isValidConversation(incoming());
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid in existing().participants);
+
+      // 5a. Direct Messages Subcollection
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn() && isValidDirectMessage(incoming()) && incoming().senderUid == request.auth.uid;
+        allow update: if isAdmin();
+        allow delete: if isAdmin() || (isSignedIn() && existing().senderUid == request.auth.uid);
+      }
+    }
+
+    // 6. Supporters & Top Donators Board
+    match /supporters/{supporterId} {
+      allow get, list: if true; // Public read so all visitors see the donor roll
+      allow create: if true; // Anyone can contribute/simulate support
+      allow update, delete: if isAdmin();
+    }
+  }
+}
