@@ -1,9 +1,11 @@
 {
-  "apiKey": "AIzaSyDummyKeyForLocalPreviewCipherFiles",
-  "authDomain": "cipher-files.firebaseapp.com",
-  "projectId": "cipher-files",
-  "storageBucket": "cipher-files.appspot.com",
-  "messagingSenderId": "1234567890",
-  "appId": "1:1234567890:web:abcdef123456",
-  "firestoreDatabaseId": "(default)"
+  "projectId": "noble-lamp-6skkt",
+  "appId": "1:340783445887:web:4555e523847ad851708c4a",
+  "apiKey": "AIzaSyDh5d-wn0OIBcQ0A_4VxvkozTG2JRFRQOs",
+  "authDomain": "noble-lamp-6skkt.firebaseapp.com",
+  "storageBucket": "noble-lamp-6skkt.firebasestorage.app",
+  "messagingSenderId": "340783445887",
+  "measurementId": "",
+  "oAuthClientId": "340783445887-cc0jes8l31ng0ebcu5ai3aam25usevgt.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

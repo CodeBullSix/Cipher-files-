@@ -80,27 +80,25 @@ export default function App() {
 
   // 1. Initialize Auth and Firestore Database
   useEffect(() => {
-    // Seed initial cases and supporters to Firestore if empty
-    FirestoreService.checkAndSeedDatabase();
-
     // Subscribe to Auth state
     const unsubAuth = AuthService.subscribeToAuthState((user) => {
       setCurrentUser(user);
     });
 
-    // Subscribe to Cases in Firestore
-    const unsubCases = FirestoreService.listenCases((loadedCases) => {
-      setCases(loadedCases);
+    // Fetch Cases from API
+    import('./services/apiService').then(({ ApiService }) => {
+      ApiService.getCases().then((loadedCases) => {
+        setCases(loadedCases);
+      }).catch(console.error);
     });
 
-    // Subscribe to Supporters in Firestore
+    // Subscribe to Supporters in Firestore (leave this if supporters aren't migrated yet)
     const unsubSupporters = FirestoreService.listenSupporters((loadedSupporters) => {
       setSupporters(loadedSupporters);
     });
 
     return () => {
       unsubAuth();
-      unsubCases();
       unsubSupporters();
     };
   }, []);

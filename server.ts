@@ -3,6 +3,11 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import { syncRssFeeds } from './src/services/rssPoller.js';
+import { requireAuth, AuthRequest } from './src/middleware/auth.js';
+import { getUser, updateUser } from './src/db/users.js';
+import { getCases, getCaseById } from './src/db/cases.js';
+import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion } from './src/db/discussions.js';
 
 dotenv.config();
 
@@ -10,6 +15,95 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// API Routes
+app.get('/api/users/me', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await getUser(req.user!.uid);
+    res.json(user);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+app.put('/api/users/me', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const updated = await updateUser(req.user!.uid, req.body);
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+app.get('/api/cases', async (req, res) => {
+  try {
+    const cases = await getCases();
+    res.json(cases);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch cases' });
+  }
+});
+
+app.get('/api/cases/:id', async (req, res) => {
+  try {
+    const c = await getCaseById(req.params.id);
+    res.json(c);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch case' });
+  }
+});
+
+app.get('/api/discussions', async (req, res) => {
+  try {
+    const caseFileId = req.query.caseFileId as string;
+    const discussions = await getDiscussions(caseFileId);
+    res.json(discussions);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch discussions' });
+  }
+});
+
+app.post('/api/discussions', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const discussion = await createDiscussion({ ...req.body, authorId: req.user!.uid });
+    res.json(discussion);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to create discussion' });
+  }
+});
+
+app.get('/api/discussions/:id/replies', async (req, res) => {
+  try {
+    const replies = await getDiscussionReplies(req.params.id);
+    res.json(replies);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch replies' });
+  }
+});
+
+app.post('/api/discussions/:id/replies', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const reply = await createReply({ 
+      id: `reply-${Date.now()}`,
+      discussionId: req.params.id, 
+      content: req.body.content,
+      authorId: req.user!.uid 
+    });
+    res.json(reply);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to create reply' });
+  }
+});
+
+app.post('/api/discussions/:id/vote', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const vote = await voteDiscussion(req.params.id, req.user!.uid, req.body.value);
+    res.json(vote);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to vote' });
+  }
+});
+
 
 // Lazy-initialized GoogleGenAI client
 let aiClient: GoogleGenAI | null = null;
@@ -163,6 +257,28 @@ Respond ONLY with valid parseable JSON.`;
     });
   }
 });
+
+// RSS Poller Endpoint & Background Service
+app.post('/api/sync-rss', async (req, res) => {
+  try {
+    const result = await syncRssFeeds();
+    res.json({ status: 'ok', ...result });
+  } catch (error: any) {
+    console.error('Manual RSS Sync Failed:', error);
+    res.status(500).json({ error: 'Sync failed', details: error?.message });
+  }
+});
+
+// Start Background Poller (Every 12 hours)
+setInterval(() => {
+  console.log('[Background Service] Running scheduled RSS Sync...');
+  syncRssFeeds().catch(console.error);
+}, 12 * 60 * 60 * 1000);
+// Trigger an initial sync 5 seconds after server start
+setTimeout(() => {
+  console.log('[Background Service] Running initial RSS Sync...');
+  syncRssFeeds().catch(console.error);
+}, 5000);
 
 async function start() {
   if (process.env.NODE_ENV !== 'production') {
