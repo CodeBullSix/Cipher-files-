@@ -421,3 +421,56 @@ export interface SupporterRecord {
   isTopDonor?: boolean;
 }
 
+
+// --- PHASE 2 ARCHIVE TYPES ---
+
+export interface ArchiveSource {
+  id: string;
+  name: string;
+  description?: string;
+  sourceType: 'PRIMARY' | 'SECONDARY' | 'TERTIARY' | 'ARCHIVAL' | 'OFFICIAL' | 'JOURNALISTIC' | 'ACADEMIC' | 'WITNESS' | 'USER_SUBMITTED' | 'OTHER';
+  url?: string;
+  publisher?: string;
+  author?: string;
+  publicationDate?: string;
+  accessedAt?: string;
+  reliability: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+  createdAt: string;
+}
+
+export interface ArchiveDocument {
+  id: string;
+  title: string;
+  description?: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  storageKey: string;
+  checksum?: string;
+  pageCount?: number;
+  uploadedById: string;
+  createdAt: string;
+}
+
+export interface ArchiveEvidence {
+  id: string;
+  title: string;
+  description: string;
+  type: 'DOCUMENT' | 'PHOTOGRAPH' | 'VIDEO' | 'AUDIO' | 'TESTIMONY' | 'OFFICIAL_RECORD' | 'NEWS_REPORT' | 'INTERVIEW' | 'DATASET' | 'ARCHIVED_WEBPAGE' | 'OTHER';
+  stance: 'SUPPORTING' | 'CONTRADICTING' | 'CONTEXTUAL' | 'UNDETERMINED';
+  status: 'UNVERIFIED' | 'UNDER_REVIEW' | 'VERIFIED' | 'DISPUTED' | 'REJECTED';
+  sourceId?: string;
+  documentId?: string;
+  submittedById: string;
+  verifiedById?: string;
+  verificationNotes?: string;
+  verifiedAt?: string;
+  createdAt: string;
+  
+  // Joined fields
+  source?: ArchiveSource;
+  document?: ArchiveDocument;
+  submitter?: { uid: string, displayName: string, avatar?: string };
+  verifier?: { uid: string, displayName: string, avatar?: string };
+  caseFileIds?: string[];
+}

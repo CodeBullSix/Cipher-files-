@@ -19,6 +19,7 @@ import { CaseCard } from './components/CaseCard';
 import { normalizeStatus } from './components/StatusBadge';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { RabbitHoleGraph } from './components/RabbitHoleGraph';
+import { EvidenceArchiveView } from './components/EvidenceArchiveView';
 import { DiscussionsView } from './components/DiscussionsView';
 import { SupportersView } from './components/SupportersView';
 import { SubmitTheoryModal } from './components/SubmitTheoryModal';
@@ -86,9 +87,31 @@ export default function App() {
     });
 
     // Fetch Cases from API
-    import('./services/apiService').then(({ ApiService }) => {
+import('./services/apiService').then(({ ApiService }) => {
       ApiService.getCases().then((loadedCases) => {
-        setCases(loadedCases);
+        const localCases = StorageService.getCases();
+        const merged = localCases.map(local => {
+          const remote = loadedCases.find((r: any) => r.id === local.id);
+          if (remote) {
+            return { ...local, ...remote };
+          }
+          return local;
+        });
+        loadedCases.forEach((remote: any) => {
+          if (!merged.find(m => m.id === remote.id)) {
+            merged.push({
+              ...remote,
+              whatWeKnow: remote.whatWeKnow || [],
+              speculations: remote.speculations || [],
+              evidenceList: remote.evidenceList || [],
+              timeline: remote.timeline || [],
+              documents: remote.documents || [],
+              entities: remote.entities || [],
+              connectedCaseIds: remote.connectedCaseIds || []
+            });
+          }
+        });
+        setCases(merged);
       }).catch(console.error);
     });
 
@@ -376,6 +399,16 @@ export default function App() {
             onRewardXp={handleRewardXp}
           />
         )}
+      
+        {/* VIEW 5: EVIDENCE ARCHIVE */}
+        {currentTab === 'evidence' && (
+          <EvidenceArchiveView
+            currentUser={currentUser || (legacyProfile as any)}
+            onOpenCase={handleOpenCase}
+            onRewardXp={handleRewardXp}
+          />
+        )}
+
       </main>
 
       {/* Bottom Tactical Status Bar */}

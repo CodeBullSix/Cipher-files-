@@ -1,0 +1,179 @@
+import { db } from './index.js';
+import {
+  evidenceItems, sources, documents, evidenceCaseFiles, evidenceDiscussions, evidenceAuditLogs, users
+} from './schema.js';
+import { eq, and, desc, isNull, inArray, ilike, or } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+
+export async function getEvidenceItems(params: {
+  caseFileId?: string,
+  query?: string,
+  status?: string,
+  page?: number,
+  limit?: number
+} = {}) {
+  const { caseFileId, query, status, page = 1, limit = 50 } = params;
+  
+  let conditions = [isNull(evidenceItems.deletedAt)];
+  
+  if (status && status !== 'ALL') {
+    conditions.push(eq(evidenceItems.status, status as any));
+  }
+  
+  if (query) {
+    conditions.push(
+      or(
+        ilike(evidenceItems.title, `%${query}%`),
+        ilike(evidenceItems.description, `%${query}%`)
+      )
+    );
+  }
+
+  let q = db.select({
+    id: evidenceItems.id,
+    title: evidenceItems.title,
+    description: evidenceItems.description,
+    type: evidenceItems.type,
+    stance: evidenceItems.stance,
+    status: evidenceItems.status,
+    createdAt: evidenceItems.createdAt,
+    submittedBy: {
+      uid: users.uid,
+      displayName: users.displayName,
+      avatar: users.avatar
+    },
+    source: {
+      id: sources.id,
+      name: sources.name,
+      reliability: sources.reliability
+    }
+  }).from(evidenceItems)
+  .leftJoin(users, eq(evidenceItems.submittedById, users.uid))
+  .leftJoin(sources, eq(evidenceItems.sourceId, sources.id));
+
+  if (caseFileId) {
+    q.innerJoin(evidenceCaseFiles, eq(evidenceCaseFiles.evidenceId, evidenceItems.id))
+    conditions.push(eq(evidenceCaseFiles.caseFileId, caseFileId));
+  }
+  
+  q.where(and(...conditions));
+
+  const offset = (page - 1) * limit;
+  const result = await q.orderBy(desc(evidenceItems.createdAt)).limit(limit).offset(offset);
+  
+  // Quick count for total pages (hacky but functional for now)
+  let countQ = db.select({ count: evidenceItems.id }).from(evidenceItems);
+  if (caseFileId) {
+    countQ.innerJoin(evidenceCaseFiles, eq(evidenceCaseFiles.evidenceId, evidenceItems.id));
+  }
+  const totalQ = await countQ.where(and(...conditions));
+  
+  return {
+    items: result,
+    total: totalQ.length,
+    page,
+    totalPages: Math.ceil(totalQ.length / limit)
+  };
+}
+
+export async function getEvidenceById(id: string) {
+  const result = await db.select().from(evidenceItems).where(eq(evidenceItems.id, id));
+  if (!result.length) return null;
+  
+  const evidence = result[0];
+  
+  const source = evidence.sourceId ? (await db.select().from(sources).where(eq(sources.id, evidence.sourceId)))[0] : null;
+  const document = evidence.documentId ? (await db.select().from(documents).where(eq(documents.id, evidence.documentId)))[0] : null;
+  const submitter = (await db.select().from(users).where(eq(users.uid, evidence.submittedById)))[0];
+  const verifier = evidence.verifiedById ? (await db.select().from(users).where(eq(users.uid, evidence.verifiedById)))[0] : null;
+  
+  const caseFilesResult = await db.select({ caseFileId: evidenceCaseFiles.caseFileId }).from(evidenceCaseFiles).where(eq(evidenceCaseFiles.evidenceId, id));
+  
+  return {
+    ...evidence,
+    source,
+    document,
+    submitter: submitter ? { uid: submitter.uid, displayName: submitter.displayName } : null,
+    verifier: verifier ? { uid: verifier.uid, displayName: verifier.displayName } : null,
+    caseFileIds: caseFilesResult.map(c => c.caseFileId)
+  };
+}
+
+export async function createEvidence(data: any, userId: string) {
+  const id = uuidv4();
+  
+  let sourceId = data.sourceId;
+  if (!sourceId && data.source) {
+    sourceId = uuidv4();
+    await db.insert(sources).values({
+      id: sourceId,
+      ...data.source,
+    });
+  }
+
+  let documentId = data.documentId;
+  if (!documentId && data.document) {
+    documentId = uuidv4();
+    await db.insert(documents).values({
+      id: documentId,
+      ...data.document,
+      uploadedById: userId,
+    });
+  }
+
+  await db.insert(evidenceItems).values({
+    id,
+    title: data.title,
+    description: data.description,
+    type: data.type,
+    stance: data.stance,
+    status: 'UNVERIFIED',
+    sourceId,
+    documentId,
+    submittedById: userId,
+  });
+
+  if (data.caseFileIds && data.caseFileIds.length > 0) {
+    const caseLinks = data.caseFileIds.map((caseFileId: string) => ({
+      evidenceId: id,
+      caseFileId
+    }));
+    await db.insert(evidenceCaseFiles).values(caseLinks);
+  }
+
+  await db.insert(evidenceAuditLogs).values({
+    id: uuidv4(),
+    evidenceId: id,
+    userId: userId,
+    action: 'SUBMITTED',
+  });
+
+  return await getEvidenceById(id);
+}
+
+export async function verifyEvidence(id: string, status: any, notes: string, userId: string) {
+  await db.update(evidenceItems)
+    .set({
+      status,
+      verifiedById: userId,
+      verificationNotes: notes,
+      verifiedAt: new Date()
+    })
+    .where(eq(evidenceItems.id, id));
+
+  const actionMap: Record<string, any> = {
+    'VERIFIED': 'VERIFIED',
+    'DISPUTED': 'DISPUTED',
+    'REJECTED': 'REJECTED'
+  };
+
+  await db.insert(evidenceAuditLogs).values({
+    id: uuidv4(),
+    evidenceId: id,
+    userId: userId,
+    action: actionMap[status] || 'EDITED',
+    notes: notes
+  });
+
+  return await getEvidenceById(id);
+}

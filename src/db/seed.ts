@@ -36,7 +36,7 @@ export async function seed() {
         summary: c.summary,
         description: c.claim || '',
         category: c.category,
-        status: c.status,
+        status: c.status === 'VERIFIED' ? 'CONFIRMED' : c.status as any,
         featured: c.id === 'mkultra' || c.id === 'roswell',
         createdBy: adminUid
       }).onConflictDoNothing();

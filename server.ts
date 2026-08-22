@@ -4,10 +4,11 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { syncRssFeeds } from './src/services/rssPoller.js';
-import { requireAuth, AuthRequest } from './src/middleware/auth.js';
+import { requireAuth, requireModerator, AuthRequest } from './src/middleware/auth.js';
 import { getUser, updateUser } from './src/db/users.js';
 import { getCases, getCaseById } from './src/db/cases.js';
-import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion } from './src/db/discussions.js';
+import evidenceRoutes from './src/routes/evidence.js';
+import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion, getDiscussionById, updateDiscussionStatus, getDiscussionEvidence } from './src/db/discussions.js';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ const PORT = 3000;
 app.use(express.json());
 
 // API Routes
+app.use('/api/evidence', evidenceRoutes);
 app.get('/api/users/me', requireAuth, async (req: AuthRequest, res) => {
   try {
     const user = await getUser(req.user!.uid);
@@ -63,9 +65,19 @@ app.get('/api/discussions', async (req, res) => {
   }
 });
 
+
+app.get('/api/discussions/:id/evidence', async (req, res) => {
+  try {
+    const evidence = await getDiscussionEvidence(req.params.id);
+    res.json(evidence);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch discussion evidence' });
+  }
+});
+
 app.post('/api/discussions', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const discussion = await createDiscussion({ ...req.body, authorId: req.user!.uid });
+    const discussion = await createDiscussion({ ...req.body, id: `disc-${Date.now()}`, authorId: req.user!.uid });
     res.json(discussion);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to create discussion' });
@@ -83,6 +95,14 @@ app.get('/api/discussions/:id/replies', async (req, res) => {
 
 app.post('/api/discussions/:id/replies', requireAuth, async (req: AuthRequest, res) => {
   try {
+    const disc = await getDiscussionById(req.params.id);
+    if (!disc) return res.status(404).json({ error: 'Discussion not found' });
+    
+    const isModerator = req.dbUser.role === 'MODERATOR' || req.dbUser.role === 'ADMIN';
+    if (disc.locked && !isModerator) {
+      return res.status(403).json({ error: 'Discussion is locked' });
+    }
+
     const reply = await createReply({ 
       id: `reply-${Date.now()}`,
       discussionId: req.params.id, 
@@ -104,6 +124,41 @@ app.post('/api/discussions/:id/vote', requireAuth, async (req: AuthRequest, res)
   }
 });
 
+app.post('/api/discussions/:id/lock', requireAuth, requireModerator, async (req: AuthRequest, res) => {
+  try {
+    const updated = await updateDiscussionStatus(req.params.id, { locked: true });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to lock discussion' });
+  }
+});
+
+app.post('/api/discussions/:id/unlock', requireAuth, requireModerator, async (req: AuthRequest, res) => {
+  try {
+    const updated = await updateDiscussionStatus(req.params.id, { locked: false });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to unlock discussion' });
+  }
+});
+
+app.delete('/api/discussions/:id', requireAuth, requireModerator, async (req: AuthRequest, res) => {
+  try {
+    const updated = await updateDiscussionStatus(req.params.id, { deletedAt: new Date() });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to soft-delete discussion' });
+  }
+});
+
+app.post('/api/discussions/:id/restore', requireAuth, requireModerator, async (req: AuthRequest, res) => {
+  try {
+    const updated = await updateDiscussionStatus(req.params.id, { deletedAt: null });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to restore discussion' });
+  }
+});
 
 // Lazy-initialized GoogleGenAI client
 let aiClient: GoogleGenAI | null = null;
@@ -261,8 +316,8 @@ Respond ONLY with valid parseable JSON.`;
 // RSS Poller Endpoint & Background Service
 app.post('/api/sync-rss', async (req, res) => {
   try {
-    const result = await syncRssFeeds();
-    res.json({ status: 'ok', ...result });
+    await syncRssFeeds();
+    res.json({ status: 'ok' });
   } catch (error: any) {
     console.error('Manual RSS Sync Failed:', error);
     res.status(500).json({ error: 'Sync failed', details: error?.message });

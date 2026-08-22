@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  FolderArchive, 
+  FolderArchive, Database, 
   Share2, 
   MessageSquare, 
   PlusCircle, 
@@ -142,6 +142,18 @@ export const Navbar: React.FC<Props> = ({
             <Share2 className="w-3.5 h-3.5" />
             <span>Rabbit Hole Graph (Map)</span>
           </button>
+          <button
+            onClick={() => { onSelectTab('evidence'); sound.click(); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
+              currentTab === 'evidence'
+                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span>Evidence</span>
+          </button>
+
 
           <button
             onClick={() => { onSelectTab('discussions'); sound.click(); }}
@@ -324,6 +336,18 @@ export const Navbar: React.FC<Props> = ({
           <Share2 className="w-4 h-4" />
           <span>Graph (Map)</span>
         </button>
+        <button
+          onClick={() => { onSelectTab('evidence'); sound.click(); }}
+          className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
+            currentTab === 'evidence'
+              ? 'text-cyan-300 bg-cyan-950/40'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          <span>Evidence</span>
+        </button>
+
 
         <button
           onClick={() => { onSelectTab('discussions'); sound.click(); }}

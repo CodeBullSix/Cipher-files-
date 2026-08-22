@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DiscussionThread, CaseFile, Comment, UserProfile, MediaAttachment } from '../types';
+import { ArchiveEvidence } from '../types';
+import { EvidenceDetailModal } from './EvidenceDetailModal';
+import { Database } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { FirestoreService } from '../services/firestoreService';
 import { UserAvatar } from './UserAvatar';
@@ -40,7 +43,8 @@ import {
   CornerDownRight,
   Reply,
   Maximize2,
-  TrendingUp
+  TrendingUp,
+  Lock
 } from 'lucide-react';
 import { sound } from '../utils/audio';
 
@@ -71,6 +75,10 @@ export const DiscussionsView: React.FC<Props> = ({
   // Selected Active Thread for full reading & reply
   const [activeThreadId, setActiveThreadId] = useState<string | null>(initialThreadId);
   const [threadComments, setThreadComments] = useState<Comment[]>([]);
+  const [threadEvidence, setThreadEvidence] = useState<any[]>([]);
+  const [selectedArchiveEvidence, setSelectedArchiveEvidence] = useState<any | null>(null);
+  const [newDiscussionEvidence, setNewDiscussionEvidence] = useState<any[]>([]);
+
   
   // Stance filter inside thread
   const [replyStanceFilter, setReplyStanceFilter] = useState<'ALL' | 'SUPPORTING' | 'SKEPTICAL' | 'NEUTRAL' | 'DEVILS_ADVOCATE'>('ALL');
@@ -110,32 +118,70 @@ export const DiscussionsView: React.FC<Props> = ({
   const replyImageInputRef = useRef<HTMLInputElement>(null);
   const replyVideoInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. Sync discussions from Firestore with local fallback
+  // 1. Sync discussions from API
   useEffect(() => {
-    const unsub = FirestoreService.listenDiscussions((list) => {
-      if (list && list.length > 0) {
-        setDiscussions(list);
-      } else {
-        setDiscussions(StorageService.getDiscussions());
-      }
+    let mounted = true;
+    import('../services/apiService').then(({ ApiService }) => {
+      ApiService.getDiscussions().then(list => {
+        if (mounted) {
+          // Map API data to UI format
+          const mapped = list.map((item: any) => ({
+            id: item.id,
+            caseId: item.caseFileId || '',
+            title: item.title,
+            initialComment: item.content,
+            authorUid: item.author?.uid,
+            authorName: item.author?.displayName || 'Unknown',
+            authorAvatar: item.author?.avatar,
+            createdAt: item.createdAt,
+            locked: item.locked,
+            deletedAt: item.deletedAt,
+            commentCount: 0, // We could fetch this or leave it as 0
+            viewCount: 0,
+            upvotes: 0,
+            tags: [],
+          }));
+          setDiscussions(mapped);
+        }
+      }).catch(console.error);
     });
-    return () => unsub();
+    return () => { mounted = false; };
   }, []);
 
   // 2. Sync thread comments whenever activeThreadId changes
   useEffect(() => {
+    let mounted = true;
     if (activeThreadId) {
-      const unsub = FirestoreService.listenDiscussionComments(activeThreadId, (comms) => {
-        if (comms && comms.length > 0) {
-          setThreadComments(comms);
-        } else {
-          setThreadComments(StorageService.getComments(activeThreadId));
-        }
+      import('../services/apiService').then(({ ApiService }) => {
+        
+        import('../services/apiService').then(({ ApiService }) => {
+          ApiService.getDiscussionEvidence(activeThreadId).then(ev => {
+            if (mounted) setThreadEvidence(ev);
+          }).catch(err => console.error(err));
+        });
+
+          ApiService.getReplies(activeThreadId).then(comms => {
+          if (mounted) {
+            const mapped = comms.map((c: any) => ({
+              id: c.id,
+              threadId: activeThreadId,
+              authorUid: c.author?.uid,
+              authorName: c.author?.displayName || 'Unknown',
+              authorAvatar: c.author?.avatar,
+              content: c.content,
+              timestamp: c.createdAt,
+              deletedAt: c.deletedAt,
+              upvotes: 0,
+              downvotes: 0
+            }));
+            setThreadComments(mapped);
+          }
+        }).catch(console.error);
       });
-      return () => unsub();
     } else {
       setThreadComments([]);
     }
+    return () => { mounted = false; };
   }, [activeThreadId]);
 
   const activeThread = activeThreadId ? discussions.find(d => d.id === activeThreadId) : null;
@@ -144,31 +190,23 @@ export const DiscussionsView: React.FC<Props> = ({
   const allTags = Array.from(new Set(discussions.flatMap(d => d.tags || [])));
 
   // Handle upvote on discussion thread
+  // Handle upvote on discussion thread
   const handleVoteThread = async (e: React.MouseEvent, threadId: string) => {
     e.stopPropagation();
     sound.click();
     try {
-      await FirestoreService.voteDiscussion(threadId, 'up');
-    } catch {
-      // local fallback
-      StorageService.voteDiscussion(threadId, 'up');
-      setDiscussions(StorageService.getDiscussions());
+      const { ApiService } = await import('../services/apiService');
+      await ApiService.voteDiscussion(threadId, 1);
+      setDiscussions(prev => prev.map(d => d.id === threadId ? { ...d, upvotes: (d.upvotes || 0) + 1, userVote: 'up' } : d));
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Handle reply vote
   const handleVoteReply = async (commentId: string, dir: 'up' | 'down') => {
     sound.click();
-    if (!activeThreadId) return;
-    try {
-      await FirestoreService.voteDiscussionComment(activeThreadId, commentId, dir);
-    } catch {
-      StorageService.voteComment(commentId, dir);
-      setThreadComments(StorageService.getComments(activeThreadId));
-    }
   };
 
-  // Handle Image Upload for New Thread
   const handleThreadImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -185,7 +223,6 @@ export const DiscussionsView: React.FC<Props> = ({
     }
   };
 
-  // Handle Video Upload for New Thread
   const handleThreadVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -202,12 +239,11 @@ export const DiscussionsView: React.FC<Props> = ({
     }
   };
 
-  // Handle Image Upload for Reply
   const handleReplyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      setIsUploadingReplyMedia(true);
+      setIsSubmittingReply(true);
       const dataUrl = await processImageUpload(file);
       setReplyUploadedImage(dataUrl);
       setReplyUploadedVideo(null);
@@ -215,16 +251,15 @@ export const DiscussionsView: React.FC<Props> = ({
     } catch (err) {
       console.error(err);
     } finally {
-      setIsUploadingReplyMedia(false);
+      setIsSubmittingReply(false);
     }
   };
 
-  // Handle Video Upload for Reply
   const handleReplyVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      setIsUploadingReplyMedia(true);
+      setIsSubmittingReply(true);
       const dataUrl = await processVideoUpload(file);
       setReplyUploadedVideo(dataUrl);
       setReplyUploadedImage(null);
@@ -232,211 +267,87 @@ export const DiscussionsView: React.FC<Props> = ({
     } catch (err) {
       console.error(err);
     } finally {
-      setIsUploadingReplyMedia(false);
+      setIsSubmittingReply(false);
     }
   };
 
-  // Handle Create New Thread
   const handleCreateThread = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newInitialComment.trim()) return;
 
     sound.click();
     const tags = newTagsText.split(',').map(t => t.trim()).filter(Boolean);
-    const activeProfile = currentUser || StorageService.getProfile();
-
-    let finalImageUrl: string | undefined = newUploadedImage || undefined;
-    let finalVideoUrl: string | undefined = newUploadedVideo || undefined;
-    let finalMediaType: 'image' | 'video' | 'youtube' | 'none' = 'none';
-
-    if (newMediaUrl.trim()) {
-      const parsed = parseMediaUrl(newMediaUrl.trim());
-      if (parsed) {
-        if (parsed.type === 'youtube') {
-          finalVideoUrl = parsed.url;
-          finalMediaType = 'youtube';
-        } else if (parsed.type === 'video') {
-          finalVideoUrl = parsed.url;
-          finalMediaType = 'video';
-        } else {
-          finalImageUrl = parsed.url;
-          finalMediaType = 'image';
-        }
-      }
-    } else if (newUploadedVideo) {
-      finalVideoUrl = newUploadedVideo;
-      finalMediaType = 'video';
-    } else if (newUploadedImage) {
-      finalImageUrl = newUploadedImage;
-      finalMediaType = 'image';
-    }
-
-    const threadId = 'disc-' + Date.now();
-    const newThread: DiscussionThread = {
-      id: threadId,
-      caseId: newCaseId,
-      title: newTitle.trim(),
-      category: newCategory,
-      authorUid: activeProfile.uid,
-      authorName: activeProfile.displayName || activeProfile.callsign || 'Investigator',
-      authorCallsign: activeProfile.callsign || 'RESEARCHER',
-      authorRank: activeProfile.rank || 'RESEARCHER',
-      authorRole: activeProfile.role || 'operative',
-      authorAvatar: activeProfile.avatarUrl,
-      imageUrl: finalImageUrl,
-      videoUrl: finalVideoUrl,
-      mediaType: finalMediaType,
-      attachments: (finalImageUrl || finalVideoUrl) ? [
-        {
-          id: 'att-1',
-          type: finalMediaType === 'youtube' ? 'youtube' : finalMediaType === 'video' ? 'video' : 'image',
-          url: finalVideoUrl || finalImageUrl || '',
-          caption: newMediaCaption.trim() || undefined
-        }
-      ] : undefined,
-      createdAt: new Date().toISOString().split('T')[0],
-      commentCount: 0,
-      viewCount: 1,
-      upvotes: 1,
-      userVote: 'up',
-      tags,
-      initialComment: newInitialComment.trim()
-    };
 
     try {
-      await FirestoreService.createDiscussion(newThread);
-    } catch {
-      // Local fallback
-      StorageService.createDiscussion(
-        newCaseId,
-        newTitle.trim(),
-        newInitialComment.trim(),
-        tags,
-        activeProfile,
-        {
-          imageUrl: finalImageUrl,
-          videoUrl: finalVideoUrl,
-          mediaType: finalMediaType,
-          attachments: newThread.attachments
-        },
-        newCategory
-      );
+      const { ApiService } = await import('../services/apiService');
+      const apiResp = await ApiService.createDiscussion({
+        title: newTitle.trim(),
+        content: newInitialComment.trim(),
+        caseFileId: newCaseId,
+        tags: tags
+      });
+      setShowCreateModal(false);
+      setNewTitle('');
+      setNewInitialComment('');
+      setNewUploadedImage(null);
+      setNewUploadedVideo(null);
+      setNewMediaUrl('');
+      setNewMediaCaption('');
+      setNewTagsText('');
+      setNewDiscussionEvidence([]);
+      
+      setDiscussions(prev => [{
+        id: apiResp.id,
+        title: apiResp.title,
+        initialComment: apiResp.content,
+        authorName: currentUser?.displayName || 'Unknown',
+        authorUid: currentUser?.uid,
+        createdAt: apiResp.createdAt,
+        upvotes: 0,
+        commentCount: 0,
+        tags: tags
+      }, ...prev]);
+      onRewardXp(50, 'Published new research inquiry');
+    } catch (err) {
+      console.error(err);
     }
-
-    setDiscussions(prev => [newThread, ...prev]);
-    setShowCreateModal(false);
-    setNewTitle('');
-    setNewInitialComment('');
-    setNewMediaUrl('');
-    setNewUploadedImage(null);
-    setNewUploadedVideo(null);
-    setNewMediaCaption('');
-    setActiveThreadId(newThread.id);
-    onRewardXp(50, `Initiated research inquiry: ${newTitle.slice(0, 30)}`);
   };
 
-  // Handle Submit Reply to Thread
-  const handleSubmitReply = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePostReply = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!replyContent.trim() || !activeThreadId) return;
 
-    setIsSubmittingReply(true);
     sound.click();
-    const activeProfile = currentUser || StorageService.getProfile();
-
-    let finalImageUrl: string | undefined = replyUploadedImage || undefined;
-    let finalVideoUrl: string | undefined = replyUploadedVideo || undefined;
-    let finalMediaType: 'image' | 'video' | 'youtube' | 'none' = 'none';
-
-    if (replyMediaUrl.trim()) {
-      const parsed = parseMediaUrl(replyMediaUrl.trim());
-      if (parsed) {
-        if (parsed.type === 'youtube') {
-          finalVideoUrl = parsed.url;
-          finalMediaType = 'youtube';
-        } else if (parsed.type === 'video') {
-          finalVideoUrl = parsed.url;
-          finalMediaType = 'video';
-        } else {
-          finalImageUrl = parsed.url;
-          finalMediaType = 'image';
-        }
-      }
-    } else if (replyUploadedVideo) {
-      finalVideoUrl = replyUploadedVideo;
-      finalMediaType = 'video';
-    } else if (replyUploadedImage) {
-      finalImageUrl = replyUploadedImage;
-      finalMediaType = 'image';
-    }
-
-    const commentId = `comm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const newComm: Comment = {
-      id: commentId,
-      caseId: activeThread?.caseId || activeThreadId,
-      threadId: activeThreadId,
-      replyToCommentId: replyingToComment?.id,
-      replyToAuthorName: replyingToComment?.authorName,
-      authorUid: activeProfile.uid,
-      authorName: activeProfile.displayName || activeProfile.callsign || 'Researcher',
-      authorCallsign: activeProfile.callsign,
-      authorRank: activeProfile.rank || 'RESEARCHER',
-      authorRole: activeProfile.role || 'operative',
-      authorBadge: activeProfile.badges?.[0]?.name || activeProfile.specialization || 'RESEARCHER',
-      authorAvatar: activeProfile.avatarUrl,
-      content: replyContent.trim(),
-      imageUrl: finalImageUrl,
-      videoUrl: finalVideoUrl,
-      mediaType: finalMediaType,
-      attachments: (finalImageUrl || finalVideoUrl) ? [
-        {
-          id: 'att-comm-1',
-          type: finalMediaType === 'youtube' ? 'youtube' : finalMediaType === 'video' ? 'video' : 'image',
-          url: finalVideoUrl || finalImageUrl || ''
-        }
-      ] : undefined,
-      createdAt: 'Just now',
-      upvotes: 1,
-      downvotes: 0,
-      userVote: 'up',
-      citedEvidenceId: replyCitedSource.trim() || undefined,
-      stance: replyStance
-    };
+    setIsSubmittingReply(true);
 
     try {
-      await FirestoreService.addDiscussionComment(activeThreadId, newComm);
-    } catch {
-      // fallback
-      StorageService.postComment(
-        activeThreadId,
-        replyContent.trim(),
-        replyStance,
-        replyCitedSource.trim() || undefined,
-        activeProfile,
-        true,
-        {
-          imageUrl: finalImageUrl,
-          videoUrl: finalVideoUrl,
-          mediaType: finalMediaType,
-          attachments: newComm.attachments
-        },
-        replyingToComment ? {
-          commentId: replyingToComment.id,
-          authorName: replyingToComment.authorName
-        } : undefined
-      );
+      const { ApiService } = await import('../services/apiService');
+      const apiResp = await ApiService.createReply(activeThreadId, replyContent.trim());
+      setReplyContent('');
+      
+      setThreadComments(prev => [...prev, {
+        id: apiResp.id,
+        threadId: activeThreadId,
+        content: apiResp.content,
+        authorName: currentUser?.displayName || 'Unknown',
+        timestamp: apiResp.createdAt,
+        upvotes: 0,
+        downvotes: 0
+      }]);
+      onRewardXp(30, 'Published peer review critique');
+    } catch (err) {
+      console.error(err);
+      alert('Unable to post reply. Discussion may be locked.');
+    } finally {
+      setIsSubmittingReply(false);
+      setReplyContent('');
+      setReplyCitedSource('');
+      setReplyMediaUrl('');
+      setReplyUploadedImage(null);
+      setReplyUploadedVideo(null);
+      setShowReplyMediaInput(false);
+      setReplyingToComment(null);
     }
-
-    setThreadComments(prev => [...prev, newComm]);
-    setReplyContent('');
-    setReplyCitedSource('');
-    setReplyMediaUrl('');
-    setReplyUploadedImage(null);
-    setReplyUploadedVideo(null);
-    setShowReplyMediaInput(false);
-    setReplyingToComment(null);
-    setIsSubmittingReply(false);
-    onRewardXp(30, 'Published peer review critique with evidentiary exhibit');
   };
 
   // Filter and sort discussions
@@ -562,7 +473,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     [{comment.authorCallsign || 'RESEARCHER'}]
                   </span>
                   <span className="text-[10px] font-mono text-gray-400">
-                    ({comment.authorRank.replace(/_/g, ' ')})
+                    ({(comment.authorRank || 'OBSERVER').replace(/_/g, ' ')})
                   </span>
                 </div>
               </div>
@@ -700,7 +611,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     )}
                   </div>
                   <span className="text-[11px] font-mono text-gray-400">
-                    Rank: <strong className="text-gray-300">{activeThread.authorRank.replace(/_/g, ' ')}</strong>
+                    Rank: <strong className="text-gray-300">{(activeThread.authorRank || 'OBSERVER').replace(/_/g, ' ')}</strong>
                   </span>
                 </div>
               </div>
@@ -742,6 +653,11 @@ export const DiscussionsView: React.FC<Props> = ({
                     SITE ANNOUNCEMENT
                   </div>
                 )}
+                {activeThread.locked && (
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-yellow-950/60 border border-yellow-500/30 text-yellow-400 font-mono text-xs font-bold uppercase ml-2">
+                    <Lock className="w-3.5 h-3.5" /> LOCKED
+                  </div>
+                )}
               </div>
               <h1 className="text-xl sm:text-2xl font-mono font-black text-white leading-snug">
                 {activeThread.title}
@@ -752,6 +668,38 @@ export const DiscussionsView: React.FC<Props> = ({
             <div className="p-4 rounded-lg bg-[#05070D] border border-gray-800 text-sm text-gray-200 font-sans leading-relaxed whitespace-pre-wrap">
               {activeThread.initialComment}
             </div>
+
+            
+            {/* PHASE 2 REFERENCED EVIDENCE */}
+            {threadEvidence.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-800">
+                <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Database className="w-3.5 h-3.5" />
+                  <span>REFERENCED EVIDENCE</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {threadEvidence.map(ev => (
+                    <div 
+                      key={ev.id} 
+                      onClick={() => setSelectedArchiveEvidence(ev)}
+                      className="p-3 bg-[#090D1A] border border-gray-800 rounded-lg hover:border-cyan-500/50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${
+                          ev.status === 'VERIFIED' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' :
+                          'bg-gray-400/10 text-gray-400 border-gray-400/20'
+                        }`}>
+                          {ev.status}
+                        </span>
+                        <span className="text-[10px] text-cyan-500 font-bold">{ev.stance}</span>
+                      </div>
+                      <h5 className="text-sm font-bold text-white mb-1 leading-tight line-clamp-1">{ev.title}</h5>
+                      <p className="text-xs text-gray-400 line-clamp-1">{ev.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ATTACHED PHOTOS & VIDEOS FORUM EXHIBITS */}
             {(activeThread.imageUrl || activeThread.videoUrl || (activeThread.attachments && activeThread.attachments.length > 0)) && (
@@ -791,6 +739,44 @@ export const DiscussionsView: React.FC<Props> = ({
                   <ThumbsUp className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{activeThread.upvotes || 0} Endorsements</span>
                 </button>
+                {/* Moderation Controls */}
+                {(currentUser?.role === 'MODERATOR' || currentUser?.role === 'ADMIN') && (
+                  <div className="flex gap-2 ml-2">
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const { ApiService } = await import('../services/apiService');
+                        if (activeThread.locked) {
+                          await ApiService.unlockDiscussion(activeThread.id);
+                          setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, locked: false } : d));
+                        } else {
+                          await ApiService.lockDiscussion(activeThread.id);
+                          setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, locked: true } : d));
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-yellow-700 bg-yellow-900/20 text-yellow-300 text-xs font-mono transition-colors hover:bg-yellow-800/40"
+                    >
+                      {activeThread.locked ? 'Unlock' : 'Lock'}
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const { ApiService } = await import('../services/apiService');
+                        if (activeThread.deletedAt) {
+                          await ApiService.restoreDiscussion(activeThread.id);
+                          setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, deletedAt: null } : d));
+                        } else {
+                          await ApiService.deleteDiscussion(activeThread.id);
+                          setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, deletedAt: new Date().toISOString() } : d));
+                          setActiveThreadId(null);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-red-700 bg-red-900/20 text-red-300 text-xs font-mono transition-colors hover:bg-red-800/40"
+                    >
+                      {activeThread.deletedAt ? 'Restore' : 'Delete'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </article>
@@ -841,7 +827,14 @@ export const DiscussionsView: React.FC<Props> = ({
 
             {/* 3. POST A PEER REVIEW FORM WITH PHOTO/VIDEO UPLOAD */}
             <div className="mt-6 rounded-xl border border-cyan-500/30 bg-[#070A14] p-5 sm:p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-800">
+              {activeThread.locked ? (
+                <div className="text-center py-6 text-yellow-400 font-mono text-sm bg-yellow-950/20 border border-yellow-500/20 rounded-lg">
+                  <Lock className="w-5 h-5 mx-auto mb-2 text-yellow-500" />
+                  This discussion is locked. New replies are disabled.
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-800">
                 <div className="flex items-center gap-2">
                   <UserAvatar
                     profile={currentUser}
@@ -873,7 +866,7 @@ export const DiscussionsView: React.FC<Props> = ({
                 )}
               </div>
 
-              <form onSubmit={handleSubmitReply} className="space-y-3">
+              <form onSubmit={handlePostReply} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-mono text-gray-300 mb-1 font-semibold">
@@ -1023,6 +1016,8 @@ export const DiscussionsView: React.FC<Props> = ({
                   </button>
                 </div>
               </form>
+              </>
+              )}
             </div>
 
           </section>
@@ -1266,7 +1261,7 @@ export const DiscussionsView: React.FC<Props> = ({
                             {disc.authorName}
                           </span>
                           <span className="text-[10px] font-mono text-gray-400">
-                            ({disc.authorRank.replace(/_/g, ' ')})
+                            ({(disc.authorRank || 'OBSERVER').replace(/_/g, ' ')})
                           </span>
 
                           {linkedCase && (
@@ -1627,6 +1622,19 @@ export const DiscussionsView: React.FC<Props> = ({
             </form>
           </div>
         </div>
+      )}
+
+
+      {selectedArchiveEvidence && (
+        <EvidenceDetailModal
+          evidence={selectedArchiveEvidence}
+          currentUser={currentUser as any}
+          onClose={() => setSelectedArchiveEvidence(null)}
+          onUpdate={(updated) => {
+            setThreadEvidence(prev => prev.map(item => item.id === updated.id ? updated : item));
+            setSelectedArchiveEvidence(updated);
+          }}
+        />
       )}
 
     </div>

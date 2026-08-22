@@ -10,6 +10,9 @@ import {
   CIPHER_FILES_PHILOSOPHY,
   OFFICIAL_STATUS_DEFINITIONS
 } from '../types';
+import { ApiService } from '../services/apiService';
+import { ArchiveEvidence } from '../types';
+import { EvidenceDetailModal } from './EvidenceDetailModal';
 import { StatusBadge } from './StatusBadge';
 import { PrimaryDocumentViewer } from './PrimaryDocumentViewer';
 import { AICrossExaminer } from './AICrossExaminer';
@@ -30,7 +33,7 @@ import {
   Building2, 
   Users, 
   MapPin, 
-  FileText, 
+  FileText, Database, 
   MessageSquare, 
   Sparkles, 
   ExternalLink,
@@ -103,6 +106,16 @@ export const CaseDetailModal: React.FC<Props> = ({
   const [showVideoInput, setShowVideoInput] = useState(false);
 
   // Evidence filtering
+  
+  const [caseEvidence, setCaseEvidence] = useState<ArchiveEvidence[]>([]);
+  const [selectedArchiveEvidence, setSelectedArchiveEvidence] = useState<ArchiveEvidence | null>(null);
+  
+  useEffect(() => {
+    ApiService.getEvidence({ caseFileId: caseFile.id })
+      .then(data => setCaseEvidence(data.items || data))
+      .catch(err => console.error("Failed to load case evidence", err));
+  }, [caseFile.id]);
+
   const [evidenceFilter, setEvidenceFilter] = useState<'ALL' | 'SUPPORTING' | 'COUNTER'>('ALL');
   const [localBeliefScore, setLocalBeliefScore] = useState<number>(caseFile.beliefScore ?? 65);
   const [hasVotedBelief, setHasVotedBelief] = useState(false);
@@ -848,128 +861,79 @@ export const CaseDetailModal: React.FC<Props> = ({
           )}
 
           {/* TAB 5: PRIMARY EVIDENCE & SOURCES VAULT */}
-          {activeTab === 'evidence' && (
-            <div className="space-y-6">
+          
+        {/* PHASE 2 EVIDENCE ARCHIVE TAB */}
+        
+        {/* PHASE 2 EVIDENCE ARCHIVE TAB */}
+        {activeTab === 'evidence' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
+                <h3 className="text-lg font-bold text-white font-mono flex items-center gap-2">
+                  <Database className="w-5 h-5 text-cyan-400" />
+                  EVIDENCE REPOSITORY
+                </h3>
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="px-2 py-1 bg-emerald-400/10 text-emerald-400 rounded-md border border-emerald-400/20 font-bold">
+                    {caseEvidence.filter(e => e.stance === 'SUPPORTING' && e.status === 'VERIFIED').length} SUPPORTING
+                  </span>
+                  <span className="px-2 py-1 bg-amber-400/10 text-amber-400 rounded-md border border-amber-400/20 font-bold">
+                    {caseEvidence.filter(e => e.stance === 'CONTRADICTING' && e.status === 'VERIFIED').length} CONTRADICTING
+                  </span>
+                </div>
+              </div>
               
-              {/* Evidence Filter Controls */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
-                <div className="flex gap-2 text-xs font-mono">
-                  <button
-                    onClick={() => setEvidenceFilter('ALL')}
-                    className={`px-3 py-1.5 rounded-lg border transition-colors ${
-                      evidenceFilter === 'ALL' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 font-bold' : 'bg-gray-900 border-gray-800 text-gray-400'
-                    }`}
-                  >
-                    All Exhibits ({(currentCase.evidenceList || []).length})
-                  </button>
-                  <button
-                    onClick={() => setEvidenceFilter('SUPPORTING')}
-                    className={`px-3 py-1.5 rounded-lg border transition-colors ${
-                      evidenceFilter === 'SUPPORTING' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-bold' : 'bg-gray-900 border-gray-800 text-gray-400'
-                    }`}
-                  >
-                    Supporting ({(currentCase.evidenceList || []).filter(e => e.isSupporting).length})
-                  </button>
-                  <button
-                    onClick={() => setEvidenceFilter('COUNTER')}
-                    className={`px-3 py-1.5 rounded-lg border transition-colors ${
-                      evidenceFilter === 'COUNTER' ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 font-bold' : 'bg-gray-900 border-gray-800 text-gray-400'
-                    }`}
-                  >
-                    Counter ({(currentCase.evidenceList || []).filter(e => !e.isSupporting).length})
-                  </button>
-                </div>
-
-                <span className="text-[11px] font-mono text-gray-500">
-                  {filteredEvidence.length} Exhibits Indexed
-                </span>
-              </div>
-
-              {/* Elevated Evidence Cards */}
-              <div className="space-y-4">
-                {filteredEvidence.map((ev) => (
-                  <div key={ev.id} className="p-5 rounded-xl bg-[#090D1A] border border-gray-800 space-y-3 shadow-md">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-800/80">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded font-bold ${
-                          ev.isSupporting 
-                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
-                            : 'bg-rose-950 text-rose-400 border border-rose-800'
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {caseEvidence.length === 0 ? (
+                  <div className="col-span-2 text-center py-12 text-gray-500 font-mono text-sm border border-dashed border-gray-800 rounded-xl">
+                    No verified evidence items attached to this dossier yet.
+                  </div>
+                ) : (
+                  caseEvidence.map(item => (
+                    <div 
+                      key={item.id} 
+                      onClick={() => setSelectedArchiveEvidence(item)}
+                      className="bg-[#050810] border border-gray-800 hover:border-cyan-500/50 rounded-lg p-4 cursor-pointer transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+                          item.status === 'VERIFIED' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' :
+                          item.status === 'UNDER_REVIEW' ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20' :
+                          item.status === 'DISPUTED' ? 'bg-amber-400/10 text-amber-400 border-amber-400/20' :
+                          'bg-gray-400/10 text-gray-400 border-gray-400/20'
                         }`}>
-                          {ev.isSupporting ? 'SUPPORTING EXHIBIT' : 'COUNTER EVIDENCE'}
+                          {item.status}
                         </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-900 text-cyan-300 border border-gray-700">
-                          {ev.type.replace(/_/g, ' ')}
-                        </span>
+                        <span className="text-[10px] text-cyan-500 font-bold">{item.stance}</span>
                       </div>
-                      <StatusBadge status={ev.rating} size="sm" />
+                      <h4 className="text-sm font-bold text-white mb-2 leading-tight">{item.title}</h4>
+                      <p className="text-xs text-gray-400 line-clamp-2 mb-3">{item.description}</p>
+                      
+                      <div className="flex items-center justify-between text-[10px] text-gray-500">
+                        <span>{item.type}</span>
+                        <span>Source: {item.source?.name || 'Unknown'}</span>
+                      </div>
                     </div>
-
-                    <h4 className="text-sm font-mono font-bold text-white">
-                      {ev.title}
-                    </h4>
-
-                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-sans">
-                      {ev.summary}
-                    </p>
-
-                    {ev.provenance && (
-                      <div className="p-2.5 rounded-lg bg-[#04060C] border border-gray-800/80 text-[11px] font-mono text-gray-400 flex items-center justify-between">
-                        <span><strong>ARCHIVAL PROVENANCE:</strong> {ev.provenance}</span>
-                        {ev.url && (
-                          <a 
-                            href={ev.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 shrink-0"
-                          >
-                            <span>View Source</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
-
-              {/* Primary Document Viewer Section */}
-              {currentCase.documents && currentCase.documents.length > 0 && (
-                <div className="pt-6 border-t border-gray-800 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      <span>DECLASSIFIED PRIMARY DOCUMENT VIEWER</span>
-                    </h4>
-
-                    {/* Document Selector */}
-                    {currentCase.documents.length > 1 && (
-                      <div className="flex gap-1 overflow-x-auto">
-                        {currentCase.documents.map((doc) => (
-                          <button
-                            key={doc.id}
-                            onClick={() => setSelectedDocId(doc.id)}
-                            className={`px-2.5 py-1 text-xs font-mono rounded ${
-                              selectedDocId === doc.id 
-                                ? 'bg-cyan-500 text-black font-bold' 
-                                : 'bg-gray-900 text-gray-400 hover:text-white'
-                            }`}
-                          >
-                            {doc.title.substring(0, 20)}...
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedDocument && (
-                    <PrimaryDocumentViewer document={selectedDocument} />
-                  )}
-                </div>
-              )}
-
             </div>
-          )}
+            
+            {selectedArchiveEvidence && (
+              <EvidenceDetailModal
+                evidence={selectedArchiveEvidence}
+                currentUser={currentUser}
+                onClose={() => setSelectedArchiveEvidence(null)}
+                onUpdate={(updated) => {
+                  setCaseEvidence(prev => prev.map(item => item.id === updated.id ? updated : item));
+                  setSelectedArchiveEvidence(updated);
+                }}
+              />
+            )}
+          </div>
+        )}
+
+
 
           {/* TAB 6: TIMELINE & CHRONOLOGY */}
           {activeTab === 'timeline' && (
@@ -1047,13 +1011,13 @@ export const CaseDetailModal: React.FC<Props> = ({
               </div>
 
               {/* Related Key Figures & Agencies */}
-              {currentCase.relatedEntities && currentCase.relatedEntities.length > 0 && (
+              {currentCase.entities && currentCase.entities.length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-gray-800">
                   <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
                     KEY PRINCIPALS & AGENCIES
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {currentCase.relatedEntities.map((ent, idx) => (
+                    {currentCase.entities.map((ent, idx) => (
                       <div
                         key={idx}
                         onClick={() => onJumpGraphEntity?.(ent.name)}

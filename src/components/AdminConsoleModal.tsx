@@ -18,6 +18,10 @@ import {
   Search
 } from 'lucide-react';
 import { UserProfile, UserRole, CaseFile, TheorySubmission } from '../types';
+import { ArchiveEvidence } from '../types';
+import { ApiService } from '../services/apiService';
+import { EvidenceDetailModal } from './EvidenceDetailModal';
+import { Database } from 'lucide-react';
 import { AuthService } from '../services/authService';
 import { FirestoreService } from '../services/firestoreService';
 import { sound } from '../utils/audio';
@@ -36,8 +40,19 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
   currentUser,
   cases,
   onRefreshCases
-}) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'moderation' | 'audit'>('users');
+}) => {  const [activeTab, setActiveTab] = useState<'users' | 'moderation' | 'evidence' | 'audit'>('users');
+
+  
+  const [reviewEvidence, setReviewEvidence] = useState<ArchiveEvidence[]>([]);
+  const [selectedArchiveEvidence, setSelectedArchiveEvidence] = useState<ArchiveEvidence | null>(null);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'evidence') {
+      ApiService.getEvidence({ status: 'UNDER_REVIEW' })
+        .then(data => setReviewEvidence(data.items || data))
+        .catch(err => console.error(err));
+    }
+  }, [isOpen, activeTab]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
