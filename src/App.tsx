@@ -419,7 +419,7 @@ import('./services/apiService').then(({ ApiService }) => {
             <span className="text-white font-bold">Firebase Auth & Firestore: ONLINE</span>
           </div>
           <span className="opacity-40 hidden sm:inline text-white">|</span>
-          <span className="hidden sm:inline text-white/80">E2E Cryptographic Terminal</span>
+          <span className="hidden sm:inline text-white/80">SECURE CHANNEL / TLS</span>
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
           <span className="text-[#00E5FF] font-bold">[{utcTime || '12:00:44 UTC'}]</span>

@@ -80,7 +80,7 @@ export class AuthService {
   }
 
   private static createFallbackProfile(user: User): UserProfile {
-    const isAdmin = user.email?.toLowerCase() === ADMIN_BOOTSTRAP_EMAIL.toLowerCase();
+    const isAdmin = false; // Determined by server
     return {
       uid: user.uid,
       email: user.email || 'unknown@cipherfiles.org',
@@ -111,7 +111,7 @@ export class AuthService {
       handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
     }
 
-    const isAdmin = user.email?.toLowerCase() === ADMIN_BOOTSTRAP_EMAIL.toLowerCase();
+    const isAdmin = false; // Determined by server
 
     if (docSnap && docSnap.exists()) {
       const data = docSnap.data() as UserProfile;

@@ -16,7 +16,6 @@ import { db, handleFirestoreError, OperationType } from './firebase';
 import { StorageService } from './storage';
 import { CaseFile, Comment, Conversation, DirectMessage, UserProfile, SupporterRecord, DiscussionThread } from '../types';
 import { INITIAL_CASES, INITIAL_SUPPORTERS, INITIAL_DISCUSSIONS, INITIAL_COMMENTS } from '../data/initialData';
-import { TacticalCrypto } from '../utils/crypto';
 
 export class FirestoreService {
   private static isSeeding = false;
@@ -352,7 +351,7 @@ export class FirestoreService {
     try {
       await setDoc(doc(db, 'conversations', conversationId, 'messages', message.id), message);
       await updateDoc(doc(db, 'conversations', conversationId), {
-        lastMessage: message.isEncrypted ? '🔐 [ENCRYPTED DATA PACKET]' : message.content.substring(0, 80),
+        lastMessage: message.content.substring(0, 80),
         lastSenderUid: message.senderUid,
         lastTimestamp: message.createdAt
       });

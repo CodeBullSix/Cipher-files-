@@ -1,3 +1,4 @@
+import { ApiService } from '../services/apiService';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
@@ -16,7 +17,6 @@ import {
 import { Conversation, DirectMessage, UserProfile } from '../types';
 import { FirestoreService } from '../services/firestoreService';
 import { AuthService } from '../services/authService';
-import { TacticalCrypto } from '../utils/crypto';
 import { processImageUpload } from '../utils/imageUpload';
 import { sound } from '../utils/audio';
 
@@ -37,7 +37,6 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isEncrypted, setIsEncrypted] = useState(true);
   const [encryptionKey, setEncryptionKey] = useState('CIPHER_SEC_KEY_ALPHA');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -60,7 +59,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
       }
     });
 
-    AuthService.getAllUsers().then(users => {
+    ApiService.getUsers().then(users => {
       setAllUsers(users.filter(u => u.uid !== currentUser.uid));
     });
 
@@ -99,10 +98,6 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
 
     sound.click();
     const plain = inputText.trim();
-    const { ciphertext, fingerprint } = isEncrypted 
-      ? TacticalCrypto.encrypt(plain, encryptionKey)
-      : { ciphertext: undefined, fingerprint: undefined };
-
     const newMsg: DirectMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       conversationId: activeConversation.id,
@@ -111,9 +106,6 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
       senderCallsign: currentUser.callsign,
       senderRole: currentUser.role,
       content: plain,
-      ciphertext,
-      isEncrypted,
-      encryptionKeyFingerprint: fingerprint,
       attachmentUrl: attachedImage || undefined,
       createdAt: new Date().toISOString()
     };
@@ -379,9 +371,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
                 ) : (
                   messages.map((msg) => {
                     const isMine = msg.senderUid === currentUser?.uid;
-                    const decrypted = msg.isEncrypted && msg.ciphertext 
-                      ? TacticalCrypto.decrypt(msg.ciphertext, encryptionKey)
-                      : msg.content;
+                    const decrypted = msg.content;
 
                     return (
                       <div 
@@ -476,7 +466,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
 
                 <input 
                   type="text"
-                  placeholder={isEncrypted ? "Compose encrypted dispatch..." : "Compose unencrypted dispatch..."}
+                  placeholder="Compose secure dispatch..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-[#00E5FF]/50"

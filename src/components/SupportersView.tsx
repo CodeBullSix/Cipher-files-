@@ -27,7 +27,7 @@ interface Props {
 const PRESET_TIERS = [
   { amount: 5, name: 'Field Supporter', badge: '🛡️ SUPPORTER', desc: 'Maintains open server bandwidth & public access' },
   { amount: 15, name: 'Archive Patron', badge: '⭐ PATRON', desc: 'Funds FOIA document processing & optical OCR scanning' },
-  { amount: 50, name: 'Grand Benefactor', badge: '🥈 GRAND PATRON', desc: 'Powers live database sync & encrypted communication nodes' },
+  { amount: 50, name: 'Grand Benefactor', badge: '🥈 GRAND PATRON', desc: 'Powers live database sync & secure communication nodes' },
   { amount: 100, name: 'Majestic Titan', badge: '👑 TITAN', desc: 'Directly finances extensive declassification archives' }
 ];
 

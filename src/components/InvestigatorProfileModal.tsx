@@ -556,7 +556,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     className="w-full px-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500 font-bold"
                   />
                   <span className="text-[10px] font-mono text-slate-500 mt-1 block">
-                    Radio & classified encrypted tag.
+                    Radio & classified secure tag.
                   </span>
                 </div>
               </div>

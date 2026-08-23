@@ -1,3 +1,4 @@
+import { adminDb } from './src/lib/firebase-admin.js';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -5,7 +6,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { syncRssFeeds } from './src/services/rssPoller.js';
 import { requireAuth, requireModerator, AuthRequest } from './src/middleware/auth.js';
-import { getUser, updateUser } from './src/db/users.js';
+import { getUser, updateUser, getAllUsersPublic } from './src/db/users.js';
 import { getCases, getCaseById } from './src/db/cases.js';
 import evidenceRoutes from './src/routes/evidence.js';
 import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion, getDiscussionById, updateDiscussionStatus, getDiscussionEvidence } from './src/db/discussions.js';
@@ -19,6 +20,22 @@ app.use(express.json());
 
 // API Routes
 app.use('/api/evidence', evidenceRoutes);
+
+app.get('/api/users', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const snap = await adminDb.collection('users').get();
+    const users = snap.docs.map(doc => {
+      const data = doc.data();
+      // PRIORITY 2 - PRIVATE EMAIL ARCHITECTURE: Do not return email
+      delete data.email;
+      return data;
+    });
+    res.json(users);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 app.get('/api/users/me', requireAuth, async (req: AuthRequest, res) => {
   try {
     const user = await getUser(req.user!.uid);

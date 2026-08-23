@@ -96,7 +96,8 @@ service cloud.firestore {
 
     // 1. User Profiles
     match /users/{userId} {
-      allow get, list: if isSignedIn();
+      allow get: if isOwner(userId) || isAdmin() || isModerator();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && isValidUserProfile(incoming());
       allow update: if (isOwner(userId) || isAdmin() || isModerator()) && isValidUserProfile(incoming());
       allow delete: if isAdmin();
@@ -170,14 +171,14 @@ service cloud.firestore {
     // 6. Direct Message Conversations
     match /conversations/{conversationId} {
       allow get: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
-      allow list: if isSignedIn();
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
       allow create: if isSignedIn() && isValidConversation(incoming()) && (request.auth.uid in incoming().participants || isAdmin());
       allow update: if isSignedIn() && (request.auth.uid in existing().participants || isAdmin()) && isValidConversation(incoming());
       allow delete: if isAdmin() || (isSignedIn() && request.auth.uid in existing().participants);
 
       // 5a. Direct Messages Subcollection
       match /messages/{messageId} {
-        allow get, list: if isSignedIn();
+        allow get, list: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants || isAdmin());
         allow create: if isSignedIn() && isValidDirectMessage(incoming()) && incoming().senderUid == request.auth.uid;
         allow update: if isAdmin();
         allow delete: if isAdmin() || (isSignedIn() && existing().senderUid == request.auth.uid);

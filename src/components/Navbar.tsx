@@ -216,7 +216,7 @@ export const Navbar: React.FC<Props> = ({
             <button
               onClick={() => { onOpenDirectMessages(); sound.click(); }}
               className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-cyan-400 transition-colors"
-              title="Encrypted Messages"
+              title="Secure Messages"
             >
               <Send className="w-3.5 h-3.5" />
             </button>

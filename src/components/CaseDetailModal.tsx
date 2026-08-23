@@ -303,7 +303,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                   );
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-900/60 transition-colors"
-                title="Open encrypted direct communication with author"
+                title="Open secure direct communication with author"
               >
                 <Radio className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="hidden sm:inline">DM Theorist</span>

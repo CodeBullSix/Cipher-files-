@@ -70,7 +70,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const allUsers = await AuthService.getAllUsers();
+      const allUsers = await ApiService.getUsers();
       setUsers(allUsers);
     } catch (e) {
       console.error('Failed to load users', e);
@@ -399,7 +399,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                   <div className="text-gray-400">E2E Cryptographic Layer</div>
                   <div className="text-base font-bold text-cyan-400 flex items-center space-x-1.5">
                     <Shield className="w-4 h-4" />
-                    <span>AES-PGP v4.2 ECC</span>
+                    <span>SECURE CHANNEL / TLS</span>
                   </div>
                   <div className="text-[10px] text-gray-500">Client-Side Armored</div>
                 </div>

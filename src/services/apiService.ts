@@ -50,6 +50,7 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
 
   // Users
   getCurrentUser: () => fetchWithAuth('/api/users/me'),
+  getUsers: () => fetchWithAuth('/api/users'),
   updateProfile: (data: any) => fetchWithAuth('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
   
   // Cases

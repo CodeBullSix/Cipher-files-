@@ -358,9 +358,6 @@ export interface DirectMessage {
   senderAvatar?: string;
   senderRole?: UserRole;
   content: string;
-  ciphertext?: string;
-  isEncrypted: boolean;
-  encryptionKeyFingerprint?: string;
   attachmentUrl?: string;
   createdAt: string;
   readBy?: string[];
