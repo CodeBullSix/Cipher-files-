@@ -58,7 +58,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'ajsteptoe123@gmail.com';
+  const isAdmin = currentUser?.role === 'admin';
   const isModerator = isAdmin || currentUser?.role === 'moderator';
 
   useEffect(() => {
@@ -81,13 +81,13 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
 
   const handleRoleChange = async (targetUser: UserProfile, newRole: UserRole) => {
     if (!isAdmin) {
-      alert('Only Primary Admin (ajsteptoe123@gmail.com) can adjust investigator security clearances.');
+      alert('Only administrators can adjust investigator security clearances.');
       return;
     }
 
     sound.click();
     try {
-      await AuthService.setUserRole(targetUser.uid, targetUser.email, newRole);
+      await ApiService.setUserRole(targetUser.uid, newRole);
       setUsers(prev => prev.map(u => u.uid === targetUser.uid ? { ...u, role: newRole } : u));
       setStatusMessage(`Clearance updated: ${targetUser.callsign} is now [${newRole.toUpperCase()}].`);
       setTimeout(() => setStatusMessage(null), 3000);
@@ -279,7 +279,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                             </span>
                           </td>
                           <td className="p-3">
-                            {isAdmin && u.email !== 'ajsteptoe123@gmail.com' ? (
+                            {isAdmin ? (
                               <select
                                 value={u.role}
                                 onChange={(e) => handleRoleChange(u, e.target.value as UserRole)}
@@ -313,7 +313,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                             )}
                           </td>
                           <td className="p-3 text-right">
-                            {u.email !== 'ajsteptoe123@gmail.com' && (
+                            {true && (
                               <button
                                 onClick={() => handleToggleBan(u)}
                                 className={`px-2 py-1 rounded text-[10px] font-mono border transition-colors ${
@@ -408,7 +408,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                   <div className="text-gray-400">Primary Administrator</div>
                   <div className="text-base font-bold text-amber-300 flex items-center space-x-1.5">
                     <UserCheck className="w-4 h-4" />
-                    <span>ajsteptoe123@gmail.com</span>
+                    
                   </div>
                   <div className="text-[10px] text-gray-500">Master Clearance 5</div>
                 </div>
@@ -418,7 +418,7 @@ export const AdminConsoleModal: React.FC<AdminConsoleModalProps> = ({
                 <h4 className="font-bold text-white text-xs">Security Protocol Rules</h4>
                 <ul className="list-disc list-inside space-y-1 text-gray-400 text-[11px] leading-relaxed">
                   <li>Zero-Trust Role-Based Access Control enforced directly via Firestore Security Rules.</li>
-                  <li>Direct messages transmitted with cryptographic signatures & client-side deciphering keys.</li>
+                  <li>Direct messages transmitted over secure TLS connections.</li>
                   <li>Moderator promotion privileges strictly isolated to Primary Master Admin account.</li>
                   <li>Real-time database mutations validated through Eight Pillars validation helpers.</li>
                 </ul>

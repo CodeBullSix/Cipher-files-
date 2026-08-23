@@ -325,10 +325,6 @@ export class FirestoreService {
           [currentProfile.uid]: currentProfile.callsign,
           [recipient.uid]: recipient.callsign
         },
-        participantRoles: {
-          [currentProfile.uid]: currentProfile.role,
-          [recipient.uid]: recipient.role
-        },
         lastMessage: 'Classified channel established.',
         lastSenderUid: currentProfile.uid,
         lastTimestamp: new Date().toISOString(),

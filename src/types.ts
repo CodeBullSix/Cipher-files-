@@ -356,7 +356,6 @@ export interface DirectMessage {
   senderName: string;
   senderCallsign?: string;
   senderAvatar?: string;
-  senderRole?: UserRole;
   content: string;
   attachmentUrl?: string;
   createdAt: string;
@@ -369,7 +368,6 @@ export interface Conversation {
   participantNames: Record<string, string>;
   participantCallsigns?: Record<string, string>;
   participantAvatars?: Record<string, string>;
-  participantRoles?: Record<string, UserRole>;
   lastMessage: string;
   lastSenderUid: string;
   lastTimestamp: string;

@@ -97,15 +97,16 @@ export const EvidenceDetailModal: React.FC<Props> = ({ evidence, currentUser, on
                         </div>
                       </div>
                     </div>
-                    <a
-                      href={`/api/evidence/documents/${evidence.document.storageKey}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-cyan-950/50 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-900 rounded flex items-center gap-2 text-xs font-bold transition-colors"
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        ApiService.downloadDocument(evidence.document!.storageKey, evidence.document!.fileName, evidence.document!.fileType).catch(err => alert(err.message));
+                      }}
+                      className="px-3 py-1.5 bg-cyan-950/50 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-900 rounded flex items-center gap-2 text-xs font-bold transition-colors cursor-pointer"
                     >
                       <Download className="w-4 h-4" />
                       View / Download
-                    </a>
+                    </button>
                   </div>
                 </div>
               )}

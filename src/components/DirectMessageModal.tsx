@@ -37,7 +37,6 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [encryptionKey, setEncryptionKey] = useState('CIPHER_SEC_KEY_ALPHA');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showKeyInspect, setShowKeyInspect] = useState(false);
@@ -104,7 +103,6 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
       senderUid: currentUser.uid,
       senderName: currentUser.displayName,
       senderCallsign: currentUser.callsign,
-      senderRole: currentUser.role,
       content: plain,
       attachmentUrl: attachedImage || undefined,
       createdAt: new Date().toISOString()
@@ -161,10 +159,10 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
               <div className="flex items-center space-x-2">
                 <span className="font-mono text-sm font-bold text-white tracking-wider">CIPHER DIRECT FREQUENCY</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/30">
-                  E2EE ACTIVE
+                  SECURE CHANNEL
                 </span>
               </div>
-              <p className="text-[11px] text-gray-400 font-mono">End-to-End Encrypted Terminal • Tactical Operative Comms</p>
+              <p className="text-[11px] text-gray-400 font-mono">Secure Channel • Tactical Operative Comms</p>
             </div>
           </div>
 
@@ -174,7 +172,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
               className="px-2.5 py-1 text-xs font-mono rounded bg-gray-900 border border-gray-700 hover:border-[#00E5FF]/50 text-gray-300 flex items-center space-x-1.5 transition-colors"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#00E5FF]" />
-              <span>Key: {TacticalCrypto.generateFingerprint(encryptionKey)}</span>
+              
             </button>
 
             <button 
@@ -192,15 +190,10 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
             <div className="flex items-center space-x-2 text-cyan-300">
               <Terminal className="w-4 h-4" />
               <span>Symmetric Key Passphrase:</span>
-              <input 
-                type="password"
-                value={encryptionKey}
-                onChange={(e) => setEncryptionKey(e.target.value)}
-                className="bg-black/60 border border-cyan-500/40 rounded px-2 py-0.5 text-white font-mono text-xs focus:outline-none focus:border-cyan-400 w-48"
-              />
+              
             </div>
             <div className="text-gray-400 text-[11px]">
-              Fingerprint: <span className="text-cyan-400">{TacticalCrypto.generateFingerprint(encryptionKey)}</span> (Share with recipient for deciphers)
+              
             </div>
           </div>
         )}
@@ -277,7 +270,8 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
                     const otherUid = conv.participants.find(p => p !== currentUser?.uid) || '';
                     const otherName = conv.participantNames?.[otherUid] || 'Field Operative';
                     const otherCallsign = conv.participantCallsigns?.[otherUid] || 'AGENT-UNKNOWN';
-                    const otherRole = conv.participantRoles?.[otherUid] || 'operative';
+                    const otherUser = allUsers.find(u => u.uid === otherUid);
+                    const otherRole = otherUser?.role || 'operative';
                     const isActive = activeConversation?.id === conv.id;
 
                     return (
@@ -325,7 +319,8 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
                 const otherUid = activeConversation.participants.find(p => p !== currentUser?.uid) || '';
                 const otherName = activeConversation.participantNames?.[otherUid] || 'Field Operative';
                 const otherCallsign = activeConversation.participantCallsigns?.[otherUid] || 'AGENT-UNKNOWN';
-                const otherRole = activeConversation.participantRoles?.[otherUid] || 'operative';
+                const otherUser = allUsers.find(u => u.uid === otherUid);
+                const otherRole = otherUser?.role || 'operative';
 
                 return (
                   <div className="px-5 py-3 bg-[#080B14] border-b border-gray-800 flex items-center justify-between">
@@ -345,17 +340,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setIsEncrypted(!isEncrypted)}
-                        className={`px-2.5 py-1 rounded text-xs font-mono flex items-center space-x-1.5 transition-colors border ${
-                          isEncrypted 
-                            ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/40' 
-                            : 'bg-amber-950/40 text-amber-400 border-amber-500/40'
-                        }`}
-                      >
-                        {isEncrypted ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                        <span>{isEncrypted ? 'PGP Ciphered' : 'Plaintext'}</span>
-                      </button>
+                      
                     </div>
                   </div>
                 );
@@ -385,11 +370,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
                           <span className="text-[9px] font-mono text-gray-600">
                             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          {msg.isEncrypted && (
-                            <span className="text-[9px] font-mono text-emerald-400 flex items-center">
-                              <Lock className="w-2.5 h-2.5 mr-0.5" /> {msg.encryptionKeyFingerprint}
-                            </span>
-                          )}
+                          
                         </div>
 
                         <div className={`max-w-lg rounded-xl p-3 text-xs ${
@@ -409,14 +390,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
 
                           <p className="whitespace-pre-wrap leading-relaxed">{decrypted}</p>
 
-                          {msg.isEncrypted && msg.ciphertext && (
-                            <details className="mt-2 text-[10px] font-mono text-gray-500 border-t border-gray-800 pt-1">
-                              <summary className="cursor-pointer hover:text-cyan-400">View Raw Ciphertext Packet</summary>
-                              <pre className="mt-1 p-1.5 bg-black/60 rounded text-[9px] text-gray-400 overflow-x-auto">
-                                {msg.ciphertext}
-                              </pre>
-                            </details>
-                          )}
+                          
                         </div>
                       </div>
                     );

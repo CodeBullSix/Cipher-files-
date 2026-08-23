@@ -17,7 +17,6 @@ import { auth, db, googleProvider, handleFirestoreError, OperationType } from '.
 import { UserProfile, UserRole, InvestigatorTier } from '../types';
 import { StorageService } from './storage';
 
-export const ADMIN_BOOTSTRAP_EMAIL = 'ajsteptoe123@gmail.com';
 
 const LOCAL_GUEST_USER: UserProfile = {
   uid: 'guest-operative',

@@ -48,10 +48,28 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
     return res.json();
   },
 
+  downloadDocument: async (storageKey: string, fileName: string, fileType: string) => {
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const res = await fetch(`/api/evidence/documents/${storageKey}`, { headers });
+    if (!res.ok) {
+      throw new Error(`Failed to download document: ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
   // Users
   getCurrentUser: () => fetchWithAuth('/api/users/me'),
   getUsers: () => fetchWithAuth('/api/users'),
   updateProfile: (data: any) => fetchWithAuth('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
+  setUserRole: (userId: string, role: string) => fetchWithAuth('/api/users/' + userId + '/role', { method: 'PUT', body: JSON.stringify({ role }) }),
   
   // Cases
   getCases: () => fetchWithAuth('/api/cases'),

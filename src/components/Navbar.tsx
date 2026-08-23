@@ -56,7 +56,7 @@ export const Navbar: React.FC<Props> = ({
   onToggleMute,
 }) => {
   const activeUser = currentUser || legacyProfile;
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'ajsteptoe123@gmail.com';
+  const isAdmin = currentUser?.role === 'admin';
   const isModerator = isAdmin || currentUser?.role === 'moderator';
 
   return (

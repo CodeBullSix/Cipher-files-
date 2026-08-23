@@ -23,13 +23,7 @@ app.use('/api/evidence', evidenceRoutes);
 
 app.get('/api/users', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const snap = await adminDb.collection('users').get();
-    const users = snap.docs.map(doc => {
-      const data = doc.data();
-      // PRIORITY 2 - PRIVATE EMAIL ARCHITECTURE: Do not return email
-      delete data.email;
-      return data;
-    });
+    const users = await getAllUsersPublic();
     res.json(users);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -42,6 +36,15 @@ app.get('/api/users/me', requireAuth, async (req: AuthRequest, res) => {
     res.json(user);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+app.put('/api/users/:id/role', requireAuth, requireModerator, async (req: AuthRequest, res) => {
+  try {
+    const updated = await updateUser(req.params.id, { role: req.body.role.toUpperCase() });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to update user role' });
   }
 });
 
