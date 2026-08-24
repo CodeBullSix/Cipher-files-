@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { ApiService } from '../services/apiService';
 import { ArchiveEvidence } from '../types';
+import { EntitiesView } from './EntitiesView';
 import { EvidenceDetailModal } from './EvidenceDetailModal';
 import { StatusBadge } from './StatusBadge';
 import { PrimaryDocumentViewer } from './PrimaryDocumentViewer';
@@ -27,12 +28,14 @@ import {
   Share2, 
   CheckCircle2, 
   AlertTriangle, 
+  User, 
+  Building, 
+  MapPin, 
   HelpCircle, 
   XCircle, 
   Calendar, 
   Building2, 
   Users, 
-  MapPin, 
   FileText, Database, 
   MessageSquare, 
   Sparkles, 
@@ -539,6 +542,43 @@ export const CaseDetailModal: React.FC<Props> = ({
           </button>
 
           {/* 7. RABBIT HOLE CONNECTIONS */}
+          
+          <button
+            onClick={() => { setActiveTab('people'); sound.click(); }}
+            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'people'
+                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">People</span>
+          </button>
+          
+          <button
+            onClick={() => { setActiveTab('organisations'); sound.click(); }}
+            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'organisations'
+                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Building className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Organisations</span>
+          </button>
+          
+          <button
+            onClick={() => { setActiveTab('locations'); sound.click(); }}
+            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'locations'
+                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Locations</span>
+          </button>
+
           <button
             onClick={() => { setActiveTab('rabbithole'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
@@ -972,6 +1012,22 @@ export const CaseDetailModal: React.FC<Props> = ({
                 ))}
               </div>
             </div>
+          )}
+
+          
+          {/* TAB: PEOPLE */}
+          {activeTab === 'people' && (
+            <EntitiesView caseFileId={currentCase.id} type="people" currentUser={currentUser} />
+          )}
+          
+          {/* TAB: ORGANISATIONS */}
+          {activeTab === 'organisations' && (
+            <EntitiesView caseFileId={currentCase.id} type="organisations" currentUser={currentUser} />
+          )}
+          
+          {/* TAB: LOCATIONS */}
+          {activeTab === 'locations' && (
+            <EntitiesView caseFileId={currentCase.id} type="locations" currentUser={currentUser} />
           )}
 
           {/* TAB 7: RABBIT HOLE CONNECTIONS */}
