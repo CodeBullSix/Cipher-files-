@@ -3,26 +3,24 @@ import re
 with open('src/services/apiService.ts', 'r') as f:
     content = f.read()
 
-download_method = """  downloadDocument: async (storageKey: string, fileName: string, fileType: string) => {
-    const token = await auth.currentUser?.getIdToken();
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const res = await fetch(`/api/evidence/documents/${storageKey}`, { headers });
-    if (!res.ok) {
-      throw new Error(`Failed to download document: ${res.status}`);
-    }
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  },
-  // Users"""
+# Remove the junk inside the fetchWithAuth function
+content = re.sub(r'  static async createRelationship.*?\}\n', '', content, flags=re.DOTALL)
+content = re.sub(r'  static async updateRelationship.*?\}\n', '', content, flags=re.DOTALL)
+content = re.sub(r'  static async deleteRelationship.*?\}\n', '', content, flags=re.DOTALL)
 
-content = content.replace("  // Users", download_method)
+# Also remove from the end of ApiService object if it was added with "static async"
+content = re.sub(r'  static async .*?\n', '', content)
+content = re.sub(r'\}// I\'ll just append it to the end or patch it. Wait, ApiService is an object exported. Let\'s patch.', '}', content)
+
+
+new_methods = """  // Relationships
+  getRelationshipsForEntity: (type: string, id: string) => fetchWithAuth(`/api/relationships/entity/${type}/${id}`),
+  createRelationship: (data: any) => fetchWithAuth('/api/relationships', { method: 'POST', body: JSON.stringify(data) }),
+  updateRelationship: (id: string, data: any) => fetchWithAuth(`/api/relationships/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRelationship: (id: string) => fetchWithAuth(`/api/relationships/${id}`, { method: 'DELETE' }),
+"""
+
+content = re.sub(r'\};?$', new_methods + '};', content.strip())
 
 with open('src/services/apiService.ts', 'w') as f:
     f.write(content)

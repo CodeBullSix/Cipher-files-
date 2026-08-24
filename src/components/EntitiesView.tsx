@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/apiService';
 import { User, Building, MapPin, Search, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { EntityModal } from './EntityModal';
+import { EntityProfileModal } from './EntityProfileModal';
 import { sound } from '../utils/audio';
 
 interface Props {
@@ -15,6 +16,7 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any | null>(null);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
 
   const handleEntityClick = (entity: any) => {
     setSelectedEntity(entity);
-    setIsModalOpen(true);
+    setIsProfileModalOpen(true);
     sound.click();
   };
 
@@ -157,6 +159,17 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
         )}
       </div>
 
+
+      {isProfileModalOpen && selectedEntity && (
+        <EntityProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => { setIsProfileModalOpen(false); loadEntities(); }}
+          entityId={selectedEntity.id}
+          type={type}
+          currentUser={currentUser}
+          caseFileId={caseFileId}
+        />
+      )}
       {isModalOpen && (
         <EntityModal 
           isOpen={isModalOpen} 

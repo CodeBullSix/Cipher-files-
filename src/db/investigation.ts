@@ -2,7 +2,8 @@ import { db } from './index.js';
 import { 
   people, organisations, locations, 
   casePeople, caseOrganisations, caseLocations,
-  users
+  users,
+  caseFiles
 } from './schema.js';
 import { eq, ilike, and, or, desc, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,7 +32,7 @@ export async function getPeople(query?: string, caseFileId?: string) {
   }).from(people);
   
   if (caseFileId) {
-    q.innerJoin(casePeople, eq(casePeople.personId, people.id))
+    q = q.innerJoin(casePeople, eq(casePeople.personId, people.id)) as any
     conditions.push(eq(casePeople.caseFileId, caseFileId));
   }
   
@@ -48,12 +49,19 @@ export async function getPersonById(id: string) {
   const person = result[0];
   
   const creator = (await db.select().from(users).where(eq(users.uid, person.createdBy)))[0];
-  const caseFilesResult = await db.select({ caseFileId: casePeople.caseFileId }).from(casePeople).where(eq(casePeople.personId, id));
+  const caseFilesResult = await db.select({ 
+    id: caseFiles.id, 
+    title: caseFiles.title 
+  })
+  .from(casePeople)
+  .innerJoin(caseFiles, eq(caseFiles.id, casePeople.caseFileId))
+  .where(eq(casePeople.personId, id));
   
   return {
     ...person,
     creator: creator ? { uid: creator.uid, displayName: creator.displayName } : null,
-    caseFileIds: caseFilesResult.map(c => c.caseFileId)
+    caseFileIds: caseFilesResult.map(c => c.id),
+    associatedCases: caseFilesResult
   };
 }
 
@@ -129,7 +137,7 @@ export async function getOrganisations(query?: string, caseFileId?: string) {
   }).from(organisations);
   
   if (caseFileId) {
-    q.innerJoin(caseOrganisations, eq(caseOrganisations.organisationId, organisations.id))
+    q = q.innerJoin(caseOrganisations, eq(caseOrganisations.organisationId, organisations.id)) as any
     conditions.push(eq(caseOrganisations.caseFileId, caseFileId));
   }
   
@@ -146,12 +154,19 @@ export async function getOrganisationById(id: string) {
   const org = result[0];
   
   const creator = (await db.select().from(users).where(eq(users.uid, org.createdBy)))[0];
-  const caseFilesResult = await db.select({ caseFileId: caseOrganisations.caseFileId }).from(caseOrganisations).where(eq(caseOrganisations.organisationId, id));
+  const caseFilesResult = await db.select({ 
+    id: caseFiles.id, 
+    title: caseFiles.title 
+  })
+  .from(caseOrganisations)
+  .innerJoin(caseFiles, eq(caseFiles.id, caseOrganisations.caseFileId))
+  .where(eq(caseOrganisations.organisationId, id));
   
   return {
     ...org,
     creator: creator ? { uid: creator.uid, displayName: creator.displayName } : null,
-    caseFileIds: caseFilesResult.map(c => c.caseFileId)
+    caseFileIds: caseFilesResult.map(c => c.id),
+    associatedCases: caseFilesResult
   };
 }
 
@@ -228,7 +243,7 @@ export async function getLocations(query?: string, caseFileId?: string) {
   }).from(locations);
   
   if (caseFileId) {
-    q.innerJoin(caseLocations, eq(caseLocations.locationId, locations.id))
+    q = q.innerJoin(caseLocations, eq(caseLocations.locationId, locations.id)) as any
     conditions.push(eq(caseLocations.caseFileId, caseFileId));
   }
   
@@ -245,12 +260,19 @@ export async function getLocationById(id: string) {
   const loc = result[0];
   
   const creator = (await db.select().from(users).where(eq(users.uid, loc.createdBy)))[0];
-  const caseFilesResult = await db.select({ caseFileId: caseLocations.caseFileId }).from(caseLocations).where(eq(caseLocations.locationId, id));
+  const caseFilesResult = await db.select({ 
+    id: caseFiles.id, 
+    title: caseFiles.title 
+  })
+  .from(caseLocations)
+  .innerJoin(caseFiles, eq(caseFiles.id, caseLocations.caseFileId))
+  .where(eq(caseLocations.locationId, id));
   
   return {
     ...loc,
     creator: creator ? { uid: creator.uid, displayName: creator.displayName } : null,
-    caseFileIds: caseFilesResult.map(c => c.caseFileId)
+    caseFileIds: caseFilesResult.map(c => c.id),
+    associatedCases: caseFilesResult
   };
 }
 

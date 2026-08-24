@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, text, timestamp, integer, boolean, pgEnum, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, boolean, pgEnum, unique, jsonb } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['USER', 'CONTRIBUTOR', 'MODERATOR', 'ADMIN']);
 export const caseStatusEnum = pgEnum('case_status', ['CONFIRMED', 'DOCUMENTED', 'DISPUTED', 'UNVERIFIED', 'DEBUNKED', 'UNKNOWN']);
@@ -30,7 +30,17 @@ export const caseFiles = pgTable('case_files', {
   description: text('description'),
   category: text('category').notNull(),
   status: caseStatusEnum('status').notNull(),
+  caseNumber: text('case_number'),
+  subtitle: text('subtitle'),
+  officialVerdict: text('official_verdict'),
+  coverImage: text('cover_image'),
+  claim: text('claim'),
+  claimOrigin: text('claim_origin'),
+  whatWeKnow: jsonb('what_we_know'),
+  speculations: jsonb('speculations'),
+  timeline: jsonb('timeline'),
   featured: boolean('featured').default(false).notNull(),
+
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -90,6 +100,7 @@ export const caseFilesRelations = relations(caseFiles, ({ one, many }) => ({
   people: many(casePeople),
   organisations: many(caseOrganisations),
   locations: many(caseLocations),
+  relationships: many(caseRelationships),
 }));
 
 export const discussionsRelations = relations(discussions, ({ one, many }) => ({
@@ -303,4 +314,37 @@ export const caseOrganisationsRelations = relations(caseOrganisations, ({ one })
 export const caseLocationsRelations = relations(caseLocations, ({ one }) => ({
   caseFile: one(caseFiles, { fields: [caseLocations.caseFileId], references: [caseFiles.id] }),
   location: one(locations, { fields: [caseLocations.locationId], references: [locations.id] }),
+}));
+
+export const entityRelationships = pgTable('entity_relationships', {
+  id: text('id').primaryKey(),
+  sourceType: text('source_type').notNull(),
+  sourceId: text('source_id').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  relationshipType: text('relationship_type').notNull(),
+  description: text('description'),
+  verificationStatus: entityVerificationStatusEnum('verification_status').default('UNVERIFIED').notNull(),
+  createdBy: text('created_by').references(() => users.uid).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  unique('unique_entity_relationship').on(t.sourceType, t.sourceId, t.targetType, t.targetId, t.relationshipType)
+]);
+
+export const caseRelationships = pgTable('case_relationships', {
+  caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
+  relationshipId: text('relationship_id').references(() => entityRelationships.id).notNull(),
+}, (t) => [
+  unique('unique_case_relationship').on(t.caseFileId, t.relationshipId)
+]);
+
+export const entityRelationshipsRelations = relations(entityRelationships, ({ one, many }) => ({
+  creator: one(users, { fields: [entityRelationships.createdBy], references: [users.uid] }),
+  caseFiles: many(caseRelationships),
+}));
+
+export const caseRelationshipsRelations = relations(caseRelationships, ({ one }) => ({
+  caseFile: one(caseFiles, { fields: [caseRelationships.caseFileId], references: [caseFiles.id] }),
+  relationship: one(entityRelationships, { fields: [caseRelationships.relationshipId], references: [entityRelationships.id] }),
 }));

@@ -3,11 +3,16 @@ import re
 with open('server.ts', 'r') as f:
     content = f.read()
 
-import_statement = "import investigationRoutes from './src/routes/investigation.js';\n"
-content = content.replace("import evidenceRoutes from './src/routes/evidence.js';", "import evidenceRoutes from './src/routes/evidence.js';\n" + import_statement)
+if "import { relationshipsRoutes }" not in content:
+    content = content.replace(
+        "import { investigationRoutes } from './src/routes/investigation.js';",
+        "import { investigationRoutes } from './src/routes/investigation.js';\nimport { relationshipsRoutes } from './src/routes/relationships.js';"
+    )
 
-route_statement = "app.use('/api/investigation', investigationRoutes);\n"
-content = content.replace("app.use('/api/evidence', evidenceRoutes);", "app.use('/api/evidence', evidenceRoutes);\n" + route_statement)
+    content = content.replace(
+        "app.use('/api/investigation', investigationRoutes);",
+        "app.use('/api/investigation', investigationRoutes);\napp.use('/api/relationships', relationshipsRoutes);"
+    )
 
 with open('server.ts', 'w') as f:
     f.write(content)

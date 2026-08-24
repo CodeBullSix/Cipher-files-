@@ -16,6 +16,8 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     throw new Error(`API error: ${response.statusText} (${response.status}) on ${url}`);
   }
   return response.json();
+
+
 }
 
 export const ApiService = {
@@ -123,6 +125,10 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
   unlockDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/unlock`, { method: 'POST' }),
   deleteDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}`, { method: 'DELETE' }),
   restoreDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/restore`, { method: 'POST' }),
-};
 
-// I'll just append it to the end or patch it. Wait, ApiService is an object exported. Let's patch.
+  // Relationships
+  getRelationshipsForEntity: (type: string, id: string) => fetchWithAuth(`/api/relationships/entity/${type}/${id}`),
+  createRelationship: (data: any) => fetchWithAuth('/api/relationships', { method: 'POST', body: JSON.stringify(data) }),
+  updateRelationship: (id: string, data: any) => fetchWithAuth(`/api/relationships/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRelationship: (id: string) => fetchWithAuth(`/api/relationships/${id}`, { method: 'DELETE' }),
+};

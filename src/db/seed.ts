@@ -37,9 +37,36 @@ export async function seed() {
         description: c.claim || '',
         category: c.category,
         status: c.status === 'VERIFIED' ? 'CONFIRMED' : c.status as any,
+        caseNumber: c.caseNumber,
+        subtitle: c.subtitle,
+        officialVerdict: c.officialVerdict,
+        coverImage: c.coverImage,
+        claim: c.claim,
+        claimOrigin: c.claimOrigin,
+        whatWeKnow: c.whatWeKnow,
+        speculations: c.speculations,
+        timeline: c.timeline,
         featured: c.id === 'mkultra' || c.id === 'roswell',
         createdBy: adminUid
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({
+        target: caseFiles.id,
+        set: {
+          title: c.title,
+          summary: c.summary,
+          description: c.claim || '',
+          category: c.category,
+          status: c.status === 'VERIFIED' ? 'CONFIRMED' : c.status as any,
+          caseNumber: c.caseNumber,
+          subtitle: c.subtitle,
+          officialVerdict: c.officialVerdict,
+          coverImage: c.coverImage,
+          claim: c.claim,
+          claimOrigin: c.claimOrigin,
+          whatWeKnow: c.whatWeKnow,
+          speculations: c.speculations,
+          timeline: c.timeline
+        }
+      });
     } catch (e) {
       console.error(`Failed to seed case ${c.id}:`, e);
     }

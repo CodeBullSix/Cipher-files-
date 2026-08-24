@@ -10,6 +10,7 @@ import { getUser, updateUser, getAllUsersPublic } from './src/db/users.js';
 import { getCases, getCaseById } from './src/db/cases.js';
 import evidenceRoutes from './src/routes/evidence.js';
 import investigationRoutes from './src/routes/investigation.js';
+import { relationshipsRoutes } from './src/routes/relationships.js';
 
 import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion, getDiscussionById, updateDiscussionStatus, getDiscussionEvidence } from './src/db/discussions.js';
 
@@ -23,6 +24,7 @@ app.use(express.json());
 // API Routes
 app.use('/api/evidence', evidenceRoutes);
 app.use('/api/investigation', investigationRoutes);
+app.use('/api/relationships', relationshipsRoutes);
 
 
 app.get('/api/users', requireAuth, async (req: AuthRequest, res) => {

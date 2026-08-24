@@ -91,7 +91,7 @@ export const CaseDetailModal: React.FC<Props> = ({
 }) => {
   // Master investigative view tabs
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'facts' | 'allegations' | 'theories' | 'ai_analysis' | 'evidence' | 'timeline' | 'rabbithole' | 'discussions'
+    'overview' | 'facts' | 'allegations' | 'theories' | 'ai_analysis' | 'evidence' | 'timeline' | 'people' | 'organisations' | 'locations' | 'rabbithole' | 'discussions'
   >('overview');
   
   const [currentCase, setCurrentCase] = useState<CaseFile>(caseFile);
@@ -449,7 +449,7 @@ export const CaseDetailModal: React.FC<Props> = ({
         </div>
 
         {/* Master Investigative Tabs (Pillars) */}
-        <div className="flex items-center gap-1 px-4 sm:px-6 border-b border-gray-800 bg-[#050810] overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1 px-4 sm:px-6 border-b border-gray-800 bg-[#050810] overflow-x-auto overflow-y-hidden whitespace-nowrap custom-scrollbar pb-2">
           
           <button
             onClick={() => { setActiveTab('overview'); sound.click(); }}
@@ -552,7 +552,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">People</span>
+            <span>People</span>
           </button>
           
           <button
@@ -564,7 +564,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <Building className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Organisations</span>
+            <span>Organisations</span>
           </button>
           
           <button
@@ -576,7 +576,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Locations</span>
+            <span>Locations</span>
           </button>
 
           <button
