@@ -17,6 +17,7 @@ import { EvidenceDetailModal } from './EvidenceDetailModal';
 import { StatusBadge } from './StatusBadge';
 import { PrimaryDocumentViewer } from './PrimaryDocumentViewer';
 import { AICrossExaminer } from './AICrossExaminer';
+import { TimelineView } from './TimelineView';
 import { MediaAttachmentViewer } from './MediaAttachmentViewer';
 import { FirestoreService } from '../services/firestoreService';
 import { processImageUpload } from '../utils/imageUpload';
@@ -132,6 +133,17 @@ export const CaseDetailModal: React.FC<Props> = ({
     setSelectedDocId(caseFile.documents?.[0]?.id || '');
     setLocalBeliefScore(caseFile.beliefScore ?? 65);
     setHasVotedBelief(false);
+    
+    // Fetch full case details including evidenceList and connectedCaseIds
+    import('../services/apiService').then(({ ApiService }) => {
+      ApiService.getCase(caseFile.id)
+        .then(fullCase => {
+          if (fullCase) {
+            setCurrentCase(fullCase);
+          }
+        })
+        .catch(err => console.error("Failed to load full case dossier", err));
+    });
   }, [caseFile]);
 
   // Real-time Comments Sync
@@ -988,92 +1000,63 @@ export const CaseDetailModal: React.FC<Props> = ({
               </div>
 
               <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-cyan-500/30">
-                {(currentCase.timeline || []).map((t, idx) => (
-                  <div key={idx} className="relative group">
-                    <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-cyan-400 border-2 border-[#04060C] shadow-[0_0_8px_rgba(0,229,255,0.8)]"></div>
-                    
-                    <div className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 group-hover:border-cyan-500/40 transition-colors">
-                      <div className="flex items-center justify-between mb-1 text-xs font-mono">
-                        <span className="font-bold text-cyan-400">{t.date}</span>
-                        {t.location && (
-                          <span className="text-gray-400 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-cyan-400" />
-                            <span>{t.location}</span>
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="text-sm font-bold font-mono text-white mb-1.5">{t.event}</h4>
-                      <p className="text-xs text-gray-300 leading-relaxed font-sans">{t.details}</p>
-                      {t.source && (
-                        <p className="text-[10px] text-gray-500 font-mono mt-2 pt-1 border-t border-gray-800">Source: {t.source}</p>
-                      )}
+                {(currentCase.timeline || []).map((t: any, idx: number) => (
+                  <div key={idx} className="relative flex gap-6 pb-8 last:pb-0">
+                    <div className="flex flex-col items-center">
+                      <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)] z-10" />
+                      <div className="w-px h-full bg-gray-800 -mt-1" />
+                    </div>
+                    <div className="pt-0">
+                      <span className="text-cyan-400 font-mono text-sm tracking-widest font-bold">
+                        {t.date}
+                      </span>
+                      <h4 className="text-gray-200 mt-1 uppercase text-sm tracking-wider font-semibold">
+                        {t.event}
+                      </h4>
+                      <p className="text-gray-400 text-sm mt-2 max-w-2xl">
+                        {t.description}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          
-          {/* TAB: PEOPLE */}
-          {activeTab === 'people' && (
-            <EntitiesView caseFileId={currentCase.id} type="people" currentUser={currentUser} />
-          )}
-          
-          {/* TAB: ORGANISATIONS */}
-          {activeTab === 'organisations' && (
-            <EntitiesView caseFileId={currentCase.id} type="organisations" currentUser={currentUser} />
-          )}
-          
-          {/* TAB: LOCATIONS */}
-          {activeTab === 'locations' && (
-            <EntitiesView caseFileId={currentCase.id} type="locations" currentUser={currentUser} />
-          )}
-
-          {/* TAB 7: RABBIT HOLE CONNECTIONS */}
-          {activeTab === 'rabbithole' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30">
-                <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">
-                  INTERCONNECTED KNOWLEDGE NETWORK
-                </h3>
-                <p className="text-xs text-gray-400 font-sans">
-                  Click any connected case or entity to immediately explore its declassified dossier or jump to the interactive graph.
-                </p>
+              <div className="mt-8 pt-8 border-t border-gray-800">
+                <TimelineView entityType="case_files" entityId={currentCase.id} currentUser={currentUser} />
               </div>
 
-              {/* Connected Cases */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
-                  LINKED DOSSIERS ({(currentCase.connectedCaseIds || []).length})
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(currentCase.connectedCaseIds || []).map((connId) => (
-                    <div
-                      key={connId}
-                      onClick={() => { onJumpCase(connId); sound.click(); }}
-                      className="p-3.5 rounded-xl bg-[#070A14] border border-gray-800 hover:border-cyan-400 hover:bg-[#0D1220] cursor-pointer transition-all flex items-center justify-between group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-cyan-400" />
-                        <span className="font-mono text-xs font-bold text-white group-hover:text-cyan-300 uppercase">
-                          {connId.replace(/-/g, ' ')}
-                        </span>
+              <div className="mt-8 pt-8 border-t border-gray-800 space-y-6">
+                <div>
+                  <h3 className="font-mono text-sm font-bold text-gray-400 uppercase mb-4">
+                    CONNECTED INVESTIGATIONS
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(currentCase.connectedCaseIds || []).map((connId: any) => (
+                      <div
+                        key={connId}
+                        onClick={() => { onJumpCase(connId); sound.click(); }}
+                        className="p-3.5 rounded-xl bg-[#070A14] border border-gray-800 hover:border-cyan-400 hover:bg-[#0D1220] cursor-pointer transition-all flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-cyan-400" />
+                          <span className="font-mono text-xs font-bold text-white group-hover:text-cyan-300 uppercase">
+                            {connId.replace(/-/g, ' ')}
+                          </span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-transform" />
                       </div>
-                      <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Related Key Figures & Agencies */}
               {currentCase.entities && currentCase.entities.length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-gray-800">
                   <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
                     KEY PRINCIPALS & AGENCIES
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {currentCase.entities.map((ent, idx) => (
+                    {currentCase.entities.map((ent: any, idx: number) => (
                       <div
                         key={idx}
                         onClick={() => onJumpGraphEntity?.(ent.name)}
@@ -1091,6 +1074,109 @@ export const CaseDetailModal: React.FC<Props> = ({
               )}
             </div>
           )}
+
+          
+        {/* TAB: PEOPLE */}
+        {activeTab === 'people' && (
+          <div className="space-y-6">
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
+              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">
+                PERSONS OF INTEREST
+              </h3>
+              <p className="text-xs text-gray-400 font-sans">
+                Individuals connected to this investigation.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(currentCase.entities || []).filter((e: any) => e.type === 'PERSON').map((ent: any, idx: number) => (
+                <div key={idx} onClick={() => onJumpGraphEntity?.(ent.name)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-cyan-400 cursor-pointer transition-colors">
+                  <h4 className="text-sm font-mono font-bold text-white">{ent.name}</h4>
+                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
+                </div>
+              ))}
+              {(currentCase.entities || []).filter((e: any) => e.type === 'PERSON').length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN PERSONS OF INTEREST</div>
+              )}
+            </div>
+          </div>
+        )}
+
+
+        {/* TAB: ORGANISATIONS */}
+        {activeTab === 'organisations' && (
+          <div className="space-y-6">
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
+              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">
+                INVOLVED ORGANISATIONS
+              </h3>
+              <p className="text-xs text-gray-400 font-sans">
+                Agencies, corporations, and groups connected to this investigation.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(currentCase.entities || []).filter((e: any) => e.type === 'ORGANISATION').map((ent: any, idx: number) => (
+                <div key={idx} onClick={() => onJumpGraphEntity?.(ent.name)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-amber-400 cursor-pointer transition-colors">
+                  <h4 className="text-sm font-mono font-bold text-amber-400">{ent.name}</h4>
+                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
+                </div>
+              ))}
+              {(currentCase.entities || []).filter((e: any) => e.type === 'ORGANISATION').length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN ORGANISATIONS</div>
+              )}
+            </div>
+          </div>
+        )}
+
+
+        {/* TAB: LOCATIONS */}
+        {activeTab === 'locations' && (
+          <div className="space-y-6">
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
+              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">
+                KEY LOCATIONS
+              </h3>
+              <p className="text-xs text-gray-400 font-sans">
+                Geographic points of interest connected to this investigation.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(currentCase.entities || []).filter((e: any) => e.type === 'LOCATION').map((ent: any, idx: number) => (
+                <div key={idx} onClick={() => onJumpGraphEntity?.(ent.name)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-blue-400 cursor-pointer transition-colors">
+                  <h4 className="text-sm font-mono font-bold text-blue-400">{ent.name}</h4>
+                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
+                </div>
+              ))}
+              {(currentCase.entities || []).filter((e: any) => e.type === 'LOCATION').length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN LOCATIONS</div>
+              )}
+            </div>
+          </div>
+        )}
+
+
+        {/* TAB: RABBIT HOLE */}
+        {activeTab === 'rabbithole' && (
+          <div className="space-y-6">
+            <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30">
+              <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">
+                RABBIT HOLE CONNECTIONS
+              </h3>
+              <p className="text-xs text-gray-400 font-sans">
+                Related investigations and cross-case connections.
+              </p>
+            </div>
+            
+            <div className="flex justify-center mt-6">
+               <button 
+                  onClick={() => onJumpGraphEntity?.('case_files_' + currentCase.id)} 
+                  className="px-6 py-3 bg-cyan-900/40 border border-cyan-500/50 hover:bg-cyan-800/60 text-cyan-300 font-mono font-bold transition-colors shadow-lg"
+               >
+                  ENTER THE NEXUS FOR THIS CASE
+               </button>
+            </div>
+          </div>
+        )}
+
 
           {/* TAB 8: COMMUNITY DEBATES & TACTICAL BRIEFS */}
           {activeTab === 'discussions' && (

@@ -18,6 +18,7 @@ import { HeroSearch } from './components/HeroSearch';
 import { CaseCard } from './components/CaseCard';
 import { normalizeStatus } from './components/StatusBadge';
 import { CaseDetailModal } from './components/CaseDetailModal';
+import { EntityProfileModal } from './components/EntityProfileModal';
 import { RabbitHoleGraph } from './components/RabbitHoleGraph';
 import { EvidenceArchiveView } from './components/EvidenceArchiveView';
 import { DiscussionsView } from './components/DiscussionsView';
@@ -72,6 +73,8 @@ export default function App() {
 
   // Direct entity navigation to graph
   const [graphTargetEntity, setGraphTargetEntity] = useState<string | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [selectedEntityType, setSelectedEntityType] = useState<string>('people');
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -190,6 +193,11 @@ import('./services/apiService').then(({ ApiService }) => {
     if (e) e.stopPropagation();
     StorageService.toggleBookmark(caseId);
     setLegacyProfile(StorageService.getProfile());
+  };
+
+  const handleOpenEntity = (type: string, id: string) => {
+    setSelectedEntityType(type);
+    setSelectedEntityId(id);
   };
 
   const handleOpenCase = (caseId: string) => {
@@ -329,7 +337,7 @@ import('./services/apiService').then(({ ApiService }) => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         {/* VIEW 1: EDITORIAL INTELLIGENCE ARCHIVE */}
         {currentTab === 'cases' && (
           <EditorialHome
@@ -359,8 +367,8 @@ import('./services/apiService').then(({ ApiService }) => {
 
         {/* VIEW 3: RABBIT HOLE GRAPH */}
         {currentTab === 'graph' && (
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-800">
+          <div className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 py-6 flex flex-col min-h-[600px]">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-800 shrink-0">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse"></span>
@@ -384,6 +392,7 @@ import('./services/apiService').then(({ ApiService }) => {
             <RabbitHoleGraph
               onOpenCase={handleOpenCase}
               onRewardXp={handleRewardXp}
+              onOpenEntity={handleOpenEntity}
               initialSelectedEntity={graphTargetEntity}
               onRandomRabbitHole={handleRandomRabbitHole}
             />
@@ -427,6 +436,17 @@ import('./services/apiService').then(({ ApiService }) => {
       </footer>
 
       {/* MODALS */}
+      {selectedEntityId && (
+        <EntityProfileModal
+          isOpen={!!selectedEntityId}
+          onClose={() => setSelectedEntityId(null)}
+          entityId={selectedEntityId}
+          type={selectedEntityType as any}
+          currentUser={currentUser}
+          caseFileId={activeCaseId || undefined}
+        />
+      )}
+
       {/* 1. Case Detail Modal */}
       {activeCaseFile && (
         <CaseDetailModal

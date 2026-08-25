@@ -379,7 +379,7 @@ export interface Conversation {
 export interface GraphNode {
   id: string;
   label: string;
-  type: 'CASE' | 'PERSON' | 'AGENCY' | 'LOCATION' | 'DOCUMENT' | 'EVENT';
+  type: 'case_files' | 'people' | 'organisations' | 'locations' | 'events' | 'evidence_items' | 'CASE' | 'PERSON' | 'AGENCY' | 'LOCATION' | 'DOCUMENT' | 'EVENT';
   caseId?: string;
   rating?: EvidenceRating;
   radius?: number;
@@ -397,6 +397,7 @@ export interface GraphLink {
   relationship: string;
   strength?: number;
   verified?: boolean;
+  relId?: string;
 }
 
 export interface RabbitHoleNetwork {

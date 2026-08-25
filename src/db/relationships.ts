@@ -1,5 +1,5 @@
 import { db } from './index.js';
-import { entityRelationships, caseRelationships, users, caseFiles, people, organisations, locations } from './schema.js';
+import { entityRelationships, caseRelationships, users, caseFiles, evidenceItems, documents, sources, evidenceEntityRelationships, people, organisations, locations } from './schema.js';
 import { eq, or, and, desc, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -62,20 +62,27 @@ export async function updateRelationship(id: string, data: any) {
 
 export async function deleteRelationship(id: string) {
   await db.delete(caseRelationships).where(eq(caseRelationships.relationshipId, id));
+  await db.delete(evidenceEntityRelationships).where(eq(evidenceEntityRelationships.relationshipId, id));
   await db.delete(entityRelationships).where(eq(entityRelationships.id, id));
   return true;
 }
 
 // Helper to resolve entity data dynamically
 async function resolveRelationshipEntities(rel: any) {
-  const [sourceEntity, targetEntity, creator, cases] = await Promise.all([
+  const [sourceEntity, targetEntity, creator, cases, evidenceList] = await Promise.all([
     fetchEntityData(rel.sourceType, rel.sourceId),
     fetchEntityData(rel.targetType, rel.targetId),
     db.select().from(users).where(eq(users.uid, rel.createdBy)).then(res => res[0]),
     db.select({ id: caseFiles.id, title: caseFiles.title })
       .from(caseRelationships)
       .innerJoin(caseFiles, eq(caseFiles.id, caseRelationships.caseFileId))
-      .where(eq(caseRelationships.relationshipId, rel.id))
+      .where(eq(caseRelationships.relationshipId, rel.id)),
+    db.select({ evidence: evidenceItems, document: documents, source: sources })
+      .from(evidenceItems)
+      .innerJoin(evidenceEntityRelationships, eq(evidenceItems.id, evidenceEntityRelationships.evidenceId))
+      .leftJoin(documents, eq(evidenceItems.documentId, documents.id))
+      .leftJoin(sources, eq(evidenceItems.sourceId, sources.id))
+      .where(eq(evidenceEntityRelationships.relationshipId, rel.id))
   ]);
 
   return {
@@ -83,7 +90,8 @@ async function resolveRelationshipEntities(rel: any) {
     sourceEntity,
     targetEntity,
     creator: creator ? { uid: creator.uid, displayName: creator.displayName } : null,
-    associatedCases: cases
+    associatedCases: cases,
+    evidenceList
   };
 }
 

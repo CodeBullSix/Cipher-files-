@@ -6,6 +6,10 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     ...options.headers,
   };
 
+  if (auth.authStateReady) {
+    await auth.authStateReady();
+  }
+
   if (auth.currentUser) {
     const token = await auth.currentUser.getIdToken();
     headers = { ...headers, Authorization: `Bearer ${token}` };
@@ -13,11 +17,12 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
   const response = await fetch(url, { ...options, headers });
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("AUTHENTICATION REQUIRED");
+    }
     throw new Error(`API error: ${response.statusText} (${response.status}) on ${url}`);
   }
   return response.json();
-
-
 }
 
 export const ApiService = {
@@ -131,4 +136,19 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
   createRelationship: (data: any) => fetchWithAuth('/api/relationships', { method: 'POST', body: JSON.stringify(data) }),
   updateRelationship: (id: string, data: any) => fetchWithAuth(`/api/relationships/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteRelationship: (id: string) => fetchWithAuth(`/api/relationships/${id}`, { method: 'DELETE' }),
+
+  // EVIDENCE ASSOCIATIONS
+  getEvidenceForEntity: (entityType: string, entityId: string) => fetchWithAuth(`/api/investigation/${entityType}/${entityId}/evidence`),
+  attachEvidenceToEntity: (entityType: string, entityId: string, evidenceId: string) => fetchWithAuth(`/api/investigation/${entityType}/${entityId}/evidence`, { method: 'POST', body: JSON.stringify({ evidenceId }) }),
+  removeEvidenceFromEntity: (entityType: string, entityId: string, evidenceId: string) => fetchWithAuth(`/api/investigation/${entityType}/${entityId}/evidence/${evidenceId}`, { method: 'DELETE' }),
+
+  getEvidenceForRelationship: (relationshipId: string) => fetchWithAuth(`/api/relationships/${relationshipId}/evidence`),
+  attachEvidenceToRelationship: (relationshipId: string, evidenceId: string) => fetchWithAuth(`/api/relationships/${relationshipId}/evidence`, { method: 'POST', body: JSON.stringify({ evidenceId }) }),
+  removeEvidenceFromRelationship: (relationshipId: string, evidenceId: string) => fetchWithAuth(`/api/relationships/${relationshipId}/evidence/${evidenceId}`, { method: 'DELETE' }),
+
+
+  // GRAPH
+  getInitialGraphNodes: () => fetchWithAuth('/api/graph/initial'),
+  getGraphForCase: (caseId: string) => fetchWithAuth(`/api/graph/case/${caseId}`),
+  expandGraphNode: (nodeId: string) => fetchWithAuth(`/api/graph/expand/${nodeId}`)
 };

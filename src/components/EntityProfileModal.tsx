@@ -4,6 +4,10 @@ import { X, User, Building, MapPin, ShieldCheck, AlertTriangle, Edit, FolderArch
 import { sound } from '../utils/audio';
 import { EntityModal } from './EntityModal';
 import { RelationshipModal } from './RelationshipModal';
+
+import { EvidenceDetailModal } from './EvidenceDetailModal';
+import { Search } from 'lucide-react';
+
 import { Plus, Trash2 } from 'lucide-react';
 
 interface Props {
@@ -25,6 +29,13 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
   const [relationships, setRelationships] = useState<any[]>([]);
   const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
   const [editingRelationship, setEditingRelationship] = useState<any>(null);
+
+  const [evidenceItems, setEvidenceItems] = useState<any[]>([]);
+  const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
+  const [isAttachingEvidence, setIsAttachingEvidence] = useState(false);
+  const [evidenceSearchQuery, setEvidenceSearchQuery] = useState('');
+  const [evidenceSearchResults, setEvidenceSearchResults] = useState<any[]>([]);
+
 
 
   useEffect(() => {
@@ -50,6 +61,62 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
   };
 
   
+  
+  const loadEvidence = async () => {
+    try {
+      const data = await ApiService.getEvidenceForEntity(type, entityId);
+      setEvidenceItems(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && entityId && activeTab === 'evidence') {
+      loadEvidence();
+    }
+  }, [isOpen, entityId, type, activeTab]);
+  
+  const handleAttachEvidenceSearch = async (q: string) => {
+    setEvidenceSearchQuery(q);
+    if (q.length > 2) {
+      try {
+        // We will just search all evidence and limit to 10
+        const res = await ApiService.getEvidence({ query: q, limit: 10 });
+        setEvidenceSearchResults(res.items || res); // Depends on how getEvidence returns
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      setEvidenceSearchResults([]);
+    }
+  };
+  
+  const handleAttachEvidence = async (evidenceId: string) => {
+    try {
+      await ApiService.attachEvidenceToEntity(type, entityId, evidenceId);
+      setIsAttachingEvidence(false);
+      setEvidenceSearchQuery('');
+      setEvidenceSearchResults([]);
+      loadEvidence();
+      sound.blip();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to attach evidence');
+    }
+  };
+  
+  const handleRemoveEvidence = async (evidenceId: string) => {
+    if (!window.confirm('Remove this evidence association?')) return;
+    try {
+      await ApiService.removeEvidenceFromEntity(type, entityId, evidenceId);
+      loadEvidence();
+      sound.blip();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const loadRelationships = async () => {
     try {
       const data = await ApiService.getRelationshipsForEntity(type, entityId);
@@ -300,6 +367,17 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                                 {rel.description && (
                                   <p className="text-sm text-gray-400 mt-1 line-clamp-2">{rel.description}</p>
                                 )}
+                                
+                                {rel.evidenceList && rel.evidenceList.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    <div className="text-[10px] font-mono text-gray-500 uppercase">Supporting Evidence</div>
+                                    {rel.evidenceList.map((evItem: any) => (
+                                      <div key={evItem.evidence.id} onClick={(e) => { e.stopPropagation(); setSelectedEvidence(evItem.evidence); }} className="text-xs text-cyan-400 hover:text-cyan-300 cursor-pointer flex items-center gap-1">
+                                        <Scale className="w-3 h-3" /> {evItem.evidence.title}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               
                               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -336,17 +414,113 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                   </div>
                 )}
 
+
                 {activeTab === 'evidence' && (
-                  <div className="text-center py-12 animate-in fade-in duration-300">
-                    <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center mx-auto mb-4 border border-gray-800">
-                      <Scale className="w-6 h-6 text-cyan-500/50" />
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-mono font-bold text-gray-400 uppercase">Supporting Evidence</h3>
+                      {isEditable && (
+                        <button
+                          onClick={() => setIsAttachingEvidence(!isAttachingEvidence)}
+                          className="px-3 py-1.5 bg-cyan-900/30 text-cyan-400 border border-cyan-800 rounded text-xs font-bold hover:bg-cyan-800/50 transition-colors"
+                        >
+                          {isAttachingEvidence ? 'Cancel' : '+ Attach Evidence'}
+                        </button>
+                      )}
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">Supporting Evidence</h3>
-                    <p className="text-gray-400 max-w-md mx-auto text-sm">
-                      Phase 3.4 feature. Documents, photos, and sources linking this entity to the investigation will appear here.
-                    </p>
+                    
+                    {isAttachingEvidence && (
+                      <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-xl space-y-4">
+                        <div>
+                          <label className="block text-xs font-mono text-gray-400 mb-1">Search Existing Evidence Archive</label>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                            <input
+                              type="text"
+                              value={evidenceSearchQuery}
+                              onChange={(e) => handleAttachEvidenceSearch(e.target.value)}
+                              placeholder="Search by title, description..."
+                              className="w-full bg-black border border-gray-800 rounded p-2 pl-9 text-sm text-white focus:border-cyan-500 outline-none"
+                            />
+                          </div>
+                        </div>
+                        {evidenceSearchResults.length > 0 && (
+                          <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            {evidenceSearchResults.map((ev: any) => (
+                              <div key={ev.id} className="p-3 bg-black border border-gray-800 rounded-lg flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm font-bold text-gray-200">{ev.title}</div>
+                                  <div className="text-xs text-gray-500">{ev.type} • {ev.status}</div>
+                                </div>
+                                <button
+                                  onClick={() => handleAttachEvidence(ev.id)}
+                                  className="px-3 py-1 bg-emerald-900/30 text-emerald-400 border border-emerald-800 rounded text-xs font-bold hover:bg-emerald-800/50 transition-colors"
+                                >
+                                  Attach
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {evidenceSearchQuery.length > 2 && evidenceSearchResults.length === 0 && (
+                          <div className="text-xs text-gray-500 text-center py-2">No existing evidence found matching query.</div>
+                        )}
+                      </div>
+                    )}
+
+                    {evidenceItems.length === 0 && !isAttachingEvidence ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center mx-auto mb-4 border border-gray-800">
+                          <Scale className="w-6 h-6 text-gray-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-400 mb-2">No Evidence Attached</h3>
+                        <p className="text-gray-500 text-sm max-w-md mx-auto">
+                          There are no primary sources or documents directly linked to this {type.replace(/s$/, '')}.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {evidenceItems.map((item: any) => {
+                          const ev = item; // getEvidenceForEntity returns { evidence, document, source }
+                          if (!ev) return null;
+                          return (
+                            <div key={ev.id} className="p-4 bg-gray-900/30 border border-gray-800 rounded-xl hover:border-gray-700 transition-colors flex flex-col group relative">
+                              {isEditable && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveEvidence(ev.id); }}
+                                  className="absolute top-2 right-2 p-1.5 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-black rounded-lg"
+                                  title="Remove Association"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded uppercase ${
+                                  ev.status === 'VERIFIED' ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-900/50' :
+                                  ev.status === 'DISPUTED' ? 'bg-red-950/50 text-red-400 border border-red-900/50' :
+                                  'bg-amber-950/50 text-amber-400 border border-amber-900/50'
+                                }`}>
+                                  {ev.status}
+                                </span>
+                                <span className="text-[10px] text-gray-500 font-mono uppercase">{ev.type}</span>
+                              </div>
+                              <h4 className="text-sm font-bold text-white mb-2 line-clamp-1">{ev.title}</h4>
+                              <p className="text-xs text-gray-400 line-clamp-2 mb-4 flex-1">{ev.description}</p>
+                              
+                              <button
+                                onClick={() => setSelectedEvidence(ev)}
+                                className="w-full py-2 bg-black text-cyan-400 text-xs font-mono font-bold border border-cyan-900/50 hover:bg-cyan-950/30 rounded transition-colors"
+                              >
+                                VIEW EVIDENCE
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
+
 
                 {activeTab === 'timeline' && (
                   <div className="text-center py-12 animate-in fade-in duration-300">
@@ -392,6 +566,18 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
           }}
         />
       )}
+
+      {selectedEvidence && (
+        <EvidenceDetailModal
+          evidence={selectedEvidence}
+          currentUser={currentUser}
+          onClose={() => setSelectedEvidence(null)}
+          onUpdate={() => {
+            loadEvidence();
+          }}
+        />
+      )}
+
     </div>
   );
 };

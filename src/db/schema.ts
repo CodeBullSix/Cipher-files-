@@ -101,7 +101,9 @@ export const caseFilesRelations = relations(caseFiles, ({ one, many }) => ({
   organisations: many(caseOrganisations),
   locations: many(caseLocations),
   relationships: many(caseRelationships),
-}));
+
+  events: many(eventCaseFiles),
+  evidence: many(evidenceCaseFiles),}));
 
 export const discussionsRelations = relations(discussions, ({ one, many }) => ({
   author: one(users, { fields: [discussions.authorId], references: [users.uid] }),
@@ -210,7 +212,14 @@ export const evidenceItemsRelations = relations(evidenceItems, ({ one, many }) =
   caseFiles: many(evidenceCaseFiles),
   discussions: many(evidenceDiscussions),
   auditLogs: many(evidenceAuditLogs),
-}));
+
+
+  people: many(evidencePeople),
+  organisations: many(evidenceOrganisations),
+  locations: many(evidenceLocations),
+  entityRelationships: many(evidenceEntityRelationships),
+
+  events: many(eventEvidence),}));
 
 export const evidenceCaseFilesRelations = relations(evidenceCaseFiles, ({ one }) => ({
   evidenceItem: one(evidenceItems, { fields: [evidenceCaseFiles.evidenceId], references: [evidenceItems.id] }),
@@ -289,17 +298,23 @@ export const caseLocations = pgTable('case_locations', {
 export const peopleRelations = relations(people, ({ one, many }) => ({
   creator: one(users, { fields: [people.createdBy], references: [users.uid] }),
   caseFiles: many(casePeople),
-}));
+
+  evidenceItems: many(evidencePeople),
+  events: many(eventPeople),}));
 
 export const organisationsRelations = relations(organisations, ({ one, many }) => ({
   creator: one(users, { fields: [organisations.createdBy], references: [users.uid] }),
   caseFiles: many(caseOrganisations),
-}));
+
+  evidenceItems: many(evidenceOrganisations),
+  events: many(eventOrganisations),}));
 
 export const locationsRelations = relations(locations, ({ one, many }) => ({
   creator: one(users, { fields: [locations.createdBy], references: [users.uid] }),
   caseFiles: many(caseLocations),
-}));
+
+  evidenceItems: many(evidenceLocations),
+  events: many(eventLocations),}));
 
 export const casePeopleRelations = relations(casePeople, ({ one }) => ({
   caseFile: one(caseFiles, { fields: [casePeople.caseFileId], references: [caseFiles.id] }),
@@ -342,9 +357,167 @@ export const caseRelationships = pgTable('case_relationships', {
 export const entityRelationshipsRelations = relations(entityRelationships, ({ one, many }) => ({
   creator: one(users, { fields: [entityRelationships.createdBy], references: [users.uid] }),
   caseFiles: many(caseRelationships),
-}));
+
+  evidenceItems: many(evidenceEntityRelationships),
+  events: many(eventRelationships),}));
 
 export const caseRelationshipsRelations = relations(caseRelationships, ({ one }) => ({
   caseFile: one(caseFiles, { fields: [caseRelationships.caseFileId], references: [caseFiles.id] }),
   relationship: one(entityRelationships, { fields: [caseRelationships.relationshipId], references: [entityRelationships.id] }),
+}));
+
+
+export const evidencePeople = pgTable('evidence_people', {
+  evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
+  personId: text('person_id').references(() => people.id).notNull(),
+}, (t) => [
+  unique('unique_evidence_person').on(t.evidenceId, t.personId)
+]);
+
+export const evidenceOrganisations = pgTable('evidence_organisations', {
+  evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
+  organisationId: text('organisation_id').references(() => organisations.id).notNull(),
+}, (t) => [
+  unique('unique_evidence_organisation').on(t.evidenceId, t.organisationId)
+]);
+
+export const evidenceLocations = pgTable('evidence_locations', {
+  evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
+  locationId: text('location_id').references(() => locations.id).notNull(),
+}, (t) => [
+  unique('unique_evidence_location').on(t.evidenceId, t.locationId)
+]);
+
+export const evidenceEntityRelationships = pgTable('evidence_entity_relationships', {
+  evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
+  relationshipId: text('relationship_id').references(() => entityRelationships.id).notNull(),
+}, (t) => [
+  unique('unique_evidence_relationship').on(t.evidenceId, t.relationshipId)
+]);
+
+export const evidencePeopleRelations = relations(evidencePeople, ({ one }) => ({
+  evidenceItem: one(evidenceItems, { fields: [evidencePeople.evidenceId], references: [evidenceItems.id] }),
+  person: one(people, { fields: [evidencePeople.personId], references: [people.id] }),
+}));
+
+export const evidenceOrganisationsRelations = relations(evidenceOrganisations, ({ one }) => ({
+  evidenceItem: one(evidenceItems, { fields: [evidenceOrganisations.evidenceId], references: [evidenceItems.id] }),
+  organisation: one(organisations, { fields: [evidenceOrganisations.organisationId], references: [organisations.id] }),
+}));
+
+export const evidenceLocationsRelations = relations(evidenceLocations, ({ one }) => ({
+  evidenceItem: one(evidenceItems, { fields: [evidenceLocations.evidenceId], references: [evidenceItems.id] }),
+  location: one(locations, { fields: [evidenceLocations.locationId], references: [locations.id] }),
+}));
+
+export const evidenceEntityRelationshipsRelations = relations(evidenceEntityRelationships, ({ one }) => ({
+  evidenceItem: one(evidenceItems, { fields: [evidenceEntityRelationships.evidenceId], references: [evidenceItems.id] }),
+  relationship: one(entityRelationships, { fields: [evidenceEntityRelationships.relationshipId], references: [entityRelationships.id] }),
+}));
+
+
+export const eventPrecisionEnum = pgEnum('event_precision', ['EXACT', 'DAY', 'MONTH', 'YEAR', 'APPROXIMATE', 'RANGE', 'UNKNOWN']);
+export const eventTypeEnum = pgEnum('event_type', ['MEETING', 'PUBLICATION', 'EMPLOYMENT', 'FOUNDING', 'INVESTIGATION', 'INCIDENT', 'MOVEMENT', 'COMMUNICATION', 'LEGAL', 'POLITICAL', 'OTHER']);
+
+export const events = pgTable('events', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: eventTypeEnum('type').notNull(),
+  
+  // Date information
+  dateString: text('date_string'), // For display: "March 1963", "1963-1965", "Unknown"
+  startDate: timestamp('start_date'), // For sorting/filtering
+  endDate: timestamp('end_date'),
+  datePrecision: eventPrecisionEnum('date_precision').notNull().default('EXACT'),
+  
+  location: text('location'),
+  verificationStatus: entityVerificationStatusEnum('verification_status').default('UNVERIFIED').notNull(),
+  
+  createdBy: text('created_by').references(() => users.uid).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const eventPeople = pgTable('event_people', {
+  eventId: text('event_id').references(() => events.id).notNull(),
+  personId: text('person_id').references(() => people.id).notNull(),
+}, (t) => [
+  unique('unique_event_person').on(t.eventId, t.personId)
+]);
+
+export const eventOrganisations = pgTable('event_organisations', {
+  eventId: text('event_id').references(() => events.id).notNull(),
+  organisationId: text('organisation_id').references(() => organisations.id).notNull(),
+}, (t) => [
+  unique('unique_event_organisation').on(t.eventId, t.organisationId)
+]);
+
+export const eventLocations = pgTable('event_locations', {
+  eventId: text('event_id').references(() => events.id).notNull(),
+  locationId: text('location_id').references(() => locations.id).notNull(),
+}, (t) => [
+  unique('unique_event_location').on(t.eventId, t.locationId)
+]);
+
+export const eventCaseFiles = pgTable('event_case_files', {
+  eventId: text('event_id').references(() => events.id).notNull(),
+  caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
+}, (t) => [
+  unique('unique_event_case_file').on(t.eventId, t.caseFileId)
+]);
+
+export const eventRelationships = pgTable('event_relationships', {
+  eventId: text('event_id').references(() => events.id).notNull(),
+  relationshipId: text('relationship_id').references(() => entityRelationships.id).notNull(),
+}, (t) => [
+  unique('unique_event_relationship').on(t.eventId, t.relationshipId)
+]);
+
+export const eventEvidence = pgTable('event_evidence', {
+  eventId: text('event_id').references(() => events.id).notNull(),
+  evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
+}, (t) => [
+  unique('unique_event_evidence').on(t.eventId, t.evidenceId)
+]);
+
+// RELATIONS
+export const eventsRelations = relations(events, ({ one, many }) => ({
+  creator: one(users, { fields: [events.createdBy], references: [users.uid] }),
+  people: many(eventPeople),
+  organisations: many(eventOrganisations),
+  locations: many(eventLocations),
+  caseFiles: many(eventCaseFiles),
+  relationships: many(eventRelationships),
+  evidence: many(eventEvidence),
+}));
+
+export const eventPeopleRelations = relations(eventPeople, ({ one }) => ({
+  event: one(events, { fields: [eventPeople.eventId], references: [events.id] }),
+  person: one(people, { fields: [eventPeople.personId], references: [people.id] }),
+}));
+
+export const eventOrganisationsRelations = relations(eventOrganisations, ({ one }) => ({
+  event: one(events, { fields: [eventOrganisations.eventId], references: [events.id] }),
+  organisation: one(organisations, { fields: [eventOrganisations.organisationId], references: [organisations.id] }),
+}));
+
+export const eventLocationsRelations = relations(eventLocations, ({ one }) => ({
+  event: one(events, { fields: [eventLocations.eventId], references: [events.id] }),
+  location: one(locations, { fields: [eventLocations.locationId], references: [locations.id] }),
+}));
+
+export const eventCaseFilesRelations = relations(eventCaseFiles, ({ one }) => ({
+  event: one(events, { fields: [eventCaseFiles.eventId], references: [events.id] }),
+  caseFile: one(caseFiles, { fields: [eventCaseFiles.caseFileId], references: [caseFiles.id] }),
+}));
+
+export const eventRelationshipsRelations = relations(eventRelationships, ({ one }) => ({
+  event: one(events, { fields: [eventRelationships.eventId], references: [events.id] }),
+  relationship: one(entityRelationships, { fields: [eventRelationships.relationshipId], references: [entityRelationships.id] }),
+}));
+
+export const eventEvidenceRelations = relations(eventEvidence, ({ one }) => ({
+  event: one(events, { fields: [eventEvidence.eventId], references: [events.id] }),
+  evidenceItem: one(evidenceItems, { fields: [eventEvidence.evidenceId], references: [evidenceItems.id] }),
 }));

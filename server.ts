@@ -11,6 +11,8 @@ import { getCases, getCaseById } from './src/db/cases.js';
 import evidenceRoutes from './src/routes/evidence.js';
 import investigationRoutes from './src/routes/investigation.js';
 import { relationshipsRoutes } from './src/routes/relationships.js';
+import { eventsRouter } from './src/routes/events.js';
+import { graphRouter } from './src/routes/graph.js';
 
 import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion, getDiscussionById, updateDiscussionStatus, getDiscussionEvidence } from './src/db/discussions.js';
 
@@ -25,6 +27,8 @@ app.use(express.json());
 app.use('/api/evidence', evidenceRoutes);
 app.use('/api/investigation', investigationRoutes);
 app.use('/api/relationships', relationshipsRoutes);
+app.use('/api/events', eventsRouter);
+app.use('/api/graph', graphRouter);
 
 
 app.get('/api/users', requireAuth, async (req: AuthRequest, res) => {
@@ -208,7 +212,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // AI Cross-Examiner Endpoint
-app.post('/api/ai/cross-examine', async (req, res) => {
+app.post('/api/ai/cross-examine', requireAuth, async (req: AuthRequest, res: any) => {
   try {
     const { caseTitle, claim, knownFacts, opposingEvidence, userHypothesis } = req.body;
     const ai = getAi();
@@ -237,7 +241,7 @@ Please return a structured analytical response containing:
 Format your output in clean Markdown with bold bullet points. Maintain a professional, technical intelligence archive tone.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: "gemini-3.6-flash",
       contents: prompt,
     });
 
@@ -255,29 +259,67 @@ Format your output in clean Markdown with bold bullet points. Maintain a profess
   }
 });
 
+// AI Brief Endpoint
+app.post('/api/ai/brief', requireAuth, async (req: AuthRequest, res: any) => {
+  try {
+    const { entityName, entityType, context } = req.body;
+    const ai = getAi();
+    const prompt = `You are an intelligence analyst for CIPHER FILES.
+Provide a concise, 150-word intelligence brief on the following entity:
+Entity Name: "${entityName}"
+Entity Type: "${entityType}"
+Context: ${context || 'General investigative intelligence'}
+
+If this is a known historical entity, provide a factual summary of their background, known operations, and intelligence significance.
+If this is an unknown or custom entity, synthesize a plausible, professional intelligence profile based on their name and type.
+
+Format your output in clean Markdown with the following headers:
+### Executive Summary
+### Known Affiliations / Indicators
+### Risk Assessment`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+    res.json({
+      brief: response.text || 'Unable to generate brief.',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Error in /api/ai/brief:', error);
+    res.status(500).json({
+      error: 'Brief generation failed',
+      details: error?.message || 'Server error',
+    });
+  }
+});
+
 // AI Rabbit Hole Connector Endpoint
-app.post('/api/ai/rabbit-hole-connect', async (req, res) => {
+app.post('/api/ai/rabbit-hole-connect', requireAuth, async (req: AuthRequest, res: any) => {
   try {
     const { entityA, entityB, context } = req.body;
     const ai = getAi();
 
     const prompt = `You are the Rabbit Hole Network Engine for CIPHER FILES.
-Identify real, historical, intelligence, organizational, or forensic links connecting:
+Analyze the following entities and identify or synthesize potential intelligence, organizational, or forensic links connecting them:
 - Entity A: "${entityA}"
 - Entity B: "${entityB}"
-Context: ${context || 'General 20th/21st century historical and intelligence records'}
+Context: ${context || 'General investigative intelligence and historical records'}
+
+If these are known historical entities, provide their real connections. If they are unknown, hypothetical, or part of a local investigation, synthesize a highly plausible intelligence link between them based on standard investigative tropes (e.g. shared shell companies, encrypted communication networks, overlapping travel manifests), but clearly state if the connection is synthesized.
 
 Provide:
-1. "The Connecting Chain": Step-by-step nodes linking Entity A to Entity B (e.g. Entity A ➔ Agency/Event ➔ Person ➔ Entity B).
-2. "The Nexus Narrative": A concise, engaging 150-word intelligence brief explaining how their operations, personnel, or investigations intersected.
-3. "Key Historical Documents / Inquiries": 2 primary government, academic, or court references documenting this connection.
+1. "The Connecting Chain": Step-by-step nodes linking Entity A to Entity B (e.g. Entity A ➔ Entity C ➔ Entity B).
+2. "The Nexus Narrative": A concise, engaging 150-word intelligence brief explaining the connection.
+3. "Key Indicators / Documents": 2 references (real or plausible case files) documenting this connection.
 4. "Degree of Separation": (1 to 4 hops).
-5. "Connection Reliability": (Documented Historical Fact / Corroborated Intelligence Link / Speculative Hypothesis).
+5. "Connection Reliability": (Documented Historical Fact / Corroborated Intelligence Link / Speculative Hypothesis / Synthesized Profile).
 
 Format with bold headers and clean Markdown.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: "gemini-3.6-flash",
       contents: prompt,
     });
 
@@ -295,7 +337,7 @@ Format with bold headers and clean Markdown.`;
 });
 
 // AI Declassification / Entity Extraction Tool
-app.post('/api/ai/declassify', async (req, res) => {
+app.post('/api/ai/declassify', requireAuth, async (req: AuthRequest, res: any) => {
   try {
     const { rawText } = req.body;
     const ai = getAi();
@@ -321,7 +363,7 @@ Extract and return structured JSON with the following fields:
 Respond ONLY with valid parseable JSON.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: "gemini-3.6-flash",
       contents: prompt,
       config: {
         responseMimeType: 'application/json',

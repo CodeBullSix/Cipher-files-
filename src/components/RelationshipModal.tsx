@@ -38,9 +38,50 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
   const [relationshipType, setRelationshipType] = useState(existingRelationship?.relationshipType || 'ASSOCIATED_WITH');
   const [description, setDescription] = useState(existingRelationship?.description || '');
   const [verificationStatus, setVerificationStatus] = useState(existingRelationship?.verificationStatus || 'UNVERIFIED');
+
+  const [evidenceSearch, setEvidenceSearch] = useState('');
+  const [evidenceResults, setEvidenceResults] = useState<any[]>([]);
+  const [isAttachingEvidence, setIsAttachingEvidence] = useState(false);
+
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+
+  useEffect(() => {
+    if (evidenceSearch.length > 2) {
+      ApiService.getEvidence({ query: evidenceSearch, limit: 10 }).then(res => {
+        setEvidenceResults(res.items || res);
+      });
+    } else {
+      setEvidenceResults([]);
+    }
+  }, [evidenceSearch]);
+
+  const handleAttachEvidence = async (evidenceId: string) => {
+    if (!existingRelationship) return;
+    try {
+      await ApiService.attachEvidenceToRelationship(existingRelationship.id, evidenceId);
+      setIsAttachingEvidence(false);
+      setEvidenceSearch('');
+      sound.blip();
+      onSaved(); // trigger a reload in the parent
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRemoveEvidence = async (evidenceId: string) => {
+    if (!existingRelationship) return;
+    if (!window.confirm('Remove this evidence association?')) return;
+    try {
+      await ApiService.removeEvidenceFromRelationship(existingRelationship.id, evidenceId);
+      sound.blip();
+      onSaved();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     if (targetSearch.length >= 2 && !selectedTarget) {
@@ -200,6 +241,61 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
                <p className="text-xs text-gray-500 font-mono mb-1">Target Entity</p>
                <p className="text-sm text-gray-300 font-bold">{existingRelationship.targetEntity?.name}</p>
              </div>
+          )}
+
+
+          {existingRelationship && (
+            <div className="border border-gray-800 rounded bg-black/20 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
+                  Supporting Evidence
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsAttachingEvidence(!isAttachingEvidence)}
+                  className="text-[10px] bg-cyan-900/30 text-cyan-400 border border-cyan-800 px-2 py-1 rounded"
+                >
+                  {isAttachingEvidence ? 'CANCEL' : '+ ATTACH'}
+                </button>
+              </div>
+              
+              {isAttachingEvidence && (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={evidenceSearch}
+                    onChange={(e) => setEvidenceSearch(e.target.value)}
+                    placeholder="Search existing evidence..."
+                    className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white"
+                  />
+                  {evidenceResults.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {evidenceResults.map(ev => (
+                        <div key={ev.id} className="flex items-center justify-between p-2 bg-black border border-gray-800 rounded text-xs">
+                          <span className="text-gray-300 truncate pr-2">{ev.title}</span>
+                          <button type="button" onClick={() => handleAttachEvidence(ev.id)} className="text-emerald-400 font-bold shrink-0">Attach</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {existingRelationship.evidenceList && existingRelationship.evidenceList.length > 0 ? (
+                <div className="space-y-2">
+                  {existingRelationship.evidenceList.map((evItem: any) => (
+                    <div key={evItem.evidence.id} className="flex items-center justify-between p-2 bg-gray-900/30 border border-gray-800 rounded">
+                      <span className="text-xs text-cyan-400 truncate pr-2">{evItem.evidence.title}</span>
+                      <button type="button" onClick={() => handleRemoveEvidence(evItem.evidence.id)} className="text-red-400 hover:text-red-300">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500">No evidence attached.</div>
+              )}
+            </div>
           )}
 
           <div>

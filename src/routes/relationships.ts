@@ -4,6 +4,7 @@ import * as RelationshipsDB from '../db/relationships.js';
 import { entityRelationships } from '../db/schema.js';
 import { db } from '../db/index.js';
 import { eq } from 'drizzle-orm';
+import { getEvidenceForRelationship, attachEvidenceToRelationship, removeEvidenceFromRelationship } from '../db/evidence.js';
 
 const router = Router();
 
@@ -88,3 +89,35 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 });
 
 export const relationshipsRoutes = router;
+
+
+// EVIDENCE ASSOCIATIONS
+router.get('/:id/evidence', async (req, res) => {
+  try {
+    const result = await getEvidenceForRelationship(req.params.id);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/evidence', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { evidenceId } = req.body;
+    if (!evidenceId) return res.status(400).json({ error: 'evidenceId required' });
+    
+    await attachEvidenceToRelationship(req.params.id, evidenceId);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/:id/evidence/:evidenceId', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    await removeEvidenceFromRelationship(req.params.id, req.params.evidenceId);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
