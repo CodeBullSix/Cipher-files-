@@ -105,3 +105,11 @@ export async function updateDiscussionStatus(discussionId: string, updates: { lo
     .returning();
   return result[0];
 }
+
+export async function updateReplyStatus(replyId: string, updates: { deletedAt?: Date | null }) {
+  const result = await db.update(discussionReplies)
+    .set(updates)
+    .where(eq(discussionReplies.id, replyId))
+    .returning();
+  return result[0];
+}

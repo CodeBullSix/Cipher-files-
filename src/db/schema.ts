@@ -1,9 +1,9 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, text, timestamp, integer, boolean, pgEnum, unique, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, primaryKey, uuid, text, varchar, timestamp, integer, boolean, pgEnum, unique, jsonb } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['USER', 'CONTRIBUTOR', 'MODERATOR', 'ADMIN']);
 export const caseStatusEnum = pgEnum('case_status', ['CONFIRMED', 'DOCUMENTED', 'DISPUTED', 'UNVERIFIED', 'DEBUNKED', 'UNKNOWN']);
-export const repEventTypeEnum = pgEnum('rep_event_type', ['CREATED_DISCUSSION', 'CREATED_CASE', 'CONTRIBUTED_EVIDENCE', 'FACT_CHECKED', 'RECEIVED_UPVOTE']);
+export const repEventTypeEnum = pgEnum('rep_event_type', ['CREATED_DISCUSSION', 'CREATED_CASE', 'CONTRIBUTED_EVIDENCE', 'FACT_CHECKED', 'RECEIVED_UPVOTE', 'EVIDENCE_VERIFIED', 'MANUAL_REWARD', 'PENALTY', 'DISCUSSION_REPLY']);
 
 export const users = pgTable('users', {
   uid: text('uid').primaryKey(), // Firebase Auth UID
@@ -17,6 +17,7 @@ export const users = pgTable('users', {
   level: integer('level').default(1).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 
@@ -44,6 +45,7 @@ export const caseFiles = pgTable('case_files', {
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const discussions = pgTable('discussions', {
@@ -56,6 +58,7 @@ export const discussions = pgTable('discussions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const discussionReplies = pgTable('discussion_replies', {
@@ -65,6 +68,7 @@ export const discussionReplies = pgTable('discussion_replies', {
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
   deletedAt: timestamp('deleted_at'),
 });
 
@@ -82,8 +86,13 @@ export const reputationEvents = pgTable('reputation_events', {
   id: text('id').primaryKey(),
   userId: text('user_id').references(() => users.uid).notNull(),
   type: repEventTypeEnum('type').notNull(),
+  points: integer('points').notNull().default(0),
+  relatedRecordId: text('related_record_id'),
+  reason: text('reason'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  unique('unique_user_rep_event').on(t.userId, t.type, t.relatedRecordId)
+]);
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -137,6 +146,7 @@ export const sources = pgTable('sources', {
   reliability: sourceReliabilityEnum('reliability').default('UNKNOWN').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const documents = pgTable('documents', {
@@ -152,6 +162,7 @@ export const documents = pgTable('documents', {
   uploadedById: text('uploaded_by_id').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const evidenceItems = pgTable('evidence_items', {
@@ -169,6 +180,7 @@ export const evidenceItems = pgTable('evidence_items', {
   verifiedAt: timestamp('verified_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
   deletedAt: timestamp('deleted_at'),
 });
 
@@ -247,6 +259,7 @@ export const people = pgTable('people', {
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const organisations = pgTable('organisations', {
@@ -259,6 +272,7 @@ export const organisations = pgTable('organisations', {
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const locations = pgTable('locations', {
@@ -272,28 +286,23 @@ export const locations = pgTable('locations', {
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const casePeople = pgTable('case_people', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   personId: text('person_id').references(() => people.id).notNull(),
-}, (t) => [
-  unique('unique_case_person').on(t.caseFileId, t.personId)
-]);
+});
 
 export const caseOrganisations = pgTable('case_organisations', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   organisationId: text('organisation_id').references(() => organisations.id).notNull(),
-}, (t) => [
-  unique('unique_case_organisation').on(t.caseFileId, t.organisationId)
-]);
+});
 
 export const caseLocations = pgTable('case_locations', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   locationId: text('location_id').references(() => locations.id).notNull(),
-}, (t) => [
-  unique('unique_case_location').on(t.caseFileId, t.locationId)
-]);
+});
 
 export const peopleRelations = relations(people, ({ one, many }) => ({
   creator: one(users, { fields: [people.createdBy], references: [users.uid] }),
@@ -343,6 +352,7 @@ export const entityRelationships = pgTable('entity_relationships', {
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 }, (t) => [
   unique('unique_entity_relationship').on(t.sourceType, t.sourceId, t.targetType, t.targetId, t.relationshipType)
 ]);
@@ -437,6 +447,7 @@ export const events = pgTable('events', {
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const eventPeople = pgTable('event_people', {
@@ -521,3 +532,142 @@ export const eventEvidenceRelations = relations(eventEvidence, ({ one }) => ({
   event: one(events, { fields: [eventEvidence.eventId], references: [events.id] }),
   evidenceItem: one(evidenceItems, { fields: [eventEvidence.evidenceId], references: [evidenceItems.id] }),
 }));
+
+
+export const workspaceEntityTypeEnum = pgEnum('workspace_entity_type', ['CASE', 'PERSON', 'ORGANISATION', 'LOCATION', 'EVIDENCE', 'EVENT']);
+
+export const investigationWorkspaces = pgTable('investigation_workspaces', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  owner: text('owner').references(() => users.uid).notNull(),
+  caseId: text('case_id').references(() => caseFiles.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+});
+
+export const workspaceNotes = pgTable('workspace_notes', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id').references(() => investigationWorkspaces.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+});
+
+export const workspaceReferences = pgTable('workspace_references', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id').references(() => investigationWorkspaces.id, { onDelete: 'cascade' }).notNull(),
+  entityType: workspaceEntityTypeEnum('entity_type').notNull(),
+  entityId: text('entity_id').notNull(), // No foreign key constraint because the entity could be deleted
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const workspaceConnections = pgTable('workspace_connections', {
+  id: text('id').primaryKey(),
+  workspaceId: text('workspace_id').references(() => investigationWorkspaces.id, { onDelete: 'cascade' }).notNull(),
+  sourceRefId: text('source_ref_id').references(() => workspaceReferences.id, { onDelete: 'cascade' }).notNull(),
+  targetRefId: text('target_ref_id').references(() => workspaceReferences.id, { onDelete: 'cascade' }).notNull(),
+  label: text('label').notNull(), // User-defined relationship label
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+});
+
+export const investigationWorkspacesRelations = relations(investigationWorkspaces, ({ one, many }) => ({
+  owner: one(users, { fields: [investigationWorkspaces.owner], references: [users.uid] }),
+  caseFile: one(caseFiles, { fields: [investigationWorkspaces.caseId], references: [caseFiles.id] }),
+  notes: many(workspaceNotes),
+  references: many(workspaceReferences),
+  connections: many(workspaceConnections),
+}));
+
+export const workspaceNotesRelations = relations(workspaceNotes, ({ one }) => ({
+  workspace: one(investigationWorkspaces, { fields: [workspaceNotes.workspaceId], references: [investigationWorkspaces.id] }),
+}));
+
+export const workspaceReferencesRelations = relations(workspaceReferences, ({ one, many }) => ({
+  workspace: one(investigationWorkspaces, { fields: [workspaceReferences.workspaceId], references: [investigationWorkspaces.id] }),
+}));
+
+export const workspaceConnectionsRelations = relations(workspaceConnections, ({ one }) => ({
+  workspace: one(investigationWorkspaces, { fields: [workspaceConnections.workspaceId], references: [investigationWorkspaces.id] }),
+  sourceRef: one(workspaceReferences, { fields: [workspaceConnections.sourceRefId], references: [workspaceReferences.id] }),
+  targetRef: one(workspaceReferences, { fields: [workspaceConnections.targetRefId], references: [workspaceReferences.id] }),
+}));
+
+export const userAchievements = pgTable('user_achievements', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 }).notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  achievementId: varchar('achievement_id', { length: 255 }).notNull(),
+  earnedAt: timestamp('earned_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    uniqueUserAchievement: unique('unique_user_achievement').on(table.userId, table.achievementId)
+  };
+});
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.uid]
+  })
+}));
+
+export const notificationTypeEnum = pgEnum('notification_type', ['DISCUSSION_REPLY', 'ACHIEVEMENT_UNLOCKED', 'LEVEL_UP', 'REPUTATION_MILESTONE', 'CONTRIBUTION_STATUS', 'SYSTEM', 'NEW_FOLLOWER']);
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  type: notificationTypeEnum('type').notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  relatedRecordId: text('related_record_id'),
+  relatedRecordType: text('related_record_type'),
+  isRead: boolean('is_read').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.uid],
+  }),
+}));
+
+export const userFollows = pgTable('user_follows', {
+  followerId: text('follower_id').notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  followingId: text('following_id').notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.followerId, t.followingId] }),
+}));
+
+export const userFollowsRelations = relations(userFollows, ({ one }) => ({
+  follower: one(users, {
+    fields: [userFollows.followerId],
+    references: [users.uid],
+    relationName: 'userFollowsFollower',
+  }),
+  following: one(users, {
+    fields: [userFollows.followingId],
+    references: [users.uid],
+    relationName: 'userFollowsFollowing',
+  }),
+}));
+
+export const moderationActionEnum = pgEnum('moderation_action', ['APPROVE', 'REJECT', 'REMOVE', 'DISPUTE', 'RESTORE', 'LOCK', 'UNLOCK', 'BAN', 'UNBAN']);
+
+export const moderationLogs = pgTable('moderation_logs', {
+  id: text('id').primaryKey(),
+  actorId: text('actor_id').references(() => users.uid, { onDelete: 'cascade' }).notNull(),
+  action: moderationActionEnum('action').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  reason: text('reason'),
+  previousStatus: text('previous_status'),
+  newStatus: text('new_status'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});

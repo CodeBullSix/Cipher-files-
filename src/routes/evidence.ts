@@ -1,5 +1,6 @@
 import { Router, Request } from 'express';
 import { requireAuth, requireModerator, AuthRequest } from '../middleware/auth.js';
+import { awardReputation } from '../db/reputation.js';
 import { getEvidenceItems, getEvidenceById, createEvidence, verifyEvidence } from '../db/evidence.js';
 import { db } from '../db/index.js';
 import { sources, documents, evidenceItems } from '../db/schema.js';
@@ -69,6 +70,7 @@ router.get('/', async (req, res) => {
 router.post('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const evidence = await createEvidence(req.body, req.dbUser.uid);
+    await awardReputation(req.dbUser.uid, 'CONTRIBUTED_EVIDENCE', 25, evidence.id, 'Contributed new evidence');
     res.status(201).json(evidence);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

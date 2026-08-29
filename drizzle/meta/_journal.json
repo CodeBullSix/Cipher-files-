@@ -15,6 +15,13 @@
       "when": 1787653036976,
       "tag": "0001_warm_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787785034053,
+      "tag": "0002_lethal_human_robot",
+      "breakpoints": true
     }
   ]
 }

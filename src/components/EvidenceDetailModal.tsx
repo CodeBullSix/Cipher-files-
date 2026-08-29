@@ -1,5 +1,6 @@
+import { AddToWorkspaceModal } from './AddToWorkspaceModal';
 import React, { useState } from 'react';
-import { X, ShieldCheck, AlertTriangle, ShieldAlert, Database, FileText, Download, User, ExternalLink, Calendar } from 'lucide-react';
+import { FolderArchive, X, ShieldCheck, AlertTriangle, ShieldAlert, Database, FileText, Download, User, ExternalLink, Calendar } from 'lucide-react';
 import { ArchiveEvidence, UserProfile } from '../types';
 import { ApiService } from '../services/apiService';
 
@@ -8,9 +9,11 @@ interface Props {
   currentUser: UserProfile | null;
   onClose: () => void;
   onUpdate: (updated: ArchiveEvidence) => void;
+  onOpenEntity?: (type: 'person' | 'organisation' | 'location', id: string) => void;
+  onOpenEvent?: (eventId: string) => void;
 }
 
-export const EvidenceDetailModal: React.FC<Props> = ({ evidence, currentUser, onClose, onUpdate }) => {
+export const EvidenceDetailModal: React.FC<Props> = ({ evidence, currentUser, onClose, onUpdate, onOpenEntity, onOpenEvent }) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationNotes, setVerificationNotes] = useState('');
   const [verifyStatus, setVerifyStatus] = useState(evidence.status);
@@ -48,8 +51,8 @@ export const EvidenceDetailModal: React.FC<Props> = ({ evidence, currentUser, on
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#04060C]/90 backdrop-blur-sm">
-      <div className="w-full max-w-4xl bg-[#0A0E1A] border border-cyan-500/30 rounded-xl shadow-[0_0_40px_rgba(0,229,255,0.1)] overflow-hidden font-mono flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl my-auto rounded-2xl border border-cyan-500/40 bg-[#080B14] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200 font-mono">
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#090D1A]">
           <div className="flex items-center gap-3">
             <Database className="w-5 h-5 text-cyan-400" />
@@ -177,7 +180,38 @@ export const EvidenceDetailModal: React.FC<Props> = ({ evidence, currentUser, on
                   </div>
                 </div>
               )}
-              
+
+              {((evidence.people && evidence.people.length > 0) || 
+                (evidence.organisations && evidence.organisations.length > 0) || 
+                (evidence.locations && evidence.locations.length > 0) || 
+                (evidence.events && evidence.events.length > 0)) && (
+                <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Associated References</h3>
+                  <div className="space-y-3">
+                    {evidence.people?.map(p => (
+                      <div key={p.id} onClick={() => onOpenEntity?.('person', p.id)} className="text-sm text-cyan-400 hover:underline cursor-pointer">
+                        • {p.name} (Person)
+                      </div>
+                    ))}
+                    {evidence.organisations?.map(o => (
+                      <div key={o.id} onClick={() => onOpenEntity?.('organisation', o.id)} className="text-sm text-cyan-400 hover:underline cursor-pointer">
+                        • {o.name} (Organisation)
+                      </div>
+                    ))}
+                    {evidence.locations?.map(l => (
+                      <div key={l.id} onClick={() => onOpenEntity?.('location', l.id)} className="text-sm text-cyan-400 hover:underline cursor-pointer">
+                        • {l.name} (Location)
+                      </div>
+                    ))}
+                    {evidence.events?.map(e => (
+                      <div key={e.id} onClick={() => onOpenEvent?.(e.id)} className="text-sm text-cyan-400 hover:underline cursor-pointer">
+                        • {e.title} (Event)
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Submission Metadata</h3>
                 <div className="space-y-3 text-sm">

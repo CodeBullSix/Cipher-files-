@@ -1,13 +1,4 @@
 import { auth } from './firebase';
-export interface CrossExamineResult {
-  analysis: string;
-  timestamp: string;
-}
-
-export interface RabbitHoleConnectResult {
-  connection: string;
-  timestamp: string;
-}
 
 export interface DeclassifyResult {
   suggestedTitle?: string;
@@ -21,81 +12,6 @@ export interface DeclassifyResult {
 }
 
 export class GeminiService {
-  public static async crossExamine(payload: {
-    caseTitle: string;
-    claim: string;
-    knownFacts: string[];
-    opposingEvidence?: string;
-    userHypothesis: string;
-  }): Promise<string> {
-    try {
-      const res = await fetchWithAuth('/api/ai/cross-examine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        let errMsg = `HTTP error ${res.status}`;
-        try {
-          const errData = await res.json();
-          errMsg = errData.details || errData.error || errMsg;
-        } catch (e) {}
-        throw new Error(errMsg);
-      }
-      const data: CrossExamineResult = await res.json();
-      return data.analysis;
-    } catch (err: any) {
-      console.warn('Cross examination API fallback:', err);
-      throw new Error(err.message || 'Failed to synthesize intelligence.');
-    }
-  }
-
-  public static async getBrief(entityName: string, entityType: string, context?: string): Promise<string> {
-    try {
-      const res = await fetchWithAuth('/api/ai/brief', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entityName, entityType, context }),
-      });
-      if (!res.ok) {
-        let errMsg = `HTTP error ${res.status}`;
-        try {
-          const errData = await res.json();
-          errMsg = errData.details || errData.error || errMsg;
-        } catch (e) {}
-        throw new Error(errMsg);
-      }
-      const data = await res.json();
-      return data.brief;
-    } catch (err: any) {
-      console.warn('Brief API fallback:', err);
-      throw new Error(err.message || 'Failed to generate brief.');
-    }
-  }
-
-  public static async connectRabbitHole(entityA: string, entityB: string, context?: string): Promise<string> {
-    try {
-      const res = await fetchWithAuth('/api/ai/rabbit-hole-connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entityA, entityB, context }),
-      });
-      if (!res.ok) {
-        let errMsg = `HTTP error ${res.status}`;
-        try {
-          const errData = await res.json();
-          errMsg = errData.details || errData.error || errMsg;
-        } catch (e) {}
-        throw new Error(errMsg);
-      }
-      const data: RabbitHoleConnectResult = await res.json();
-      return data.connection;
-    } catch (err: any) {
-      console.warn('Rabbit Hole API fallback:', err);
-      throw new Error(err.message || 'Failed to connect entities.');
-    }
-  }
-
   public static async declassifyText(rawText: string): Promise<DeclassifyResult | null> {
     try {
       const res = await fetchWithAuth('/api/ai/declassify', {
@@ -119,7 +35,6 @@ export class GeminiService {
   }
 }
 
-
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   if (auth.authStateReady) {
     await auth.authStateReady();
@@ -129,7 +44,6 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   if (!user) {
     throw new Error('User not authenticated. Please wait or log in again.');
   }
-
   const headers = new Headers(options.headers || {});
   
   try {

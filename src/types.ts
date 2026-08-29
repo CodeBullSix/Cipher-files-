@@ -309,6 +309,7 @@ export interface Badge {
 }
 
 export interface UserProfile {
+  emailVerified?: boolean;
   uid: string;
   id?: string; // legacy fallback for uid
   email: string;
@@ -325,8 +326,7 @@ export interface UserProfile {
   bannerUrl?: string;
   role: UserRole;
   tier: InvestigatorTier;
-  xp: number;
-  nextRankXp?: number;
+  reputation?: number;
   rank: InvestigatorRank;
   clearanceLevel: string; // e.g. "LEVEL 5 (MAJESTIC ARCHIVIST)"
   isBanned?: boolean;
@@ -469,4 +469,50 @@ export interface ArchiveEvidence {
   submitter?: { uid: string, displayName: string, avatar?: string };
   verifier?: { uid: string, displayName: string, avatar?: string };
   caseFileIds?: string[];
+  people?: { id: string, name: string }[];
+  organisations?: { id: string, name: string }[];
+  locations?: { id: string, name: string }[];
+  events?: { id: string, title: string }[];
+}
+
+
+export interface InvestigationWorkspace {
+  id: string;
+  title: string;
+  description: string;
+  owner: string;
+  caseId?: string;
+  createdAt: string;
+  updatedAt: string;
+  notes?: WorkspaceNote[];
+  references?: WorkspaceReference[];
+  connections?: WorkspaceConnection[];
+}
+
+export interface WorkspaceNote {
+  id: string;
+  workspaceId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkspaceReference {
+  id: string;
+  workspaceId: string;
+  entityType: 'CASE' | 'PERSON' | 'ORGANISATION' | 'LOCATION' | 'EVIDENCE' | 'EVENT';
+  entityId: string;
+  createdAt: string;
+  resolvedData?: any; // To hold the fetched details of the referenced entity
+}
+
+export interface WorkspaceConnection {
+  id: string;
+  workspaceId: string;
+  sourceRefId: string;
+  targetRefId: string;
+  label: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }

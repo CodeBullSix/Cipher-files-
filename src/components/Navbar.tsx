@@ -1,5 +1,5 @@
 import React from 'react';
-import { 
+import { Bell, 
   FolderArchive, Database, 
   Share2, 
   MessageSquare, 
@@ -21,39 +21,27 @@ import { sound } from '../utils/audio';
 import { UserAvatar } from './UserAvatar';
 
 interface Props {
-  currentTab: 'cases' | 'graph' | 'discussions' | 'supporters';
-  onSelectTab: (tab: 'cases' | 'graph' | 'discussions' | 'supporters') => void;
+  currentTab: 'cases' | 'graph' | 'discussions' | 'supporters' | 'evidence' | 'workspaces';
+  onSelectTab: (tab: 'cases' | 'graph' | 'discussions' | 'supporters' | 'evidence' | 'workspaces' | 'moderation') => void;
   onOpenSubmitModal: () => void;
   onOpenProfileModal: () => void;
   onOpenDirectMessages: () => void;
   onOpenAdminConsole: () => void;
   onOpenSupportersModal: () => void;
   onRandomRabbitHole: () => void;
-  currentUser: UserProfile | null;
-  legacyProfile?: UserProfile;
-  onLogin: () => void;
-  onLogout: () => void;
   onOpenSearch: () => void;
+  currentUser: UserProfile | null;
+  legacyProfile: UserProfile;
   isMuted: boolean;
   onToggleMute: () => void;
+  onLogin: () => void;
+  onLogout: () => void;
+  unreadNotificationCount?: number;
+  onOpenNotifications?: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
-  currentTab,
-  onSelectTab,
-  onOpenSubmitModal,
-  onOpenProfileModal,
-  onOpenDirectMessages,
-  onOpenAdminConsole,
-  onOpenSupportersModal,
-  onRandomRabbitHole,
-  currentUser,
-  legacyProfile,
-  onLogin,
-  onLogout,
-  onOpenSearch,
-  isMuted,
-  onToggleMute,
+  currentTab, onSelectTab, onOpenSubmitModal, onOpenProfileModal, onOpenDirectMessages, onOpenAdminConsole, onOpenSupportersModal, onRandomRabbitHole, onOpenSearch, currentUser, legacyProfile, isMuted, onToggleMute, onLogin, onLogout, unreadNotificationCount = 0, onOpenNotifications
 }) => {
   const activeUser = currentUser || legacyProfile;
   const isAdmin = currentUser?.role === 'admin';
@@ -120,6 +108,18 @@ export const Navbar: React.FC<Props> = ({
         {/* Primary Navigation Tabs (Desktop & Tablet) */}
         <nav className="hidden md:flex items-center gap-1 bg-[#090D1A] border border-gray-800 p-1 rounded-xl">
           <button
+            onClick={() => { onSelectTab('workspaces'); sound.click(); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
+              currentTab === 'workspaces'
+                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
+            }`}
+          >
+            <FolderArchive className="w-3.5 h-3.5" />
+            <span>Private Workspace</span>
+          </button>
+
+          <button
             onClick={() => { onSelectTab('cases'); sound.click(); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
               currentTab === 'cases'
@@ -128,7 +128,7 @@ export const Navbar: React.FC<Props> = ({
             }`}
           >
             <FolderArchive className="w-3.5 h-3.5" />
-            <span>Dossiers</span>
+            <span>Case Dossiers</span>
           </button>
 
           <button
@@ -140,7 +140,7 @@ export const Navbar: React.FC<Props> = ({
             }`}
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span>Rabbit Hole Graph (Map)</span>
+            <span>The Rabbit Hole</span>
           </button>
           <button
             onClick={() => { onSelectTab('evidence'); sound.click(); }}
@@ -164,7 +164,7 @@ export const Navbar: React.FC<Props> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Debate Forums</span>
+            <span>Community Forums</span>
           </button>
 
           <button
@@ -178,6 +178,19 @@ export const Navbar: React.FC<Props> = ({
             <Crown className="w-3.5 h-3.5 text-amber-400" />
             <span>Supporters</span>
           </button>
+          {(currentUser?.role === 'MODERATOR' || currentUser?.role === 'ADMIN') && (
+            <button
+              onClick={() => { onSelectTab('moderation'); sound.click(); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold tracking-widest uppercase transition-all ${
+                currentTab === 'moderation'
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm'
+                  : 'text-red-400/80 hover:text-red-300 hover:bg-gray-800/40'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+              <span>Moderation</span>
+            </button>
+          )}
         </nav>
 
         {/* Right Actions Bar */}
@@ -210,6 +223,23 @@ export const Navbar: React.FC<Props> = ({
             <PlusCircle className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">File Theory</span>
           </button>
+
+          
+          {/* Notifications Button */}
+          {currentUser && (
+            <button
+              onClick={() => { if(onOpenNotifications) onOpenNotifications(); sound.click(); }}
+              className="relative p-2 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-emerald-400 transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              {unreadNotificationCount > 0 && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 text-[8px] font-bold text-white flex items-center justify-center animate-pulse">
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                </div>
+              )}
+            </button>
+          )}
 
           {/* Direct Messaging Drawer Button */}
           {currentUser && (
@@ -314,6 +344,18 @@ export const Navbar: React.FC<Props> = ({
       {/* Clean Mobile Bottom/Sub Navigation Bar */}
       <div className="md:hidden flex items-center justify-around px-2 py-1.5 bg-[#04060C] border-t border-gray-800/80">
         <button
+          onClick={() => { onSelectTab('workspaces'); sound.click(); }}
+          className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
+            currentTab === 'workspaces'
+              ? 'text-cyan-300 bg-cyan-950/40'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <FolderArchive className="w-4 h-4" />
+          <span>Private Workspace</span>
+        </button>
+
+        <button
           onClick={() => { onSelectTab('cases'); sound.click(); }}
           className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
             currentTab === 'cases'
@@ -322,7 +364,7 @@ export const Navbar: React.FC<Props> = ({
           }`}
         >
           <FolderArchive className="w-4 h-4" />
-          <span>Dossiers</span>
+          <span>Case Dossiers</span>
         </button>
 
         <button
@@ -334,7 +376,7 @@ export const Navbar: React.FC<Props> = ({
           }`}
         >
           <Share2 className="w-4 h-4" />
-          <span>Graph (Map)</span>
+          <span>Rabbit Hole</span>
         </button>
         <button
           onClick={() => { onSelectTab('evidence'); sound.click(); }}

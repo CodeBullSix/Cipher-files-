@@ -3,7 +3,7 @@ import {
   signOut, 
   onAuthStateChanged,
   User
-} from 'firebase/auth';
+, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, updateProfile} from 'firebase/auth';
 import { 
   doc, 
   getDoc, 
@@ -25,7 +25,7 @@ const LOCAL_GUEST_USER: UserProfile = {
   callsign: 'CIPHER-GUEST-01',
   role: 'operative',
   tier: 'FREE',
-  xp: 150,
+  reputation: 150,
   rank: 'OBSERVER',
   clearanceLevel: 'LEVEL 1 // PUBLIC ARCHIVES',
   contributionsCount: 0,
@@ -79,16 +79,17 @@ export class AuthService {
   }
 
   private static createFallbackProfile(user: User): UserProfile {
-    const isAdmin = false; // Determined by server
+    const isAdmin = user.email === 'ajsteptoe123@gmail.com'; // Restored admin override
     return {
       uid: user.uid,
+      emailVerified: user.emailVerified,
       email: user.email || 'unknown@cipherfiles.org',
       displayName: user.displayName || 'Anonymous Investigator',
       callsign: `AGENT-${user.uid.substring(0, 5).toUpperCase()}`,
-      avatarUrl: user.photoURL || undefined,
+      avatarUrl: user.photoURL || null,
       role: isAdmin ? 'admin' : 'operative',
       tier: isAdmin ? 'VIP_MAJESTIC' : 'FREE',
-      xp: 250,
+      reputation: 250,
       rank: isAdmin ? 'MAJESTIC_CHIEF' : 'RESEARCHER',
       clearanceLevel: isAdmin ? 'LEVEL 5 // MAJESTIC ARCHIVIST' : 'LEVEL 2 // CLASSIFIED FIELD',
       contributionsCount: 1,
@@ -110,10 +111,11 @@ export class AuthService {
       handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
     }
 
-    const isAdmin = false; // Determined by server
+    const isAdmin = user.email === 'ajsteptoe123@gmail.com'; // Restored admin override
 
     if (docSnap && docSnap.exists()) {
       const data = docSnap.data() as UserProfile;
+      data.emailVerified = user.emailVerified;
       // Guarantee bootstrap admin privileges
       if (isAdmin && data.role !== 'admin') {
         data.role = 'admin';
@@ -129,13 +131,14 @@ export class AuthService {
     const callsign = `AGENT-${(user.displayName?.split(' ')[0] || 'CIPHER').toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
     const newProfile: UserProfile = {
       uid: user.uid,
+      emailVerified: user.emailVerified,
       email: user.email || 'unknown@cipherfiles.org',
       displayName: user.displayName || 'Field Investigator',
       callsign,
-      avatarUrl: user.photoURL || undefined,
+      avatarUrl: user.photoURL || null,
       role: isAdmin ? 'admin' : 'operative',
       tier: isAdmin ? 'VIP_MAJESTIC' : 'FREE',
-      xp: 250,
+      reputation: 250,
       rank: isAdmin ? 'MAJESTIC_CHIEF' : 'RESEARCHER',
       clearanceLevel: isAdmin ? 'LEVEL 5 // MAJESTIC ARCHIVIST' : 'LEVEL 2 // CLASSIFIED FIELD',
       contributionsCount: 0,
@@ -157,6 +160,68 @@ export class AuthService {
     }
 
     return newProfile;
+  }
+
+  
+  public static async registerWithEmail(email: string, password: string): Promise<UserProfile> {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      // Try to send verification email immediately
+      try {
+        await sendEmailVerification(result.user);
+      } catch (e) {
+        console.error('Failed to send verification email:', e);
+      }
+      const profile = await this.syncUserProfile(result.user);
+      this.currentUserProfile = profile;
+      this.notify();
+      return profile;
+    } catch (error) {
+      console.error('Email Registration failed:', error);
+      throw error;
+    }
+  }
+
+  public static async loginWithEmail(email: string, password: string): Promise<UserProfile> {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const profile = await this.syncUserProfile(result.user);
+      this.currentUserProfile = profile;
+      this.notify();
+      return profile;
+    } catch (error) {
+      console.error('Email Login failed:', error);
+      throw error;
+    }
+  }
+
+  public static async resetPassword(email: string): Promise<void> {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error('Password reset failed:', error);
+      throw error;
+    }
+  }
+  
+  
+  public static async reloadUser(): Promise<UserProfile | null> {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      const profile = await this.syncUserProfile(auth.currentUser);
+      this.currentUserProfile = profile;
+      this.notify();
+      return profile;
+    }
+    return null;
+  }
+
+  public static async resendVerificationEmail(): Promise<void> {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    } else {
+      throw new Error('No user is currently logged in');
+    }
   }
 
   public static async loginWithGoogle(): Promise<UserProfile | null> {

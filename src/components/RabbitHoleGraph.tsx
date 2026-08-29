@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { GraphNode, GraphLink } from '../types';
 import { ApiService } from '../services/apiService';
-import { GeminiService } from '../services/geminiService';
 import { 
   Share2, 
   Search, 
@@ -11,7 +10,6 @@ import {
   X,
   RefreshCw,
   Target,
-  BrainCircuit,
   FileText,
   MapPin,
   Building,
@@ -24,7 +22,7 @@ import { sound } from '../utils/audio';
 
 interface RabbitHoleGraphProps {
   onOpenCase: (id: string) => void;
-  onRewardXp: (amount: number, reason: string) => void;
+  onReputationEarned: (amount: number, reason: string, persist?: boolean) => void;
   onOpenEntity?: (type: string, id: string) => void;
   initialSelectedEntity?: string | null;
   onRandomRabbitHole?: () => void;
@@ -32,7 +30,7 @@ interface RabbitHoleGraphProps {
 
 export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({ 
   onOpenCase, 
-  onRewardXp, 
+  onReputationEarned, 
   onOpenEntity, 
   initialSelectedEntity,
   onRandomRabbitHole
@@ -52,10 +50,6 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const [selectedLink, setSelectedLink] = useState<any | null>(null);
 
-  // Trace Nexus mode
-  const [traceTargetMode, setTraceTargetMode] = useState(false);
-  const [aiBriefLoading, setAiBriefLoading] = useState(false);
-  const [aiBriefContent, setAiBriefContent] = useState<string | null>(null);
 
   // Refs for D3
   const simulationRef = useRef<d3.Simulation<any, any> | null>(null);
@@ -92,10 +86,7 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
     sound.click();
     setSelectedNode(null);
     setSelectedLink(null);
-    setTraceTargetMode(false);
-    setAiBriefContent(null);
     setSearchQuery('');
-    setFilterType('ALL');
     setLoading(true);
     setError(null);
     try {
@@ -137,7 +128,7 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
         return newLinks;
       });
 
-      onRewardXp(10, "Expanded Rabbit Hole Nexus");
+      onReputationEarned(10, "Expanded Rabbit Hole Nexus", true);
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -145,46 +136,6 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
     }
   };
 
-  const handleTraceNexus = () => {
-    sound.click();
-    if (!selectedNode) return;
-    setTraceTargetMode(true);
-    setAiBriefContent(null);
-  };
-
-  const handleTraceTargetSelected = async (targetNode: any) => {
-    sound.click();
-    setTraceTargetMode(false);
-    setAiBriefLoading(true);
-    setAiBriefContent(null);
-    
-    try {
-      const result = await GeminiService.connectRabbitHole(selectedNode.label, targetNode.label);
-      setAiBriefContent(result);
-      onRewardXp(25, "Traced Nexus Connection");
-    } catch (e: any) {
-      setAiBriefContent(`### ⚠️ NEXUS TRACE FAILED\n\n${e.message}`);
-    } finally {
-      setAiBriefLoading(false);
-    }
-  };
-
-  const handleAIBrief = async () => {
-    sound.click();
-    if (!selectedNode) return;
-    setAiBriefLoading(true);
-    setAiBriefContent(null);
-    try {
-      const label = selectedNode.label;
-      const result = await GeminiService.getBrief(label, selectedNode.type);
-      setAiBriefContent(result);
-      onRewardXp(15, "Requested AI Brief");
-    } catch (e: any) {
-      setAiBriefContent(`### ⚠️ AI BRIEF UNAVAILABLE\n\n${e.message}`);
-    } finally {
-      setAiBriefLoading(false);
-    }
-  };
 
   const handleRandomNode = () => {
     sound.playWarp();
@@ -192,8 +143,6 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
       const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
       setSelectedNode(randomNode);
       setSelectedLink(null);
-      setAiBriefContent(null);
-      setTraceTargetMode(false);
       
       // Center the node
       if (randomNode.x && randomNode.y && svgRef.current) {
@@ -254,7 +203,7 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
     const simulation = simulationRef.current;
     
     // Process filter
-    const filteredNodes = filterType === 'ALL' ? nodes : nodes.filter(n => n.type === filterType);
+    const filteredNodes = filterType === 'ALL' ? nodes : nodes.filter(n => n.type === filterType || n.type === 'case_files');
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     const filteredLinks = links.filter(l => {
       const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
@@ -291,7 +240,6 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
       sound.click();
       setSelectedLink(d);
       setSelectedNode(null);
-      setTraceTargetMode(false);
     });
 
     // Data join for nodes
@@ -360,32 +308,28 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
     node = nodeEnter.merge(node);
     
     node.on('click', (event: any, d: any) => {
-      if (traceTargetMode && selectedNode && d.id !== selectedNode.id) {
-        handleTraceTargetSelected(d);
-      } else {
-        sound.click();
-        setSelectedNode(d);
-        setSelectedLink(null);
-      }
+      sound.click();
+      setSelectedNode(d);
+      setSelectedLink(null);
     });
 
     // Apply Search Highlighting
     node.selectAll('circle')
       .attr('stroke', (d: any) => {
         if (selectedNode?.id === d.id) return '#fff';
-        if (searchQuery && d.label.toLowerCase().includes(searchQuery.toLowerCase())) return '#fff';
+        if (searchQuery && (d.label || '').toLowerCase().includes(searchQuery.toLowerCase())) return '#fff';
         return getNodeColor(d.type);
       })
       .attr('stroke-width', (d: any) => {
         if (selectedNode?.id === d.id) return 4;
-        if (searchQuery && d.label.toLowerCase().includes(searchQuery.toLowerCase())) return 4;
+        if (searchQuery && (d.label || '').toLowerCase().includes(searchQuery.toLowerCase())) return 4;
         return 2;
       });
 
     node.selectAll('text.label')
       .attr('fill', (d: any) => {
         if (selectedNode?.id === d.id) return '#00E5FF';
-        if (searchQuery && d.label.toLowerCase().includes(searchQuery.toLowerCase())) return '#00E5FF';
+        if (searchQuery && (d.label || '').toLowerCase().includes(searchQuery.toLowerCase())) return '#00E5FF';
         return '#fff';
       });
 
@@ -406,7 +350,7 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
         .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
     });
 
-  }, [nodes, links, filterType, searchQuery, selectedNode, traceTargetMode]);
+  }, [nodes, links, filterType, searchQuery, selectedNode]);
 
   const handleOpenEntity = () => {
     if (!selectedNode) return;
@@ -425,31 +369,34 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
       
       {/* Top Controls Overlay */}
       <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-3 w-[calc(100%-2rem)] pointer-events-auto">
+        
+        <select 
+          value={filterType}
+          onChange={(e) => { sound.click(); setFilterType(e.target.value); }}
+          className="bg-[#0D0D0D]/95 border border-white/20 text-white text-[10px] font-mono p-2 rounded shadow-xl outline-none hover:border-[#00E5FF]/50 transition-colors"
+        >
+          <option value="ALL">ALL NODES</option>
+          <option value="case_files">CASES</option>
+          <option value="people">PEOPLE</option>
+          <option value="organisations">ORGANISATIONS</option>
+          <option value="locations">LOCATIONS</option>
+          <option value="events">EVENTS</option>
+          <option value="evidence">EVIDENCE</option>
+        </select>
+
         <div className="flex items-center bg-[#0D0D0D]/95 border border-[#00E5FF]/30 p-1 rounded-sm shadow-xl min-w-[200px] max-w-sm flex-1">
           <div className="pl-3 pr-2 py-1.5 flex items-center border-r border-[#00E5FF]/20">
             <Search className="w-4 h-4 text-[#00E5FF]" />
           </div>
           <input 
             type="text" 
-            placeholder="Search nexus..."
+            placeholder="Highlight visible nodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-transparent border-none outline-none text-white text-xs mono w-full px-3 py-1.5"
           />
         </div>
         
-        <select 
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="bg-[#0D0D0D]/95 border border-[#00E5FF]/30 text-[#00E5FF] text-[10px] sm:text-xs mono font-bold px-3 py-2.5 outline-none shadow-xl cursor-pointer"
-        >
-          <option value="ALL">ALL CLASSIFICATIONS</option>
-          <option value="case_files">CASE FILES</option>
-          <option value="people">PEOPLE</option>
-          <option value="organisations">ORGANISATIONS</option>
-          <option value="locations">LOCATIONS</option>
-          <option value="events">EVENTS</option>
-        </select>
 
         <button 
           onClick={handleRandomNode}
@@ -491,7 +438,7 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#050505]/90 backdrop-blur-sm pointer-events-none">
           <div className="border border-red-500/50 bg-red-950/80 p-6 max-w-md text-center shadow-2xl">
             <h3 className="text-red-400 font-mono font-bold text-sm mb-2">
-              {error === 'AUTHENTICATION REQUIRED' ? 'AUTHENTICATION REQUIRED' : 'NEXUS CONNECTION FAILURE'}
+              {error === 'AUTHENTICATION REQUIRED' ? 'AUTHENTICATION REQUIRED' : 'GRAPH CONNECTION FAILURE'}
             </h3>
             <p className="text-red-200/70 text-xs font-mono">
               {error === 'AUTHENTICATION REQUIRED' 
@@ -502,22 +449,22 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
         </div>
       )}
 
+      {!loading && !error && nodes.length === 0 && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#050505]/50 backdrop-blur-sm pointer-events-none">
+          <div className="border border-cyan-500/50 bg-[#0D0D0D]/90 p-6 max-w-md text-center shadow-2xl rounded-xl">
+            <h3 className="text-cyan-400 font-mono font-bold text-sm mb-2">NO RECORDS FOUND</h3>
+            <p className="text-white/60 text-xs font-sans">No documented connections are currently available.</p>
+          </div>
+        </div>
+      )}
+      
       {/* SVG Canvas */}
       <svg ref={svgRef} className="w-full h-full flex-1 cursor-grab active:cursor-grabbing"></svg>
 
-      {/* Trace Target Mode Indicator */}
-      {traceTargetMode && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-purple-950/90 border border-purple-500 px-6 py-3 shadow-[0_0_20px_rgba(168,85,247,0.4)] animate-pulse rounded-full pointer-events-none">
-          <p className="text-purple-300 font-mono text-sm font-bold tracking-widest text-center flex items-center gap-3">
-            <Target className="w-5 h-5" />
-            SELECT TARGET NODE TO TRACE CONNECTION
-          </p>
-        </div>
-      )}
 
       {/* Selected Entity Inspector Drawer */}
-      {selectedNode && !traceTargetMode && (
-        <div className="absolute top-20 right-4 z-30 w-80 max-h-[80vh] overflow-y-auto border border-[#00E5FF]/50 bg-[#0D0D0D]/95 backdrop-blur-md p-4 shadow-2xl text-white animate-in slide-in-from-right-4 duration-150">
+      {selectedNode && (
+        <div className="absolute bottom-0 sm:bottom-auto left-0 sm:left-auto sm:top-20 right-0 sm:right-4 z-30 w-full sm:w-80 max-h-[50vh] sm:max-h-[80vh] overflow-y-auto border-t sm:border border-[#00E5FF]/50 bg-[#0D0D0D]/95 rounded-t-xl sm:rounded-none backdrop-blur-md p-4 shadow-2xl text-white animate-in slide-in-from-right-4 duration-150">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/10">
             <span className="text-[9px] mono font-bold text-[#00E5FF] uppercase tracking-wider">
               NODE INSPECTOR // {selectedNode.type}
@@ -538,20 +485,7 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
               <Share2 className="w-3.5 h-3.5" />
               EXPAND CONNECTIONS
             </button>
-            <button
-              onClick={handleTraceNexus}
-              className="w-full py-2 bg-purple-950/40 border border-purple-500/40 hover:bg-purple-900/60 text-purple-400 text-[11px] font-mono font-bold transition-colors flex items-center justify-center gap-2"
-            >
-              <Target className="w-3.5 h-3.5" />
-              TRACE NEXUS
-            </button>
-            <button
-              onClick={handleAIBrief}
-              className="w-full py-2 bg-amber-950/40 border border-amber-500/40 hover:bg-amber-900/60 text-amber-400 text-[11px] font-mono font-bold transition-colors flex items-center justify-center gap-2"
-            >
-              <BrainCircuit className="w-3.5 h-3.5" />
-              AI BRIEF
-            </button>
+
             <button
               onClick={handleOpenEntity}
               className="w-full py-2 mt-2 bg-[#00E5FF] hover:bg-[#33ebff] text-black text-[11px] font-mono font-black transition-colors flex items-center justify-center gap-2"
@@ -561,36 +495,12 @@ export const RabbitHoleGraph: React.FC<RabbitHoleGraphProps> = ({
             </button>
           </div>
 
-          {/* AI Brief Content Area */}
-          {(aiBriefLoading || aiBriefContent) && (
-            <div className="mt-4 pt-4 border-t border-gray-800">
-              <h5 className="text-[10px] font-mono font-bold text-amber-400 mb-3 flex items-center gap-2">
-                <BrainCircuit className="w-3.5 h-3.5" />
-                INTELLIGENCE SYNTHESIS
-              </h5>
-              
-              {aiBriefLoading ? (
-                <div className="flex flex-col items-center justify-center py-6 gap-3">
-                  <div className="w-5 h-5 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-                  <span className="text-[9px] text-amber-500/70 font-mono uppercase tracking-widest animate-pulse">Cross-referencing databases...</span>
-                </div>
-              ) : (
-                <div className="text-xs font-sans text-gray-300 space-y-2 leading-relaxed bg-black/40 p-3 border border-amber-500/20 rounded">
-                  {aiBriefContent?.split('\n').map((line, i) => (
-                    <p key={i} className={line.startsWith('#') ? 'font-bold text-amber-400 font-mono text-[11px] mt-2 mb-1' : ''}>
-                      {line.replace(/#/g, '')}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
       {/* Selected Edge Inspector Drawer */}
       {selectedLink && (
-        <div className="absolute bottom-0 left-0 right-0 sm:left-auto sm:top-24 sm:right-4 z-30 w-full sm:w-80 border-t sm:border border-amber-500/50 bg-[#0D0D0D]/95 backdrop-blur-md p-4 shadow-2xl text-white animate-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-150 pb-8 sm:pb-4 rounded-t-xl sm:rounded">
+        <div className="absolute bottom-0 sm:bottom-auto left-0 sm:left-auto sm:top-24 sm:right-4 z-30 w-full sm:w-80 border-t sm:border border-amber-500/50 bg-[#0D0D0D]/95 backdrop-blur-md p-4 shadow-2xl text-white animate-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-150 pb-8 sm:pb-4 rounded-t-xl sm:rounded">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/10">
             <span className="text-[9px] mono font-bold text-amber-400 uppercase tracking-wider">
               RELATIONSHIP INSPECTOR

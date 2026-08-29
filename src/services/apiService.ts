@@ -26,6 +26,27 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 }
 
 export const ApiService = {
+  // WORKSPACES
+  getWorkspaces: () => fetchWithAuth('/api/workspaces'),
+  getWorkspace: (id: string) => fetchWithAuth(`/api/workspaces/${id}`),
+  createWorkspace: (data: any) => fetchWithAuth('/api/workspaces', { method: 'POST', body: JSON.stringify(data) }),
+  updateWorkspace: (id: string, data: any) => fetchWithAuth(`/api/workspaces/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWorkspace: (id: string) => fetchWithAuth(`/api/workspaces/${id}`, { method: 'DELETE' }),
+  updateWorkspaceNote: (wsId: string, noteId: string, content: string) => fetchWithAuth(`/api/workspaces/${wsId}/notes/${noteId}`, { method: 'PUT', body: JSON.stringify({ content }) }),
+  addWorkspaceReference: (wsId: string, data: { entityType: string, entityId: string }) => fetchWithAuth(`/api/workspaces/${wsId}/references`, { method: 'POST', body: JSON.stringify(data) }),
+  removeWorkspaceReference: (wsId: string, refId: string) => fetchWithAuth(`/api/workspaces/${wsId}/references/${refId}`, { method: 'DELETE' }),
+  addWorkspaceConnection: (wsId: string, data: { sourceRefId: string, targetRefId: string, label: string, notes?: string }) => fetchWithAuth(`/api/workspaces/${wsId}/connections`, { method: 'POST', body: JSON.stringify(data) }),
+  updateWorkspaceConnection: (wsId: string, connId: string, data: { label: string, notes: string }) => fetchWithAuth(`/api/workspaces/${wsId}/connections/${connId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  removeWorkspaceConnection: (wsId: string, connId: string) => fetchWithAuth(`/api/workspaces/${wsId}/connections/${connId}`, { method: 'DELETE' }),
+
+  // Global Search
+  search: (query: string, types?: string[]) => {
+    let url = `/api/search?q=${encodeURIComponent(query)}`;
+    if (types && types.length > 0) {
+      url += `&types=${types.join(',')}`;
+    }
+    return fetchWithAuth(url);
+  },
   // Investigation Entities
   getPeople: (query?: string, caseFileId?: string) => {
     const params = new URLSearchParams();
@@ -105,7 +126,34 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
   },
   // Users
   getCurrentUser: () => fetchWithAuth('/api/users/me'),
+    followUser: (id: string) => fetchWithAuth(`/api/users/${id}/follow`, { method: 'POST' }),
+  unfollowUser: (id: string) => fetchWithAuth(`/api/users/${id}/follow`, { method: 'DELETE' }),
+  getFollowing: (id: string) => fetchWithAuth(`/api/users/${id}/following`),
+  getFollowers: (id: string) => fetchWithAuth(`/api/users/${id}/followers`),
+  getFollowStatus: (id: string) => fetchWithAuth(`/api/users/${id}/follow-status`),
+  getFollowCounts: (id: string) => fetchWithAuth(`/api/users/${id}/follow-counts`),
   getUsers: () => fetchWithAuth('/api/users'),
+      getNotifications: (limit?: number) => {
+    return fetchWithAuth(`/api/notifications${limit ? '?limit=' + limit : ''}`);
+  },
+  getUnreadNotificationCount: () => {
+    return fetchWithAuth('/api/notifications/unread-count');
+  },
+  markNotificationRead: (id: string) => {
+    return fetchWithAuth(`/api/notifications/${id}/read`, { method: 'PUT' });
+  },
+  markAllNotificationsRead: () => {
+    return fetchWithAuth('/api/notifications/read-all', { method: 'PUT' });
+  },
+  getUserContributions: (id: string, filter?: string, limit?: number) => {
+    const params = new URLSearchParams();
+    if (filter) params.append('filter', filter);
+    if (limit) params.append('limit', limit.toString());
+    return fetchWithAuth(`/api/users/${id}/contributions?${params.toString()}`);
+  },
+  getUserReputation: (id: string) => fetchWithAuth(`/api/users/${id}/reputation`),
+  rewardManualReputation: (amount: number, reason: string) => fetchWithAuth('/api/users/me/reputation/reward', { method: 'POST', body: JSON.stringify({ amount, reason }) }),
+
   updateProfile: (data: any) => fetchWithAuth('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
   setUserRole: (userId: string, role: string) => fetchWithAuth('/api/users/' + userId + '/role', { method: 'PUT', body: JSON.stringify({ role }) }),
   
@@ -129,6 +177,7 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
   lockDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/lock`, { method: 'POST' }),
   unlockDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/unlock`, { method: 'POST' }),
   deleteDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}`, { method: 'DELETE' }),
+  moderateContent: (targetType: string, targetId: string, action: string, reason?: string) => fetchWithAuth('/api/moderation/action', { method: 'POST', body: JSON.stringify({ targetType, targetId, action, reason }) }),
   restoreDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/restore`, { method: 'POST' }),
 
   // Relationships

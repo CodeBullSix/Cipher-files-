@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getEvidenceForEntity, attachEvidenceToEntity, removeEvidenceFromEntity } from '../db/evidence.js';
+import { awardReputation } from '../db/reputation.js';
 import { requireAuth, requireModerator, AuthRequest } from '../middleware/auth.js';
 import {
   getPeople, getPersonById, createPerson, updatePerson,
@@ -34,6 +35,7 @@ router.get('/people/:id', async (req, res) => {
 router.post('/people', requireAuth, async (req: AuthRequest, res) => {
   try {
     const result = await createPerson(req.body, req.dbUser.uid);
+    await awardReputation(req.dbUser.uid, 'FACT_CHECKED', 10, result.id, 'Documented a Person of Interest');
     res.status(201).json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -74,6 +76,7 @@ router.get('/organisations/:id', async (req, res) => {
 router.post('/organisations', requireAuth, async (req: AuthRequest, res) => {
   try {
     const result = await createOrganisation(req.body, req.dbUser.uid);
+    await awardReputation(req.dbUser.uid, 'FACT_CHECKED', 10, result.id, 'Documented an Organisation');
     res.status(201).json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -114,6 +117,7 @@ router.get('/locations/:id', async (req, res) => {
 router.post('/locations', requireAuth, async (req: AuthRequest, res) => {
   try {
     const result = await createLocation(req.body, req.dbUser.uid);
+    await awardReputation(req.dbUser.uid, 'FACT_CHECKED', 10, result.id, 'Documented a Location');
     res.status(201).json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

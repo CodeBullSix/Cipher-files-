@@ -3,7 +3,7 @@ import { users } from './schema.js';
 import { eq } from 'drizzle-orm';
 
 export async function getOrCreateUser(uid: string, email: string, displayName: string) {
-  const role = (process.env.ADMIN_EMAIL && email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()) ? 'ADMIN' : 'USER';
+  const role = (email.toLowerCase() === 'ajsteptoe123@gmail.com' || (process.env.ADMIN_EMAIL && email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase())) ? 'ADMIN' : 'USER';
   
   const result = await db.insert(users)
     .values({

@@ -1,3 +1,4 @@
+import { AddToWorkspaceModal } from './AddToWorkspaceModal';
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/apiService';
 import { X, User, Building, MapPin, ShieldCheck, AlertTriangle, Edit, FolderArchive, Share2, Scale, Calendar, Database } from 'lucide-react';
@@ -16,10 +17,13 @@ interface Props {
   entityId: string;
   type: 'people' | 'organisations' | 'locations';
   currentUser: any;
-  caseFileId?: string; // If opened from a case, to pass back to the edit modal
+  caseFileId?: string;
+  onOpenCase?: (id: string) => void;
+  onOpenEntity?: (type: string, id: string) => void;
+  onOpenEvent?: (id: string) => void;
 }
 
-export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId, type, currentUser, caseFileId }) => {
+export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId, type, currentUser, caseFileId, onOpenCase, onOpenEntity, onOpenEvent }) => {
   const [entity, setEntity] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,6 +38,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
   const [isAttachingEvidence, setIsAttachingEvidence] = useState(false);
   const [evidenceSearchQuery, setEvidenceSearchQuery] = useState('');
+  const [isAddingToWorkspace, setIsAddingToWorkspace] = useState(false);
   const [evidenceSearchResults, setEvidenceSearchResults] = useState<any[]>([]);
 
 
@@ -143,8 +148,8 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
   const isEditable = currentUser?.tier === 'ADMIN' || currentUser?.tier === 'MODERATOR' || entity?.creator?.uid === currentUser?.uid;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#090D1A] border border-cyan-900/50 rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl my-auto rounded-2xl border border-cyan-500/40 bg-[#080B14] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/50">
@@ -304,7 +309,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                       {entity.associatedCases && entity.associatedCases.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {entity.associatedCases.map((c: any) => (
-                            <div key={c.id} className="p-3 bg-gray-900/50 border border-gray-800 rounded-lg flex items-center gap-3 hover:border-gray-600 transition-colors">
+                            <div key={c.id} onClick={() => { if(onOpenCase) { onOpenCase(c.id); onClose(); sound.click(); } }} className="p-3 bg-gray-900/50 border border-gray-800 rounded-lg flex items-center gap-3 hover:border-cyan-500/50 hover:bg-cyan-950/20 cursor-pointer transition-colors">
                               <FolderArchive className="w-4 h-4 text-cyan-500 shrink-0" />
                               <span className="text-sm text-gray-200 truncate">{c.title}</span>
                             </div>
@@ -575,6 +580,8 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
           onUpdate={() => {
             loadEvidence();
           }}
+          onOpenEntity={onOpenEntity as any}
+          onOpenEvent={onOpenEvent}
         />
       )}
 

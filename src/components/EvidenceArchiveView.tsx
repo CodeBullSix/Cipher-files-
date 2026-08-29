@@ -9,10 +9,12 @@ import { EvidenceDetailModal } from './EvidenceDetailModal';
 interface Props {
   currentUser: UserProfile | null;
   onOpenCase: (caseId: string) => void;
-  onRewardXp: (amount: number, reason: string) => void;
+  onReputationEarned: (amount: number, reason: string, persist?: boolean) => void;
+  onOpenEntity?: (type: string, id: string) => void;
+  onOpenEvent?: (id: string) => void;
 }
 
-export const EvidenceArchiveView: React.FC<Props> = ({ currentUser, onOpenCase, onRewardXp }) => {
+export const EvidenceArchiveView: React.FC<Props> = ({ currentUser, onOpenCase, onReputationEarned, onOpenEntity, onOpenEvent }) => {
   const [evidenceItems, setEvidenceItems] = useState<ArchiveEvidence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,11 +149,27 @@ const [page, setPage] = useState(1);
             </div>
           ))}
           {evidenceItems.length === 0 && (
-            <div className="col-span-full text-center py-12 text-gray-500 text-sm">
-              No records found matching criteria.
+            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center border border-dashed border-gray-800 rounded-xl bg-[#090D1A]">
+              <Database className="w-12 h-12 text-gray-600 mb-4" />
+              <h3 className="text-white font-mono font-bold text-sm mb-2 uppercase">NO EVIDENCE RECORDS FOUND</h3>
+              <p className="text-gray-500 font-sans text-xs">No documentation or primary evidence matches the current filters.</p>
             </div>
           )}
         </div>
+      )}
+
+      {selectedEvidence && (
+        <EvidenceDetailModal
+          evidence={selectedEvidence}
+          currentUser={currentUser}
+          onClose={() => setSelectedEvidence(null)}
+          onUpdate={(updated) => {
+            setEvidenceItems(items => items.map(i => i.id === updated.id ? updated : i));
+            setSelectedEvidence(updated);
+          }}
+          onOpenEntity={onOpenEntity as any}
+          onOpenEvent={onOpenEvent}
+        />
       )}
 
       {isSubmitModalOpen && currentUser && (

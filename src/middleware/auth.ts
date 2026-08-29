@@ -28,6 +28,10 @@ export const requireAuth = async (
     const name = decodedToken.name || decodedToken.email?.split('@')[0] || 'Unknown';
     const dbUser = await getOrCreateUser(decodedToken.uid, email, name);
     req.dbUser = dbUser;
+
+    if (dbUser.deletedAt) {
+      return res.status(403).json({ error: 'Forbidden: Account suspended' });
+    }
     
     next();
   } catch (error) {

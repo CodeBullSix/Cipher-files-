@@ -101,7 +101,6 @@ export class StorageService {
         evidence.votes += direction === 'up' ? 1 : -1;
       }
       evidence.userVoted = direction;
-      this.addXp(15, `Evaluated evidence provenance in ${targetCase.caseNumber}`);
     }
 
     cases[caseIndex] = targetCase;
@@ -122,7 +121,6 @@ export class StorageService {
     targetCase.communityVerdictVote[rating] = (targetCase.communityVerdictVote[rating] || 0) + 1;
     cases[caseIndex] = targetCase;
     this.save(STORAGE_KEYS.CASES, cases);
-    this.addXp(25, `Submitted verdict consensus for ${targetCase.title}`);
     sound.playStamp();
     return targetCase;
   }
@@ -134,7 +132,6 @@ export class StorageService {
       profile.savedCaseIds = profile.savedCaseIds.filter(id => id !== caseId);
     } else {
       profile.savedCaseIds.push(caseId);
-      this.addXp(10, `Secured dossier to classified binder: ${caseId}`);
     }
     this.save(STORAGE_KEYS.PROFILE, profile);
     sound.playClick(900);
@@ -240,7 +237,6 @@ export class StorageService {
     discussions.unshift(newThread);
     this.save(STORAGE_KEYS.DISCUSSIONS, discussions);
 
-    this.addXp(50, `Initiated investigative debate: "${title.slice(0, 30)}..."`);
     sound.playUnlock();
     return newThread;
   }
@@ -359,7 +355,6 @@ export class StorageService {
     }
 
     const xpAmount = stance === 'DEVILS_ADVOCATE' ? 40 : 25;
-    this.addXp(xpAmount, `Added peer review argument`);
     sound.playClick(1100);
     return newComment;
   }
@@ -427,7 +422,6 @@ export class StorageService {
 
     subs.unshift(newSub);
     this.save(STORAGE_KEYS.SUBMISSIONS, subs);
-    this.addXp(120, `Submitted formal investigative case dossier: ${title}`);
     sound.playUnlock();
     return newSub;
   }
@@ -589,55 +583,7 @@ export class StorageService {
   }
 
   public static addXp(amount: number, reason: string): { newXp: number, leveledUp: boolean, newRank?: InvestigatorRank } {
-    const profile = this.getProfile();
-    const oldRank = profile.rank;
-    profile.xp += amount;
-    profile.contributionsCount += 1;
-
-    // Determine Rank
-    let newRank: InvestigatorRank = 'OBSERVER';
-    let nextThreshold = 100;
-    let clearance = 'LEVEL 1 // RESTRICTED ACCESS';
-
-    if (profile.xp >= 2500) {
-      newRank = 'SENIOR_INVESTIGATOR';
-      nextThreshold = 5000;
-      clearance = 'LEVEL 5 // SPECIAL ACCESS PROGRAM (SAP) OMNI';
-    } else if (profile.xp >= 1300) {
-      newRank = 'INVESTIGATOR';
-      nextThreshold = 2500;
-      clearance = 'LEVEL 4 // COSMIC TOP SECRET // NOFORN';
-    } else if (profile.xp >= 700) {
-      newRank = 'ANALYST';
-      nextThreshold = 1300;
-      clearance = 'LEVEL 3 // SECRET // COMPARTMENTED';
-    } else if (profile.xp >= 300) {
-      newRank = 'ARCHIVIST';
-      nextThreshold = 700;
-      clearance = 'LEVEL 2 // CONFIDENTIAL // FOIA LIAISON';
-    } else if (profile.xp >= 100) {
-      newRank = 'RESEARCHER';
-      nextThreshold = 300;
-      clearance = 'LEVEL 1.5 // DECLASSIFIED ARCHIVE ACCESS';
-    }
-
-    profile.rank = newRank;
-    profile.nextRankXp = nextThreshold;
-    profile.clearanceLevel = clearance;
-
-    // Log Activity
-    profile.recentActivity.unshift({
-      id: 'act-' + Date.now(),
-      action: `+${amount} XP: ${reason}`,
-      target: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      timestamp: 'Just now'
-    });
-    profile.recentActivity = profile.recentActivity.slice(0, 10);
-
-    const leveledUp = oldRank !== newRank;
-    this.save(STORAGE_KEYS.PROFILE, profile);
-
-    return { newXp: profile.xp, leveledUp, newRank: leveledUp ? newRank : undefined };
+    return { newXp: 0, leveledUp: false };
   }
 
   // RESET TO DEFAULTS

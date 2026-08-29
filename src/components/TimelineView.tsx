@@ -9,9 +9,10 @@ interface TimelineViewProps {
   currentUser?: any;
   entityType: 'people' | 'organisations' | 'locations' | 'case_files' | 'relationships';
   entityId: string;
+  onOpenEvent?: (id: string) => void;
 }
 
-export function TimelineView({ entityType, entityId, currentUser }: TimelineViewProps) {
+export function TimelineView({ entityType, entityId, currentUser, onOpenEvent }: TimelineViewProps) {
   
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ export function TimelineView({ entityType, entityId, currentUser }: TimelineView
           {events.map((event) => (
             <div key={event.id} className="relative">
               <div className="absolute -left-[30px] top-1.5 w-3 h-3 rounded-full bg-cyan-500 ring-4 ring-black" />
-              <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg hover:border-gray-700 transition-colors">
+              <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg hover:border-cyan-900/50 cursor-pointer transition-colors" onClick={(e) => { if ((e.target as any).closest('button')) return; sound.click(); onOpenEvent?.(event.id); }}>
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-col">
                     <span className="text-cyan-400 font-mono text-sm font-bold">{event.dateString}</span>

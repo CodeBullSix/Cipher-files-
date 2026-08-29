@@ -1,3 +1,4 @@
+import { AddToWorkspaceModal } from './AddToWorkspaceModal';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   CaseFile, 
@@ -16,14 +17,15 @@ import { EntitiesView } from './EntitiesView';
 import { EvidenceDetailModal } from './EvidenceDetailModal';
 import { StatusBadge } from './StatusBadge';
 import { PrimaryDocumentViewer } from './PrimaryDocumentViewer';
-import { AICrossExaminer } from './AICrossExaminer';
 import { TimelineView } from './TimelineView';
+import { DiscussionsView } from './DiscussionsView';
 import { MediaAttachmentViewer } from './MediaAttachmentViewer';
 import { FirestoreService } from '../services/firestoreService';
 import { processImageUpload } from '../utils/imageUpload';
 import { processVideoUpload } from '../utils/mediaUtils';
 import { TACTICAL_AVATAR_PRESETS } from '../data/avatarPresets';
 import { 
+  FolderArchive,
   X, 
   Bookmark, 
   Share2, 
@@ -71,11 +73,14 @@ interface Props {
   onJumpCase: (caseId: string) => void;
   isBookmarked: boolean;
   onToggleBookmark: (caseId: string) => void;
-  onRewardXp: (amount: number, reason: string) => void;
+  onReputationEarned: (amount: number, reason: string, persist?: boolean) => void;
   onJumpGraphEntity?: (entityName: string) => void;
   currentUser?: UserProfile | null;
   onOpenDirectMessageWithUser?: (authorUid: string, authorName: string, authorCallsign: string) => void;
   onRandomRabbitHole?: () => void;
+  onOpenEntity?: (type: string, id: string) => void;
+  onOpenEvent?: (id: string) => void;
+  onOpenEvidence?: (id: string) => void;
 }
 
 export const CaseDetailModal: React.FC<Props> = ({
@@ -84,17 +89,21 @@ export const CaseDetailModal: React.FC<Props> = ({
   onJumpCase,
   isBookmarked,
   onToggleBookmark,
-  onRewardXp,
+  onReputationEarned,
   onJumpGraphEntity,
   currentUser,
   onOpenDirectMessageWithUser,
-  onRandomRabbitHole
+  onRandomRabbitHole,
+  onOpenEntity,
+  onOpenEvent,
+  onOpenEvidence
 }) => {
   // Master investigative view tabs
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'facts' | 'allegations' | 'theories' | 'ai_analysis' | 'evidence' | 'timeline' | 'people' | 'organisations' | 'locations' | 'rabbithole' | 'discussions'
+    'overview' | 'facts' | 'allegations' | 'theories' | 'evidence' | 'timeline' | 'people' | 'organisations' | 'locations' | 'rabbithole' | 'discussions'
   >('overview');
   
+  const [isAddingToWorkspace, setIsAddingToWorkspace] = useState(false);
   const [currentCase, setCurrentCase] = useState<CaseFile>(caseFile);
   const [selectedDocId, setSelectedDocId] = useState<string>(caseFile.documents?.[0]?.id || '');
   
@@ -139,7 +148,20 @@ export const CaseDetailModal: React.FC<Props> = ({
       ApiService.getCase(caseFile.id)
         .then(fullCase => {
           if (fullCase) {
-            setCurrentCase(fullCase);
+            setCurrentCase({
+              ...fullCase,
+              whatWeKnow: fullCase.whatWeKnow || caseFile.whatWeKnow || [],
+              speculations: fullCase.speculations || caseFile.speculations || [],
+              timeline: fullCase.timeline || (fullCase.events && fullCase.events.length > 0 ? fullCase.events.map((e) => ({
+                id: e.event?.id || e.id,
+                date: e.event?.dateString || 'Unknown',
+                title: e.event?.title || 'Unknown Event',
+                description: e.event?.description || '',
+                rating: e.event?.verificationStatus || 'UNVERIFIED',
+                location: e.event?.location
+              })) : caseFile.timeline) || [],
+              documents: fullCase.documents || caseFile.documents || []
+            });
           }
         })
         .catch(err => console.error("Failed to load full case dossier", err));
@@ -165,7 +187,7 @@ export const CaseDetailModal: React.FC<Props> = ({
         mindblownCount: reaction === 'mindblown' ? (prev.mindblownCount || 0) + 1 : prev.mindblownCount,
         skepticCount: reaction === 'skeptic' ? (prev.skepticCount || 0) + 1 : prev.skepticCount
       }));
-      onRewardXp(15, `Evaluated case ${currentCase.caseNumber}`);
+      onReputationEarned(15, `Evaluated case ${currentCase.caseNumber}`, true);
     } catch (e) {
       console.error(e);
     }
@@ -180,7 +202,7 @@ export const CaseDetailModal: React.FC<Props> = ({
     setHasVotedBelief(true);
     try {
       await FirestoreService.updateBeliefScore(currentCase.id, localBeliefScore);
-      onRewardXp(25, `Submitted conviction score on ${currentCase.caseNumber}`);
+      onReputationEarned(25, `Submitted conviction score on ${currentCase.caseNumber}`, true);
     } catch (e) {
       console.error(e);
     }
@@ -257,7 +279,7 @@ export const CaseDetailModal: React.FC<Props> = ({
     try {
       await FirestoreService.addComment(currentCase.id, newComm);
       sound.blip();
-      onRewardXp(35, `Published tactical debate argument in ${currentCase.caseNumber}`);
+      onReputationEarned(35, `Published tactical debate argument in ${currentCase.caseNumber}`, true);
     } catch (err) {
       console.error('Failed to post comment', err);
     }
@@ -328,7 +350,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             {onRandomRabbitHole && (
               <button
                 onClick={() => {
-                  onRandomRabbitHole();
+                  if (onRandomRabbitHole) onRandomRabbitHole();
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-gradient-to-r from-cyan-950/80 to-purple-950/80 hover:from-cyan-900/80 hover:to-purple-900/80 text-cyan-300 border border-cyan-500/50 transition-colors shadow-sm"
                 title="Jump to another declassified dossier"
@@ -350,6 +372,15 @@ export const CaseDetailModal: React.FC<Props> = ({
               <span className="hidden sm:inline">{isBookmarked ? 'Saved Dossier' : 'Save Dossier'}</span>
             </button>
 
+            {currentUser && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsAddingToWorkspace(true); }}
+                className="p-1.5 border border-white/10 rounded hover:bg-white/[0.02] text-gray-400 hover:text-cyan-400 transition-colors"
+                title="Add to Workspace"
+              >
+                <FolderArchive className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 transition-colors"
@@ -365,7 +396,7 @@ export const CaseDetailModal: React.FC<Props> = ({
           {/* Status & Epistemic Disclaimer Banner */}
           <div className="mb-4">
             <StatusBadge status={currentCase.status} variant="banner" size="lg" />
-            <div className="mt-2 px-3 py-1.5 rounded-lg bg-black/60 border border-gray-800/80 flex items-center justify-between gap-2 text-[11px] font-mono text-gray-400">
+            <div className="mt-2 px-3 py-2 rounded-lg bg-black/60 border border-gray-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] font-mono text-gray-400">
               <span className="text-cyan-400 font-bold">EPISTEMIC PRINCIPLE:</span>
               <span className="text-gray-300 italic text-center sm:text-left">
                 "Cipher Files does not endorse the theories presented in this dossier. Here is the evidence. Investigate it yourself."
@@ -376,7 +407,7 @@ export const CaseDetailModal: React.FC<Props> = ({
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black font-mono text-white mb-1">
+              <h2 className="text-xl sm:text-2xl font-black font-mono text-white mb-1 break-words">
                 {currentCase.title}
               </h2>
               <p className="text-xs sm:text-sm text-gray-300 font-sans">
@@ -429,11 +460,11 @@ export const CaseDetailModal: React.FC<Props> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 text-xs font-mono">
               <div className="flex items-center space-x-2">
                 <Flame className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-white uppercase">COMMUNITY CONVICTION SCORE</span>
+                <span className="font-bold text-white uppercase">COMMUNITY OPINION (NOT VERIFIED FACT)</span>
                 <span className="text-cyan-300 font-bold">({localBeliefScore}%)</span>
               </div>
               <span className="text-[11px] text-gray-400">
-                {localBeliefScore > 80 ? 'High Corroborating Evidence' : localBeliefScore > 40 ? 'Actively Disputed / Open Investigation' : 'High Skepticism / Proven Hoax'}
+                {localBeliefScore > 80 ? 'Strong Community Belief' : localBeliefScore > 40 ? 'Divided Community Opinion' : 'High Community Skepticism'}
               </span>
             </div>
 
@@ -461,7 +492,7 @@ export const CaseDetailModal: React.FC<Props> = ({
         </div>
 
         {/* Master Investigative Tabs (Pillars) */}
-        <div className="flex items-center gap-1 px-4 sm:px-6 border-b border-gray-800 bg-[#050810] overflow-x-auto overflow-y-hidden whitespace-nowrap custom-scrollbar pb-2">
+        <div className="flex items-center gap-2 px-4 sm:px-6 border-b border-gray-800 bg-[#050810] overflow-x-auto overflow-y-hidden whitespace-nowrap hide-scrollbar pb-1 pt-1">
           
           <button
             onClick={() => { setActiveTab('overview'); sound.click(); }}
@@ -472,10 +503,9 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Overview & Hypothesis</span>
+            <span>1. CASE IDENTITY</span>
           </button>
 
-          {/* 1. FACTS & OFFICIAL RECORD */}
           <button
             onClick={() => { setActiveTab('facts'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
@@ -485,49 +515,9 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>1. Confirmed Facts ({(currentCase.whatWeKnow || []).length})</span>
+            <span>2. WHAT IS KNOWN ({(currentCase.whatWeKnow || []).length})</span>
           </button>
 
-          {/* 2. ALLEGATIONS & TESTIMONY */}
-          <button
-            onClick={() => { setActiveTab('allegations'); sound.click(); }}
-            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'allegations'
-                ? 'border-amber-400 text-amber-300 bg-amber-950/20'
-                : 'border-transparent text-gray-400 hover:text-amber-300'
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span>2. Allegations & Leaks</span>
-          </button>
-
-          {/* 3. SPECULATIVE THEORIES */}
-          <button
-            onClick={() => { setActiveTab('theories'); sound.click(); }}
-            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'theories'
-                ? 'border-purple-400 text-purple-300 bg-purple-950/20'
-                : 'border-transparent text-gray-400 hover:text-purple-300'
-            }`}
-          >
-            <Brain className="w-3.5 h-3.5 text-purple-400" />
-            <span>3. Speculative Theories</span>
-          </button>
-
-          {/* 4. AI FORENSIC ANALYSIS */}
-          <button
-            onClick={() => { setActiveTab('ai_analysis'); sound.click(); }}
-            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'ai_analysis'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
-                : 'border-transparent text-gray-400 hover:text-cyan-300'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>4. AI Analysis</span>
-          </button>
-
-          {/* 5. PRIMARY EVIDENCE VAULT */}
           <button
             onClick={() => { setActiveTab('evidence'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
@@ -537,10 +527,9 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <Scale className="w-3.5 h-3.5" />
-            <span>Evidence & Sources ({(currentCase.evidenceList || []).length})</span>
+            <span>3. SUPPORTING EVIDENCE ({(currentCase.evidenceList || []).length})</span>
           </button>
 
-          {/* 6. TIMELINE */}
           <button
             onClick={() => { setActiveTab('timeline'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
@@ -550,10 +539,10 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            <span>Timeline</span>
+            <span>4. TIMELINE</span>
           </button>
 
-          {/* 7. RABBIT HOLE CONNECTIONS */}
+          <div className="w-px h-5 bg-gray-800 mx-1 flex-shrink-0"></div>
           
           <button
             onClick={() => { setActiveTab('people'); sound.click(); }}
@@ -576,7 +565,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             }`}
           >
             <Building className="w-3.5 h-3.5" />
-            <span>Organisations</span>
+            <span>Orgs</span>
           </button>
           
           <button
@@ -603,7 +592,34 @@ export const CaseDetailModal: React.FC<Props> = ({
             <span>Rabbit Holes ({(currentCase.connectedCaseIds || []).length})</span>
           </button>
 
-          {/* 8. COMMUNITY DEBATES */}
+          <div className="w-px h-5 bg-gray-800 mx-1 flex-shrink-0"></div>
+
+          <button
+            onClick={() => { setActiveTab('allegations'); sound.click(); }}
+            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'allegations'
+                ? 'border-amber-400 text-amber-300 bg-amber-950/20'
+                : 'border-transparent text-gray-400 hover:text-amber-300'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>ALLEGATIONS</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('theories'); sound.click(); }}
+            className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'theories'
+                ? 'border-purple-400 text-purple-300 bg-purple-950/20'
+                : 'border-transparent text-gray-400 hover:text-purple-300'
+            }`}
+          >
+            <Brain className="w-3.5 h-3.5 text-purple-400" />
+            <span>SPECULATION</span>
+          </button>
+
+          <div className="w-px h-5 bg-gray-800 mx-1 flex-shrink-0"></div>
+
           <button
             onClick={() => { setActiveTab('discussions'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
@@ -612,8 +628,8 @@ export const CaseDetailModal: React.FC<Props> = ({
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
-            <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Debates ({comments.length})</span>
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>COMMUNITY OPINION ({(currentCase.discussions || []).length})</span>
           </button>
 
         </div>
@@ -636,11 +652,14 @@ export const CaseDetailModal: React.FC<Props> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* The Hypothesis */}
-                <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30 flex flex-col justify-between">
+                <div className="p-4 rounded-xl bg-amber-950/10 border border-amber-500/30 flex flex-col justify-between relative overflow-hidden">
                   <div>
-                    <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Quote className="w-4 h-4 text-cyan-400" />
+                    <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Quote className="w-4 h-4 text-amber-400" />
                       <span>THE CORE HYPOTHESIS</span>
+                      {(currentCase.status === 'ALLEGED' || currentCase.status === 'UNVERIFIED' || currentCase.status === 'DISPUTED') && (
+                        <span className="ml-auto text-[9px] px-1.5 py-0.5 border border-amber-500/50 text-amber-500 rounded bg-amber-950/30">UNVERIFIED SPECULATION</span>
+                      )}
                     </h4>
                     <p className="text-sm font-mono text-white leading-relaxed">
                       "{currentCase.claim}"
@@ -690,7 +709,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                 >
                   <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold mb-1">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>1. CONFIRMED FACTS</span>
+                    <span>2. WHAT IS KNOWN</span>
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans">
                     {(currentCase.whatWeKnow || []).length} verified forensic facts and primary records.
@@ -703,7 +722,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                 >
                   <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-bold mb-1">
                     <AlertTriangle className="w-4 h-4" />
-                    <span>2. ALLEGATIONS & LEAKS</span>
+                    <span>ALLEGATIONS & LEAKS</span>
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans">
                     Whistleblower statements and declassified claims.
@@ -716,27 +735,14 @@ export const CaseDetailModal: React.FC<Props> = ({
                 >
                   <div className="flex items-center gap-2 text-purple-400 font-mono text-xs font-bold mb-1">
                     <Brain className="w-4 h-4" />
-                    <span>3. SPECULATIVE THEORIES</span>
+                    <span>SPECULATIVE THEORIES</span>
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans">
                     Alternative explanations and cover-up motives.
                   </p>
-                </div>
 
-                <div 
-                  onClick={() => { setActiveTab('ai_analysis'); sound.click(); }}
-                  className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 hover:border-cyan-400 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-bold mb-1">
-                    <Sparkles className="w-4 h-4" />
-                    <span>4. AI FORENSIC AUDIT</span>
-                  </div>
-                  <p className="text-[11px] text-gray-400 font-sans">
-                    Gemini cross-examiner and contradiction detector.
-                  </p>
                 </div>
               </div>
-
               {/* Tags */}
               {currentCase.tags && currentCase.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -751,6 +757,117 @@ export const CaseDetailModal: React.FC<Props> = ({
             </div>
           )}
 
+                  {/* TAB: TIMELINE */}
+        {activeTab === 'timeline' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+             <TimelineView entityType="case_files" entityId={currentCase.id} onOpenEvent={onOpenEvent} />
+          </div>
+        )}
+        {/* TAB: PEOPLE */}
+        {activeTab === 'people' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
+              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">PERSONS OF INTEREST</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(currentCase.entities || []).filter((e) => e.type === 'PERSON').map((ent, idx) => (
+                <div key={idx} onClick={() => onOpenEntity?.('PERSON', ent.id)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-cyan-400 cursor-pointer transition-colors">
+                  <h4 className="text-sm font-mono font-bold text-white">{ent.name}</h4>
+                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
+                </div>
+              ))}
+              {(currentCase.entities || []).filter((e) => e.type === 'PERSON').length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN PERSONS OF INTEREST</div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* TAB: ORGANISATIONS */}
+        {activeTab === 'organisations' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
+              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">INVOLVED ORGANISATIONS</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(currentCase.entities || []).filter((e) => e.type === 'ORGANISATION').map((ent, idx) => (
+                <div key={idx} onClick={() => onOpenEntity?.('ORGANISATION', ent.id)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-amber-400 cursor-pointer transition-colors">
+                  <h4 className="text-sm font-mono font-bold text-amber-400">{ent.name}</h4>
+                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* TAB: LOCATIONS */}
+        {activeTab === 'locations' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
+              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">KEY LOCATIONS</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(currentCase.entities || []).filter((e) => e.type === 'LOCATION').map((ent, idx) => (
+                <div key={idx} onClick={() => onOpenEntity?.('LOCATION', ent.id)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-blue-400 cursor-pointer transition-colors">
+                  <h4 className="text-sm font-mono font-bold text-blue-400">{ent.name}</h4>
+                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* TAB: RABBIT HOLE */}
+        {activeTab === 'rabbithole' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30">
+              <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">RABBIT HOLE CONNECTIONS</h3>
+            </div>
+            <div className="flex justify-center mt-6">
+               <button
+                   onClick={() => { if (onRandomRabbitHole) onRandomRabbitHole(); }}
+                   className="px-6 py-3 bg-cyan-900/40 border border-cyan-500/50 hover:bg-cyan-800/60 text-cyan-300 font-mono font-bold transition-colors shadow-lg"
+               >
+                  ENTER THE NEXUS FOR THIS CASE
+               </button>
+            </div>
+          </div>
+        )}
+        {/* TAB 8: DISCUSSIONS */}
+        {activeTab === 'discussions' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <DiscussionsView entityType="CASE" entityId={currentCase.id} />
+          </div>
+        )}
+                  {/* PHASE 2 EVIDENCE ARCHIVE TAB */}
+        {activeTab === 'evidence' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
+                <h3 className="text-lg font-bold text-white font-mono flex items-center gap-2">
+                  <Database className="w-5 h-5 text-cyan-400" />
+                  EVIDENCE REPOSITORY
+                </h3>
+              </div>
+                            
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(currentCase.evidenceList || []).length === 0 ? (
+                  <div className="col-span-2 text-center py-12 text-gray-500 font-mono text-sm border border-dashed border-gray-800 rounded-xl">
+                    No verified evidence items attached to this dossier yet.
+                  </div>
+                ) : (
+                  (currentCase.evidenceList || []).map((item) => (
+                    <div 
+                      key={item.id} 
+                      onClick={() => { if (onOpenEvidence) onOpenEvidence(item.id); }}
+                      className="bg-[#050810] border border-gray-800 hover:border-cyan-500/50 rounded-lg p-4 cursor-pointer transition-colors"
+                    >
+                      <h4 className="text-sm font-bold text-white mb-2 leading-tight">{item.title}</h4>
+                      <p className="text-xs text-gray-400 line-clamp-2 mb-3">{item.summary || item.description}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
           {/* TAB 1: CONFIRMED FACTS & OFFICIAL RECORD */}
           {activeTab === 'facts' && (
             <div className="space-y-6">
@@ -893,517 +1010,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             </div>
           )}
 
-          {/* TAB 4: AI FORENSIC ANALYSIS & CROSS-EXAMINATION */}
-          {activeTab === 'ai_analysis' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/40 flex items-start gap-3">
-                <Cpu className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">
-                    GEMINI AI ADVERSARIAL FORENSIC CROSS-EXAMINER
-                  </h3>
-                  <p className="text-xs text-gray-300 font-sans">
-                    Execute automated logical fallacy audits, chain-of-custody checks, probability assessments, and adversarial interrogations on this dossier.
-                  </p>
-                </div>
-              </div>
-
-              <AICrossExaminer caseFile={currentCase} onRewardXp={onRewardXp} />
-            </div>
-          )}
-
-          {/* TAB 5: PRIMARY EVIDENCE & SOURCES VAULT */}
-          
-        {/* PHASE 2 EVIDENCE ARCHIVE TAB */}
-        
-        {/* PHASE 2 EVIDENCE ARCHIVE TAB */}
-        {activeTab === 'evidence' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
-                <h3 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-                  <Database className="w-5 h-5 text-cyan-400" />
-                  EVIDENCE REPOSITORY
-                </h3>
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className="px-2 py-1 bg-emerald-400/10 text-emerald-400 rounded-md border border-emerald-400/20 font-bold">
-                    {caseEvidence.filter(e => e.stance === 'SUPPORTING' && e.status === 'VERIFIED').length} SUPPORTING
-                  </span>
-                  <span className="px-2 py-1 bg-amber-400/10 text-amber-400 rounded-md border border-amber-400/20 font-bold">
-                    {caseEvidence.filter(e => e.stance === 'CONTRADICTING' && e.status === 'VERIFIED').length} CONTRADICTING
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {caseEvidence.length === 0 ? (
-                  <div className="col-span-2 text-center py-12 text-gray-500 font-mono text-sm border border-dashed border-gray-800 rounded-xl">
-                    No verified evidence items attached to this dossier yet.
-                  </div>
-                ) : (
-                  caseEvidence.map(item => (
-                    <div 
-                      key={item.id} 
-                      onClick={() => setSelectedArchiveEvidence(item)}
-                      className="bg-[#050810] border border-gray-800 hover:border-cyan-500/50 rounded-lg p-4 cursor-pointer transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
-                          item.status === 'VERIFIED' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' :
-                          item.status === 'UNDER_REVIEW' ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20' :
-                          item.status === 'DISPUTED' ? 'bg-amber-400/10 text-amber-400 border-amber-400/20' :
-                          'bg-gray-400/10 text-gray-400 border-gray-400/20'
-                        }`}>
-                          {item.status}
-                        </span>
-                        <span className="text-[10px] text-cyan-500 font-bold">{item.stance}</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-white mb-2 leading-tight">{item.title}</h4>
-                      <p className="text-xs text-gray-400 line-clamp-2 mb-3">{item.description}</p>
-                      
-                      <div className="flex items-center justify-between text-[10px] text-gray-500">
-                        <span>{item.type}</span>
-                        <span>Source: {item.source?.name || 'Unknown'}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            
-            {selectedArchiveEvidence && (
-              <EvidenceDetailModal
-                evidence={selectedArchiveEvidence}
-                currentUser={currentUser}
-                onClose={() => setSelectedArchiveEvidence(null)}
-                onUpdate={(updated) => {
-                  setCaseEvidence(prev => prev.map(item => item.id === updated.id ? updated : item));
-                  setSelectedArchiveEvidence(updated);
-                }}
-              />
-            )}
-          </div>
-        )}
-
-
-
-          {/* TAB 6: TIMELINE & CHRONOLOGY */}
-          {activeTab === 'timeline' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30">
-                <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">
-                  HISTORICAL CHRONOLOGY & DECLASSIFIED TIMELINE
-                </h3>
-                <p className="text-xs text-gray-400 font-sans">
-                  Chronological progression of key events, leaks, investigations, and declassifications.
-                </p>
-              </div>
-
-              <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-cyan-500/30">
-                {(currentCase.timeline || []).map((t: any, idx: number) => (
-                  <div key={idx} className="relative flex gap-6 pb-8 last:pb-0">
-                    <div className="flex flex-col items-center">
-                      <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)] z-10" />
-                      <div className="w-px h-full bg-gray-800 -mt-1" />
-                    </div>
-                    <div className="pt-0">
-                      <span className="text-cyan-400 font-mono text-sm tracking-widest font-bold">
-                        {t.date}
-                      </span>
-                      <h4 className="text-gray-200 mt-1 uppercase text-sm tracking-wider font-semibold">
-                        {t.event}
-                      </h4>
-                      <p className="text-gray-400 text-sm mt-2 max-w-2xl">
-                        {t.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-gray-800">
-                <TimelineView entityType="case_files" entityId={currentCase.id} currentUser={currentUser} />
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-gray-800 space-y-6">
-                <div>
-                  <h3 className="font-mono text-sm font-bold text-gray-400 uppercase mb-4">
-                    CONNECTED INVESTIGATIONS
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(currentCase.connectedCaseIds || []).map((connId: any) => (
-                      <div
-                        key={connId}
-                        onClick={() => { onJumpCase(connId); sound.click(); }}
-                        className="p-3.5 rounded-xl bg-[#070A14] border border-gray-800 hover:border-cyan-400 hover:bg-[#0D1220] cursor-pointer transition-all flex items-center justify-between group"
-                      >
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-cyan-400" />
-                          <span className="font-mono text-xs font-bold text-white group-hover:text-cyan-300 uppercase">
-                            {connId.replace(/-/g, ' ')}
-                          </span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {currentCase.entities && currentCase.entities.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-gray-800">
-                  <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
-                    KEY PRINCIPALS & AGENCIES
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {currentCase.entities.map((ent: any, idx: number) => (
-                      <div
-                        key={idx}
-                        onClick={() => onJumpGraphEntity?.(ent.name)}
-                        className="p-3 rounded-xl bg-[#070A14] border border-gray-800 hover:border-amber-400 cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center justify-between text-xs font-mono font-bold text-white mb-1">
-                          <span>{ent.name}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 uppercase">{ent.type}</span>
-                        </div>
-                        <p className="text-[11px] text-gray-400">{ent.role}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          
-        {/* TAB: PEOPLE */}
-        {activeTab === 'people' && (
-          <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
-              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">
-                PERSONS OF INTEREST
-              </h3>
-              <p className="text-xs text-gray-400 font-sans">
-                Individuals connected to this investigation.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(currentCase.entities || []).filter((e: any) => e.type === 'PERSON').map((ent: any, idx: number) => (
-                <div key={idx} onClick={() => onJumpGraphEntity?.(ent.name)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-cyan-400 cursor-pointer transition-colors">
-                  <h4 className="text-sm font-mono font-bold text-white">{ent.name}</h4>
-                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
-                </div>
-              ))}
-              {(currentCase.entities || []).filter((e: any) => e.type === 'PERSON').length === 0 && (
-                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN PERSONS OF INTEREST</div>
-              )}
-            </div>
-          </div>
-        )}
-
-
-        {/* TAB: ORGANISATIONS */}
-        {activeTab === 'organisations' && (
-          <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
-              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">
-                INVOLVED ORGANISATIONS
-              </h3>
-              <p className="text-xs text-gray-400 font-sans">
-                Agencies, corporations, and groups connected to this investigation.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(currentCase.entities || []).filter((e: any) => e.type === 'ORGANISATION').map((ent: any, idx: number) => (
-                <div key={idx} onClick={() => onJumpGraphEntity?.(ent.name)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-amber-400 cursor-pointer transition-colors">
-                  <h4 className="text-sm font-mono font-bold text-amber-400">{ent.name}</h4>
-                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
-                </div>
-              ))}
-              {(currentCase.entities || []).filter((e: any) => e.type === 'ORGANISATION').length === 0 && (
-                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN ORGANISATIONS</div>
-              )}
-            </div>
-          </div>
-        )}
-
-
-        {/* TAB: LOCATIONS */}
-        {activeTab === 'locations' && (
-          <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
-              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">
-                KEY LOCATIONS
-              </h3>
-              <p className="text-xs text-gray-400 font-sans">
-                Geographic points of interest connected to this investigation.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(currentCase.entities || []).filter((e: any) => e.type === 'LOCATION').map((ent: any, idx: number) => (
-                <div key={idx} onClick={() => onJumpGraphEntity?.(ent.name)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-blue-400 cursor-pointer transition-colors">
-                  <h4 className="text-sm font-mono font-bold text-blue-400">{ent.name}</h4>
-                  <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
-                </div>
-              ))}
-              {(currentCase.entities || []).filter((e: any) => e.type === 'LOCATION').length === 0 && (
-                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN LOCATIONS</div>
-              )}
-            </div>
-          </div>
-        )}
-
-
-        {/* TAB: RABBIT HOLE */}
-        {activeTab === 'rabbithole' && (
-          <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30">
-              <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">
-                RABBIT HOLE CONNECTIONS
-              </h3>
-              <p className="text-xs text-gray-400 font-sans">
-                Related investigations and cross-case connections.
-              </p>
-            </div>
-            
-            <div className="flex justify-center mt-6">
-               <button 
-                  onClick={() => onJumpGraphEntity?.('case_files_' + currentCase.id)} 
-                  className="px-6 py-3 bg-cyan-900/40 border border-cyan-500/50 hover:bg-cyan-800/60 text-cyan-300 font-mono font-bold transition-colors shadow-lg"
-               >
-                  ENTER THE NEXUS FOR THIS CASE
-               </button>
-            </div>
-          </div>
-        )}
-
-
-          {/* TAB 8: COMMUNITY DEBATES & TACTICAL BRIEFS */}
-          {activeTab === 'discussions' && (
-            <div className="space-y-6">
-              
-              {/* Add Comment Form */}
-              <form onSubmit={handlePostComment} className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-cyan-400" />
-                    <span>PUBLISH TACTICAL ARGUMENT / FORENSIC CRITIQUE</span>
-                  </h4>
-                  
-                  {/* Stance Selector */}
-                  <div className="flex items-center gap-1.5 text-xs font-mono">
-                    <span className="text-[10px] text-gray-400 hidden sm:inline">STANCE:</span>
-                    <select
-                      value={newCommentStance}
-                      onChange={(e) => setNewCommentStance(e.target.value as any)}
-                      className="bg-gray-900 border border-gray-700 text-cyan-300 text-xs rounded px-2 py-1 focus:outline-none"
-                    >
-                      <option value="SUPPORTING">Supporting Theory</option>
-                      <option value="SKEPTICAL">Skeptical Critique</option>
-                      <option value="NEUTRAL">Neutral Evidence</option>
-                      <option value="DEVILS_ADVOCATE">Devil's Advocate</option>
-                    </select>
-                  </div>
-                </div>
-
-                <textarea
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  placeholder="State your evidence-based argument, dispute a primary source, or offer corroborating testimony..."
-                  className="w-full h-24 p-3 rounded-lg bg-[#04060C] border border-gray-800 text-xs sm:text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-400 font-mono resize-none"
-                />
-
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Image Upload Button */}
-                      <input 
-                        type="file" 
-                        ref={commentFileInputRef} 
-                        onChange={handleCommentImageUpload} 
-                        accept="image/*" 
-                        className="hidden" 
-                      />
-                      <button
-                        type="button"
-                        onClick={() => commentFileInputRef.current?.click()}
-                        disabled={isUploadingImage}
-                        className="px-2.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 text-xs font-mono flex items-center gap-1.5"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{attachedCommentImage ? 'Photo Attached' : 'Attach Photo'}</span>
-                      </button>
-
-                      {/* Video Upload Button */}
-                      <input 
-                        type="file" 
-                        ref={commentVideoInputRef} 
-                        onChange={handleCommentVideoUpload} 
-                        accept="video/*" 
-                        className="hidden" 
-                      />
-                      <button
-                        type="button"
-                        onClick={() => commentVideoInputRef.current?.click()}
-                        disabled={isUploadingVideo}
-                        className="px-2.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 text-xs font-mono flex items-center gap-1.5"
-                      >
-                        <Film className="w-3.5 h-3.5 text-rose-400" />
-                        <span>{attachedCommentVideo ? 'Video Attached' : 'Attach Video'}</span>
-                      </button>
-
-                      {/* Toggle Video Link Input */}
-                      <button
-                        type="button"
-                        onClick={() => setShowVideoInput(!showVideoInput)}
-                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-1.5 ${
-                          showVideoInput || commentVideoUrlInput 
-                            ? 'bg-rose-950/60 border-rose-500/50 text-rose-300' 
-                            : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200'
-                        }`}
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        <span>YouTube / Link</span>
-                      </button>
-
-                      {(attachedCommentImage || attachedCommentVideo || commentVideoUrlInput) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAttachedCommentImage(null);
-                            setAttachedCommentVideo(null);
-                            setCommentVideoUrlInput('');
-                            setShowVideoInput(false);
-                          }}
-                          className="text-[10px] font-mono text-rose-400 hover:underline px-1"
-                        >
-                          Clear Media
-                        </button>
-                      )}
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={!newCommentText.trim() && !attachedCommentImage && !attachedCommentVideo && !commentVideoUrlInput.trim()}
-                      className="px-4 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-black font-mono text-xs font-extrabold flex items-center gap-1.5 shadow-md"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Submit Argument</span>
-                    </button>
-                  </div>
-
-                  {/* Video URL Input Field */}
-                  {showVideoInput && (
-                    <input
-                      type="url"
-                      value={commentVideoUrlInput}
-                      onChange={(e) => setCommentVideoUrlInput(e.target.value)}
-                      placeholder="Paste YouTube or video URL (e.g. https://youtu.be/...)"
-                      className="w-full px-3 py-1.5 bg-[#04060C] border border-rose-500/40 rounded-lg text-xs text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-400 font-mono"
-                    />
-                  )}
-
-                  {/* Preview if attached */}
-                  {(attachedCommentImage || attachedCommentVideo || commentVideoUrlInput.trim()) && (
-                    <div className="p-2.5 rounded-lg bg-[#04060C] border border-gray-800">
-                      <MediaAttachmentViewer
-                        imageUrl={attachedCommentImage || undefined}
-                        videoUrl={attachedCommentVideo || (commentVideoUrlInput.trim() ? commentVideoUrlInput.trim() : undefined)}
-                        allowZoom={false}
-                      />
-                    </div>
-                  )}
-                </div>
-              </form>
-
-              {/* Comments Feed */}
-              <div className="space-y-3">
-                {comments.length === 0 ? (
-                  <div className="p-8 text-center rounded-xl bg-[#090D1A] border border-gray-800 text-xs font-mono text-gray-500">
-                    No debate arguments filed yet. Be the first investigator to post!
-                  </div>
-                ) : (
-                  comments.map((comm) => {
-                    const presetObj = comm.authorBadge ? TACTICAL_AVATAR_PRESETS.find(p => p.id === comm.authorBadge) : null;
-                    return (
-                      <div key={comm.id} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 space-y-2.5">
-                        <div className="flex items-center justify-between text-xs font-mono">
-                          <div className="flex items-center gap-2.5">
-                            {/* Author Avatar Thumbnail */}
-                            <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700/80 flex items-center justify-center overflow-hidden shrink-0">
-                              {comm.authorAvatar ? (
-                                <img src={comm.authorAvatar} alt={comm.authorCallsign} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                              ) : presetObj ? (
-                                <span className="text-sm">{presetObj.icon}</span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-cyan-400 font-mono">
-                                  {(comm.authorName || comm.authorCallsign || 'OP').substring(0, 2).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-bold text-white">{comm.authorCallsign || comm.authorName}</span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-900 text-cyan-400 border border-gray-800">
-                                {comm.authorRank}
-                              </span>
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                                comm.stance === 'SUPPORTING' ? 'bg-emerald-950 text-emerald-400' :
-                                comm.stance === 'SKEPTICAL' ? 'bg-rose-950 text-rose-400' :
-                                comm.stance === 'DEVILS_ADVOCATE' ? 'bg-purple-950 text-purple-400' :
-                                'bg-gray-800 text-gray-300'
-                              }`}>
-                                {comm.stance}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-gray-500">
-                            {new Date(comm.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                      <p className="text-xs sm:text-sm text-gray-200 font-sans leading-relaxed whitespace-pre-wrap">
-                        {comm.content}
-                      </p>
-
-                      {/* Render photos, video embeds, and attachment collections */}
-                      {(comm.imageUrl || comm.videoUrl || (comm.attachments && comm.attachments.length > 0)) && (
-                        <div className="mt-2">
-                          <MediaAttachmentViewer
-                            imageUrl={comm.imageUrl}
-                            videoUrl={comm.videoUrl}
-                            attachments={comm.attachments}
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-3 pt-2 text-xs font-mono text-gray-400">
-                        <button
-                          onClick={() => handleVoteComment(comm.id, 'up')}
-                          className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
-                        >
-                          <ThumbsUp className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>{comm.upvotes || 0}</span>
-                        </button>
-                        <button
-                          onClick={() => handleVoteComment(comm.id, 'down')}
-                          className="flex items-center gap-1 hover:text-rose-400 transition-colors"
-                        >
-                          <ThumbsDown className="w-3.5 h-3.5 text-rose-400" />
-                          <span>{comm.downvotes || 0}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            </div>
-          )}
-
         </div>
-
       </div>
     </div>
   );

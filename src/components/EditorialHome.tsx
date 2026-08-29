@@ -79,7 +79,11 @@ export const EditorialHome: React.FC<Props> = ({
     { id: 'DISPROVEN', label: 'DISPROVEN', tagline: 'Contradicted by available evidence.' },
   ];
 
-  // Pick 3 Trending investigations
+  const handleScrollToExplore = () => {
+    exploreRef.current?.scrollIntoView({ behavior: 'smooth' });
+    sound.click();
+  };
+
   const trendingCases = cases.filter(c => 
     c.id === 'jfk-assassination' || 
     c.id === 'project-mkultra' || 
@@ -87,61 +91,38 @@ export const EditorialHome: React.FC<Props> = ({
     c.id === 'operation-gladio'
   ).slice(0, 3);
 
-  // Pick 3 Recently Updated investigations
   const recentlyUpdatedCases = cases.filter(c => 
     c.id === 'aatip-pentagon-uap' || 
     c.id === 'nsa-tao-surveillance' || 
     c.id === 'dyatlov-pass'
   ).slice(0, 3);
 
-  // Filtered cases for the full explorer
   const filteredCases = cases.filter(c => {
     if (selectedCategory !== 'ALL' && c.category !== selectedCategory) return false;
     if (selectedStatus !== 'ALL') {
-      const normalizedCurrent = normalizeStatus(c.status);
-      const normalizedTarget = normalizeStatus(selectedStatus);
-      if (normalizedCurrent !== normalizedTarget) return false;
+      const norm = normalizeStatus(c.status);
+      if (norm !== selectedStatus) return false;
     }
-    if (searchQuery.trim()) {
+    if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchTitle = c.title.toLowerCase().includes(q);
-      const matchSubtitle = c.subtitle.toLowerCase().includes(q);
-      const matchClaim = c.claim.toLowerCase().includes(q);
-      const matchTags = (c.tags || []).some(t => t.toLowerCase().includes(q));
-      const matchNumber = c.caseNumber.toLowerCase().includes(q);
-      if (!matchTitle && !matchSubtitle && !matchClaim && !matchTags && !matchNumber) return false;
+      if (!c.title.toLowerCase().includes(q) && !c.summary.toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
-  // Daily Intel Briefing Logic
-  // Generate a seeded index based on the current date string (YYYY-MM-DD)
-  const todayStr = new Date().toISOString().split('T')[0];
-  const dateHash = todayStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  
-  // Pick one daily case
-  const dailyCaseIndex = dateHash % (cases.length || 1);
-  const dailyCase = cases.length > 0 ? cases[dailyCaseIndex] : null;
-  
-  // Collect all documents
-  const allDocs = cases.flatMap(c => 
-    (c.documents || []).map(d => ({ doc: d, caseId: c.id, caseTitle: c.title, caseNumber: c.caseNumber }))
-  ).filter(item => item.doc !== undefined);
-  const dailyDocIndex = allDocs.length > 0 ? (dateHash + 7) % allDocs.length : 0;
-  const dailyDocItem = allDocs.length > 0 ? allDocs[dailyDocIndex] : null;
+  const dailyCase = cases.find(c => c.id === 'project-blue-book');
+  const dailyDocCase = cases.find(c => c.id === 'jfk-assassination');
+  const dailyDocItem = dailyDocCase?.evidenceList?.[0];
 
-  const handleScrollToExplore = () => {
-    sound.click();
-    exploreRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
-  // Connected rabbit hole nodes for the visual teaser
   const rabbitHoleTeasers = [
-    { label: 'CIA', category: 'AGENCY' },
-    { label: 'Project MKUltra', category: 'OPERATION' },
-    { label: 'Project Stargate', category: 'OPERATION' },
-    { label: 'Operation Paperclip', category: 'OPERATION' },
-    { label: 'Majestic 12', category: 'SOCIETY' },
+    { label: 'CIA', category: 'ORGANISATION' },
+    { label: 'JFK', category: 'PERSON' },
+    { label: 'Area 51', category: 'LOCATION' },
+    { label: 'Majestic 12', category: 'ORGANISATION' },
+    { label: 'Roswell', category: 'LOCATION' },
+    { label: 'MKUltra', category: 'OPERATION' },
+    { label: 'Pentagon', category: 'LOCATION' },
     { label: 'Bohemian Grove', category: 'LOCATION' },
     { label: 'Operation Gladio', category: 'OPERATION' },
     { label: 'Denver Airport', category: 'LOCATION' },
@@ -153,29 +134,61 @@ export const EditorialHome: React.FC<Props> = ({
       {/* 1. CINEMATIC EDITORIAL HERO */}
       <section className="relative w-full min-h-[58vh] sm:min-h-[64vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 py-16 sm:py-20 border-b border-cyan-500/20 bg-gradient-to-b from-[#03050B] via-[#070B16] to-[#05070E] overflow-hidden">
         
-        {/* Carbon background grid & subtle light glow */}
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#00E5FF_1px,transparent_1px)] [background-size:28px_28px]"></div>
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] sm:w-[600px] h-[250px] bg-cyan-500/10 blur-[100px] pointer-events-none rounded-full"></div>
 
         <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
           
-          {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono tracking-[0.25em] uppercase mb-5 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
             <span>CIPHER FILES // DECLASSIFIED ARCHIVE</span>
           </div>
 
-          {/* Master Headline */}
           <h1 className="font-mono text-3xl sm:text-5xl md:text-6xl font-black tracking-[0.18em] text-white uppercase mb-4 leading-tight">
             NOTHING IS <span className="text-cyan-400 cyan-glow">EVERYTHING.</span>
           </h1>
 
-          {/* Subtitle */}
           <p className="text-sm sm:text-lg text-gray-300 font-sans max-w-2xl mx-auto leading-relaxed mb-8">
             Investigate classified documents, unexplained events, covert operations and controversial theories.
           </p>
 
-          {/* Primary Action Buttons */}
+          {/* New Investigator Orientation */}
+          <div className="w-full max-w-3xl mx-auto mb-10 bg-[#090D1A] border border-cyan-500/30 rounded-xl p-5 text-left shadow-lg">
+            <h3 className="text-cyan-400 font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 border-b border-cyan-500/20 pb-2 mb-4">
+              <ShieldCheck className="w-4 h-4" />
+              NEW INVESTIGATOR ORIENTATION
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <FolderArchive className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-mono text-[11px] text-white font-bold block mb-0.5">CASE DOSSIERS</span>
+                  <span className="text-gray-400 text-[10px] sm:text-[11px] font-sans leading-tight block">Official investigations separating verified facts from unverified speculation.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Database className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-mono text-[11px] text-white font-bold block mb-0.5">PRIMARY EVIDENCE</span>
+                  <span className="text-gray-400 text-[10px] sm:text-[11px] font-sans leading-tight block">Source materials, FOIA releases, and declassified records.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Share2 className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-mono text-[11px] text-white font-bold block mb-0.5">THE RABBIT HOLE</span>
+                  <span className="text-gray-400 text-[10px] sm:text-[11px] font-sans leading-tight block">A visual graph connecting people, organisations, locations, and cases.</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Lock className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-mono text-[11px] text-white font-bold block mb-0.5">PRIVATE WORKSPACE</span>
+                  <span className="text-gray-400 text-[10px] sm:text-[11px] font-sans leading-tight block">Your personal area to collect evidence and build your own theories.</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full max-w-md justify-center">
             <button
               onClick={handleScrollToExplore}
@@ -253,7 +266,7 @@ export const EditorialHome: React.FC<Props> = ({
             {dailyDocItem && (
               <div 
                 className="group rounded-2xl bg-[#0A0E18] border border-rose-900/40 hover:border-rose-500/50 p-5 flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden"
-                onClick={() => { onOpenCase(dailyDocItem.caseId); sound.click(); }}
+                onClick={() => { onOpenCase(dailyDocCase?.id || ""); sound.click(); }}
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[50px] -mr-10 -mt-10 rounded-full pointer-events-none"></div>
                 <div>
@@ -261,19 +274,19 @@ export const EditorialHome: React.FC<Props> = ({
                     <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-400 font-mono text-[10px] font-bold border border-rose-900">
                       NEWLY DECLASSIFIED DOCUMENT
                     </span>
-                    <span className="text-gray-500 font-mono text-[10px]">{dailyDocItem.doc.dateCreated}</span>
+                    <span className="text-gray-500 font-mono text-[10px]">{dailyDocItem.date || "Unknown Date"}</span>
                   </div>
                   <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-rose-400 transition-colors">
-                    {dailyDocItem.doc.title}
+                    {dailyDocItem.title}
                   </h3>
                   <p className="text-xs text-gray-400 font-sans line-clamp-3 mb-4 italic border-l-2 border-rose-900/50 pl-3">
-                    "{dailyDocItem.doc.fullExcerpt || dailyDocItem.doc.summary}"
+                    "{dailyDocItem.summary}"
                   </p>
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-4 border-t border-gray-800">
                   <div className="flex items-center gap-2 text-xs font-mono text-gray-500 truncate mr-4">
                     <FileText className="w-3.5 h-3.5 text-gray-600 shrink-0" />
-                    <span className="truncate">From: {dailyDocItem.caseTitle}</span>
+                    <span className="truncate">From: {dailyDocCase?.title || ""}</span>
                   </div>
                   <div className="flex items-center gap-1 text-rose-400 text-xs font-mono font-bold shrink-0 group-hover:translate-x-1 transition-transform">
                     <span>VIEW SOURCE</span>

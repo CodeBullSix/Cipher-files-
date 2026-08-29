@@ -81,7 +81,36 @@ export async function getEventById(id: string) {
   const creator = await db.select({ uid: users.uid, displayName: users.displayName })
     .from(users).where(eq(users.uid, event.createdBy)).then(res => res[0]);
 
-  return { ...event, evidenceList, creator };
+  // Fetch associated entities
+  const caseFilesList = await db.query.eventCaseFiles.findMany({
+    where: eq(eventCaseFiles.eventId, id),
+    with: { caseFile: true }
+  }).then(res => res.map(r => r.caseFile).filter(Boolean));
+
+  const peopleList = await db.query.eventPeople.findMany({
+    where: eq(eventPeople.eventId, id),
+    with: { person: true }
+  }).then(res => res.map(r => r.person).filter(Boolean));
+
+  const organisationsList = await db.query.eventOrganisations.findMany({
+    where: eq(eventOrganisations.eventId, id),
+    with: { organisation: true }
+  }).then(res => res.map(r => r.organisation).filter(Boolean));
+
+  const locationsList = await db.query.eventLocations.findMany({
+    where: eq(eventLocations.eventId, id),
+    with: { location: true }
+  }).then(res => res.map(r => r.location).filter(Boolean));
+
+  return { 
+    ...event, 
+    evidenceList, 
+    creator,
+    caseFiles: caseFilesList,
+    people: peopleList,
+    organisations: organisationsList,
+    locations: locationsList
+  };
 }
 
 export async function getEventsForEntity(entityType: string, entityId: string) {

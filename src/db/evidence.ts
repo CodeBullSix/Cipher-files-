@@ -1,9 +1,11 @@
 import { db } from './index.js';
 import {
-  evidenceItems, sources, documents, evidenceCaseFiles, evidenceDiscussions, evidenceAuditLogs, users, evidencePeople, evidenceOrganisations, evidenceLocations, evidenceEntityRelationships
+  evidenceItems, sources, documents, evidenceCaseFiles, evidenceDiscussions, evidenceAuditLogs, users, evidencePeople, evidenceOrganisations, evidenceLocations, evidenceEntityRelationships,
+  people, organisations, locations, events, eventEvidence
 } from './schema.js';
 import { eq, and, desc, isNull, inArray, ilike, or } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { createNotification } from './notifications.js';
 
 export async function getEvidenceItems(params: {
   caseFileId?: string,
@@ -89,13 +91,37 @@ export async function getEvidenceById(id: string) {
   
   const caseFilesResult = await db.select({ caseFileId: evidenceCaseFiles.caseFileId }).from(evidenceCaseFiles).where(eq(evidenceCaseFiles.evidenceId, id));
   
+  const peopleResult = await db.select({ id: people.id, name: people.name })
+    .from(evidencePeople)
+    .innerJoin(people, eq(people.id, evidencePeople.personId))
+    .where(eq(evidencePeople.evidenceId, id));
+
+  const organisationsResult = await db.select({ id: organisations.id, name: organisations.name })
+    .from(evidenceOrganisations)
+    .innerJoin(organisations, eq(organisations.id, evidenceOrganisations.organisationId))
+    .where(eq(evidenceOrganisations.evidenceId, id));
+
+  const locationsResult = await db.select({ id: locations.id, name: locations.name })
+    .from(evidenceLocations)
+    .innerJoin(locations, eq(locations.id, evidenceLocations.locationId))
+    .where(eq(evidenceLocations.evidenceId, id));
+
+  const eventsResult = await db.select({ id: events.id, title: events.title })
+    .from(eventEvidence)
+    .innerJoin(events, eq(events.id, eventEvidence.eventId))
+    .where(eq(eventEvidence.evidenceId, id));
+
   return {
     ...evidence,
     source,
     document,
     submitter: submitter ? { uid: submitter.uid, displayName: submitter.displayName } : null,
     verifier: verifier ? { uid: verifier.uid, displayName: verifier.displayName } : null,
-    caseFileIds: caseFilesResult.map(c => c.caseFileId)
+    caseFileIds: caseFilesResult.map(c => c.caseFileId),
+    people: peopleResult,
+    organisations: organisationsResult,
+    locations: locationsResult,
+    events: eventsResult
   };
 }
 
@@ -161,13 +187,27 @@ export async function verifyEvidence(id: string, status: any, notes: string, use
     })
     .where(eq(evidenceItems.id, id));
 
+
   const actionMap: Record<string, any> = {
     'VERIFIED': 'VERIFIED',
     'DISPUTED': 'DISPUTED',
     'REJECTED': 'REJECTED'
   };
 
-  await db.insert(evidenceAuditLogs).values({
+  const updatedEv = await getEvidenceById(id);
+  if (updatedEv && updatedEv.submittedById !== userId) {
+    await createNotification(
+      updatedEv.submittedById,
+      'CONTRIBUTION_STATUS',
+      'Evidence Status Updated',
+      `Your evidence "${updatedEv.title.substring(0, 30)}" was marked as ${status}.`,
+      id,
+      'EVIDENCE'
+    ).catch(console.error);
+  }
+
+  await db.insert(evidenceAuditLogs)
+.values({
     id: uuidv4(),
     evidenceId: id,
     userId: userId,

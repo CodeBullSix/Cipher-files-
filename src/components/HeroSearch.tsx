@@ -76,7 +76,7 @@ export const HeroSearch: React.FC<Props> = ({
           </h2>
 
           <p className="text-xs sm:text-sm text-white/70 font-sans max-w-2xl mx-auto leading-relaxed">
-            Examine declassified documents, verify provenance, cross-examine competing explanations, and navigate the interconnected knowledge network.
+            Examine declassified documents, verify provenance, compare competing theories, and navigate the interconnected knowledge network.
           </p>
         </div>
 

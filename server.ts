@@ -14,8 +14,17 @@ import { relationshipsRoutes } from './src/routes/relationships.js';
 import { eventsRouter } from './src/routes/events.js';
 import { graphRouter } from './src/routes/graph.js';
 
+import { awardReputation } from './src/db/reputation.js';
 import { getDiscussions, createDiscussion, getDiscussionReplies, createReply, voteDiscussion, getDiscussionById, updateDiscussionStatus, getDiscussionEvidence } from './src/db/discussions.js';
 
+import { getUserReputationData } from './src/db/reputation.js';
+import { getUserContributions } from './src/db/contributions.js';
+import { createNotification } from './src/db/notifications.js';
+import searchRoutes from "./src/routes/search.js";
+import { notificationsRouter } from "./src/routes/notifications.js";
+import { followsRouter } from "./src/routes/follows.js";
+import { moderationRouter } from "./src/routes/moderation.js";
+import workspacesRoutes from "./src/routes/workspaces.js";
 dotenv.config();
 
 const app = express();
@@ -29,6 +38,9 @@ app.use('/api/investigation', investigationRoutes);
 app.use('/api/relationships', relationshipsRoutes);
 app.use('/api/events', eventsRouter);
 app.use('/api/graph', graphRouter);
+app.use("/api/search", searchRoutes);
+app.use('/api/workspaces', workspacesRoutes);
+app.use('/api/moderation', moderationRouter);
 
 
 app.get('/api/users', requireAuth, async (req: AuthRequest, res) => {
@@ -64,6 +76,15 @@ app.put('/api/users/me', requireAuth, async (req: AuthRequest, res) => {
     res.json(updated);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+app.get('/api/users/:id/reputation', async (req, res) => {
+  try {
+    const data = await getUserReputationData(req.params.id);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch reputation history' });
   }
 });
 
@@ -108,6 +129,7 @@ app.get('/api/discussions/:id/evidence', async (req, res) => {
 app.post('/api/discussions', requireAuth, async (req: AuthRequest, res) => {
   try {
     const discussion = await createDiscussion({ ...req.body, id: `disc-${Date.now()}`, authorId: req.user!.uid });
+    await awardReputation(req.user!.uid, 'CREATED_DISCUSSION', 10, discussion.id, 'Started a new discussion');
     res.json(discussion);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to create discussion' });
@@ -133,12 +155,27 @@ app.post('/api/discussions/:id/replies', requireAuth, async (req: AuthRequest, r
       return res.status(403).json({ error: 'Discussion is locked' });
     }
 
+    
     const reply = await createReply({ 
       id: `reply-${Date.now()}`,
       discussionId: req.params.id, 
       content: req.body.content,
       authorId: req.user!.uid 
     });
+    
+    // Notify discussion author if it's not their own reply
+    if (disc.authorId !== req.user!.uid) {
+      await createNotification(
+        disc.authorId,
+        'DISCUSSION_REPLY',
+        'New Reply to your Discussion',
+        `${req.dbUser.username || 'An investigator'} replied: "${req.body.content.substring(0, 30)}..."`,
+        disc.id,
+        'DISCUSSION'
+      );
+    }
+
+    await awardReputation(req.user!.uid, 'DISCUSSION_REPLY', 2, reply.id, 'Participated in a discussion');
     res.json(reply);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to create reply' });
@@ -259,82 +296,6 @@ Format your output in clean Markdown with bold bullet points. Maintain a profess
   }
 });
 
-// AI Brief Endpoint
-app.post('/api/ai/brief', requireAuth, async (req: AuthRequest, res: any) => {
-  try {
-    const { entityName, entityType, context } = req.body;
-    const ai = getAi();
-    const prompt = `You are an intelligence analyst for CIPHER FILES.
-Provide a concise, 150-word intelligence brief on the following entity:
-Entity Name: "${entityName}"
-Entity Type: "${entityType}"
-Context: ${context || 'General investigative intelligence'}
-
-If this is a known historical entity, provide a factual summary of their background, known operations, and intelligence significance.
-If this is an unknown or custom entity, synthesize a plausible, professional intelligence profile based on their name and type.
-
-Format your output in clean Markdown with the following headers:
-### Executive Summary
-### Known Affiliations / Indicators
-### Risk Assessment`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-    });
-    res.json({
-      brief: response.text || 'Unable to generate brief.',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('Error in /api/ai/brief:', error);
-    res.status(500).json({
-      error: 'Brief generation failed',
-      details: error?.message || 'Server error',
-    });
-  }
-});
-
-// AI Rabbit Hole Connector Endpoint
-app.post('/api/ai/rabbit-hole-connect', requireAuth, async (req: AuthRequest, res: any) => {
-  try {
-    const { entityA, entityB, context } = req.body;
-    const ai = getAi();
-
-    const prompt = `You are the Rabbit Hole Network Engine for CIPHER FILES.
-Analyze the following entities and identify or synthesize potential intelligence, organizational, or forensic links connecting them:
-- Entity A: "${entityA}"
-- Entity B: "${entityB}"
-Context: ${context || 'General investigative intelligence and historical records'}
-
-If these are known historical entities, provide their real connections. If they are unknown, hypothetical, or part of a local investigation, synthesize a highly plausible intelligence link between them based on standard investigative tropes (e.g. shared shell companies, encrypted communication networks, overlapping travel manifests), but clearly state if the connection is synthesized.
-
-Provide:
-1. "The Connecting Chain": Step-by-step nodes linking Entity A to Entity B (e.g. Entity A ➔ Entity C ➔ Entity B).
-2. "The Nexus Narrative": A concise, engaging 150-word intelligence brief explaining the connection.
-3. "Key Indicators / Documents": 2 references (real or plausible case files) documenting this connection.
-4. "Degree of Separation": (1 to 4 hops).
-5. "Connection Reliability": (Documented Historical Fact / Corroborated Intelligence Link / Speculative Hypothesis / Synthesized Profile).
-
-Format with bold headers and clean Markdown.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-    });
-
-    res.json({
-      connection: response.text || 'No direct pathway located in declassified archives.',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('Error in /api/ai/rabbit-hole-connect:', error);
-    res.status(500).json({
-      error: 'Rabbit Hole synthesis failed',
-      details: error?.message || 'Server error',
-    });
-  }
-});
 
 // AI Declassification / Entity Extraction Tool
 app.post('/api/ai/declassify', requireAuth, async (req: AuthRequest, res: any) => {
@@ -418,7 +379,34 @@ async function start() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  
+app.post('/api/users/me/reputation/reward', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { amount, reason } = req.body;
+    if (!amount || typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+    const result = await awardReputation(req.user!.uid, 'MANUAL_REWARD', amount, undefined, reason);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to award reputation' });
+  }
+});
+
+
+app.get('/api/users/:id/contributions', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const filter = req.query.filter as string | undefined;
+    const data = await getUserContributions(req.params.id, filter, limit);
+    res.json(data);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch contributions' });
+  }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`CIPHER FILES Intelligence Server active on http://0.0.0.0:${PORT}`);
   });
 }

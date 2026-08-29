@@ -20,7 +20,7 @@ eventsRouter.post('/', requireAuth, async (req, res) => {
   }
 });
 
-eventsRouter.get('/:id', requireAuth, async (req, res) => {
+eventsRouter.get('/:id', async (req, res) => {
   try {
     const event = await getEventById(req.params.id);
     if (!event) return res.status(404).json({ error: 'Event not found' });
@@ -49,7 +49,7 @@ eventsRouter.delete('/:id', requireAuth, async (req, res) => {
 });
 
 // Entity specific events
-eventsRouter.get('/entity/:type/:id', requireAuth, async (req, res) => {
+eventsRouter.get('/entity/:type/:id', async (req, res) => {
   try {
     const events = await getEventsForEntity(req.params.type, req.params.id);
     res.json(events);

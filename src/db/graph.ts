@@ -77,6 +77,18 @@ export async function getGraphForCase(caseId: string) {
     }
   }
 
+  // 6. Get Evidence for case
+  const caseEvidenceList = await db.query.evidenceCaseFiles.findMany({
+    where: eq(schema.evidenceCaseFiles.caseFileId, caseId),
+    with: { evidenceItem: true }
+  });
+  for (const ce of caseEvidenceList) {
+    if (ce.evidenceItem) {
+      addNode(`evidence_${ce.evidenceItem.id}`, ce.evidenceItem.title, 'evidence', { verificationStatus: ce.evidenceItem.status });
+      addEdge(`case_files_${caseId}`, `evidence_${ce.evidenceItem.id}`, 'SUPPORTED_BY', ce.evidenceItem.status === 'VERIFIED');
+    }
+  }
+
   // Return formatted structure
   return {
     nodes: Array.from(nodes.values()),
@@ -174,6 +186,24 @@ export async function expandGraphNode(nodeIdStr: string) {
       if (r.event) {
         addNode(`events_${r.event.id}`, r.event.title, 'events');
         addEdge(`events_${r.event.id}`, `locations_${id}`, 'OCCURRED_AT');
+      }
+    }
+  }
+
+  if (entityType === 'evidence') {
+    const ec = await db.query.evidenceCaseFiles.findMany({ where: eq(schema.evidenceCaseFiles.evidenceId, id), with: { caseFile: true } });
+    for (const r of ec) {
+      if (r.caseFile) {
+        addNode(`case_files_${r.caseFile.id}`, r.caseFile.title, 'case_files');
+        addEdge(`case_files_${r.caseFile.id}`, `evidence_${id}`, 'SUPPORTED_BY');
+      }
+    }
+
+    const evEvents = await db.query.eventEvidence.findMany({ where: eq(schema.eventEvidence.evidenceId, id), with: { event: true } });
+    for (const r of evEvents) {
+      if (r.event) {
+        addNode(`events_${r.event.id}`, r.event.title, 'events');
+        addEdge(`events_${r.event.id}`, `evidence_${id}`, 'SUPPORTED_BY');
       }
     }
   }

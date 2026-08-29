@@ -1,3 +1,4 @@
+import { awardReputation } from '../db/reputation.js';
 import { Router, Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
 import * as RelationshipsDB from '../db/relationships.js';
@@ -27,6 +28,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
     }
 
     const rel = await RelationshipsDB.createRelationship(req.body, req.user!.uid);
+    await awardReputation(req.user!.uid, 'FACT_CHECKED', 5, rel.id, 'Mapped a new relationship');
     res.status(201).json(rel);
   } catch (error: any) {
     console.error('Create relationship error:', error);
@@ -34,7 +36,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.get('/entity/:type/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/entity/:type/:id', async (req: AuthRequest, res: Response) => {
   try {
     const rels = await RelationshipsDB.getRelationshipsForEntity(req.params.type, req.params.id);
     res.json(rels);

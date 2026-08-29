@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DiscussionThread, CaseFile, Comment, UserProfile, MediaAttachment } from '../types';
 import { ArchiveEvidence } from '../types';
 import { EvidenceDetailModal } from './EvidenceDetailModal';
-import { Database } from 'lucide-react';
+import { Database, Trash2 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { FirestoreService } from '../services/firestoreService';
 import { UserAvatar } from './UserAvatar';
@@ -52,7 +52,7 @@ interface Props {
   cases: CaseFile[];
   currentUser?: UserProfile | null;
   onOpenCase: (caseId: string) => void;
-  onRewardXp: (amount: number, reason: string) => void;
+  onReputationEarned: (amount: number, reason: string, persist?: boolean) => void;
   initialThreadId?: string | null;
 }
 
@@ -60,7 +60,7 @@ export const DiscussionsView: React.FC<Props> = ({
   cases, 
   currentUser, 
   onOpenCase, 
-  onRewardXp,
+  onReputationEarned,
   initialThreadId = null
 }) => {
   const [discussions, setDiscussions] = useState<DiscussionThread[]>(StorageService.getDiscussions());
@@ -307,7 +307,7 @@ export const DiscussionsView: React.FC<Props> = ({
         commentCount: 0,
         tags: tags
       }, ...prev]);
-      onRewardXp(50, 'Published new research inquiry');
+      onReputationEarned(10, 'Published new research inquiry');
     } catch (err) {
       console.error(err);
     }
@@ -334,7 +334,7 @@ export const DiscussionsView: React.FC<Props> = ({
         upvotes: 0,
         downvotes: 0
       }]);
-      onRewardXp(30, 'Published peer review critique');
+      onReputationEarned(2, 'Published peer review critique');
     } catch (err) {
       console.error(err);
       alert('Unable to post reply. Discussion may be locked.');
@@ -499,8 +499,8 @@ export const DiscussionsView: React.FC<Props> = ({
           )}
 
           {/* Content */}
-          <p className="text-xs sm:text-sm text-gray-200 font-sans leading-relaxed whitespace-pre-wrap">
-            {comment.content}
+          <p className={`text-xs sm:text-sm font-sans leading-relaxed whitespace-pre-wrap ${comment.deletedAt ? 'text-gray-500 italic' : 'text-gray-200'}`}>
+            {comment.deletedAt ? '[This comment was removed by moderation]' : comment.content}
           </p>
 
           {/* Comment Media Attachments (Photos / Videos) */}
@@ -528,6 +528,49 @@ export const DiscussionsView: React.FC<Props> = ({
               <span>Reply to @{comment.authorName}</span>
             </button>
 
+            {(currentUser?.role === 'MODERATOR' || currentUser?.role === 'ADMIN') && (
+              <div className="flex items-center gap-2 ml-auto">
+                {comment.deletedAt ? (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { ApiService } = await import('../services/apiService');
+                        await ApiService.moderateContent('REPLY', comment.id, 'RESTORE');
+                        // Update local state by re-fetching or marking
+                        const res = await ApiService.getReplies(activeThread!.id);
+                        const commentsTree = buildCommentTree(res);
+                        setThreadComments(commentsTree);
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 px-2 py-1 rounded border border-emerald-900/50 transition-colors"
+                  >
+                    <span>Restore</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm('Remove this comment?')) return;
+                      try {
+                        const { ApiService } = await import('../services/apiService');
+                        await ApiService.moderateContent('REPLY', comment.id, 'REMOVE');
+                        // Re-fetch
+                        const res = await ApiService.getReplies(activeThread!.id);
+                        const commentsTree = buildCommentTree(res);
+                        setThreadComments(commentsTree);
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-mono text-red-400 hover:text-red-300 bg-red-950/30 px-2 py-1 rounded border border-red-900/50 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove</span>
+                  </button>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-4 bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800">
               <button
                 onClick={() => handleVoteReply(comment.id, 'up')}
@@ -665,8 +708,8 @@ export const DiscussionsView: React.FC<Props> = ({
             </div>
 
             {/* Opening Argument Content */}
-            <div className="p-4 rounded-lg bg-[#05070D] border border-gray-800 text-sm text-gray-200 font-sans leading-relaxed whitespace-pre-wrap">
-              {activeThread.initialComment}
+            <div className={`p-4 rounded-lg bg-[#05070D] border border-gray-800 text-sm font-sans leading-relaxed whitespace-pre-wrap ${activeThread.deletedAt ? 'text-gray-500 italic' : 'text-gray-200'}`}>
+              {activeThread.deletedAt ? '[This thread was removed by moderation]' : activeThread.initialComment}
             </div>
 
             
@@ -747,10 +790,10 @@ export const DiscussionsView: React.FC<Props> = ({
                         e.stopPropagation();
                         const { ApiService } = await import('../services/apiService');
                         if (activeThread.locked) {
-                          await ApiService.unlockDiscussion(activeThread.id);
+                          await ApiService.moderateContent('DISCUSSION', activeThread.id, 'UNLOCK');
                           setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, locked: false } : d));
                         } else {
-                          await ApiService.lockDiscussion(activeThread.id);
+                          await ApiService.moderateContent('DISCUSSION', activeThread.id, 'LOCK');
                           setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, locked: true } : d));
                         }
                       }}
@@ -763,10 +806,10 @@ export const DiscussionsView: React.FC<Props> = ({
                         e.stopPropagation();
                         const { ApiService } = await import('../services/apiService');
                         if (activeThread.deletedAt) {
-                          await ApiService.restoreDiscussion(activeThread.id);
+                          await ApiService.moderateContent('DISCUSSION', activeThread.id, 'RESTORE');
                           setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, deletedAt: null } : d));
                         } else {
-                          await ApiService.deleteDiscussion(activeThread.id);
+                          await ApiService.moderateContent('DISCUSSION', activeThread.id, 'REMOVE');
                           setDiscussions(prev => prev.map(d => d.id === activeThread.id ? { ...d, deletedAt: new Date().toISOString() } : d));
                           setActiveThreadId(null);
                         }
@@ -1012,7 +1055,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>PUBLISH PEER REVIEW (+30 XP)</span>
+                    <span>PUBLISH PEER REVIEW (+2 REP)</span>
                   </button>
                 </div>
               </form>
@@ -1036,12 +1079,8 @@ export const DiscussionsView: React.FC<Props> = ({
                   PRIMARY INVESTIGATIVE DEBATE & AUDIT FLOOR
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight">
-                RESEARCH FORUMS & INQUIRIES
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 font-sans max-w-2xl">
-                Rigorous, citation-backed primary evidence analysis, archival declassifications, and methodology debates. Attach photos, scans, and video exhibits.
-              </p>
+              <h2 className="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight">COMMUNITY FORUMS & THEORIES</h2>
+              <p className="text-xs sm:text-sm text-gray-400 font-sans max-w-2xl">Investigator discussions, unverified theories, and community analysis. Content in these forums does not represent official Cipher Files verified data.</p>
             </div>
 
             <button
@@ -1313,8 +1352,8 @@ export const DiscussionsView: React.FC<Props> = ({
                       </h3>
 
                       {/* Excerpt */}
-                      <p className="text-xs text-gray-300 font-sans line-clamp-2 leading-relaxed mb-3">
-                        "{disc.initialComment}"
+                      <p className={`text-xs font-sans line-clamp-2 leading-relaxed mb-3 ${disc.deletedAt ? 'text-gray-600 italic' : 'text-gray-300'}`}>
+                        {disc.deletedAt ? '[This thread was removed by moderation]' : `"${disc.initialComment}"`}
                       </p>
 
                       {/* Attached Thumbnail preview if present */}
@@ -1616,7 +1655,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   disabled={isUploadingNewMedia || !newTitle.trim() || !newInitialComment.trim()}
                   className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold shadow-[0_0_15px_rgba(0,229,255,0.3)] cursor-pointer"
                 >
-                  Publish Inquiry (+50 XP)
+                  Publish Inquiry (+10 REP)
                 </button>
               </div>
             </form>

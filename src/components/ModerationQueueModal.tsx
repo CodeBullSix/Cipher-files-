@@ -19,11 +19,11 @@ import { sound } from '../utils/audio';
 
 interface Props {
   onClose: () => void;
-  onRewardXp: (amount: number, reason: string) => void;
+  onReputationEarned: (amount: number, reason: string, persist?: boolean) => void;
   onRefreshCases: () => void;
 }
 
-export const ModerationQueueModal: React.FC<Props> = ({ onClose, onRewardXp, onRefreshCases }) => {
+export const ModerationQueueModal: React.FC<Props> = ({ onClose, onReputationEarned, onRefreshCases }) => {
   const [submissions, setSubmissions] = useState<TheorySubmission[]>(StorageService.getSubmissions());
   const [selectedSub, setSelectedSub] = useState<TheorySubmission | null>(submissions[0] || null);
   const [assignedRating, setAssignedRating] = useState<EvidenceRating>('UNVERIFIED');
@@ -32,7 +32,7 @@ export const ModerationQueueModal: React.FC<Props> = ({ onClose, onRewardXp, onR
   const handleApprovePublish = (sub: TheorySubmission) => {
     StorageService.updateSubmissionStatus(sub.id, 'PUBLISHED', reviewNotes, assignedRating);
     setSubmissions(StorageService.getSubmissions());
-    onRewardXp(80, `Approved & declassified community investigation: ${sub.title}`);
+    onReputationEarned(80, `Approved & declassified community investigation: ${sub.title}`, true);
     onRefreshCases();
     sound.playStamp();
   };

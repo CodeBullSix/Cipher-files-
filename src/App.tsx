@@ -13,23 +13,32 @@ import { FirestoreService } from './services/firestoreService';
 import { StorageService } from './services/storage';
 import { INITIAL_SUPPORTERS, INITIAL_CASES } from './data/initialData';
 import { Navbar } from './components/Navbar';
+
+import { AuthModal } from './components/AuthModal';
 import { EditorialHome } from './components/EditorialHome';
 import { HeroSearch } from './components/HeroSearch';
 import { CaseCard } from './components/CaseCard';
 import { normalizeStatus } from './components/StatusBadge';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { EntityProfileModal } from './components/EntityProfileModal';
+import { EvidenceDetailModal } from './components/EvidenceDetailModal';
+import { EventDetailModal } from './components/EventDetailModal';
 import { RabbitHoleGraph } from './components/RabbitHoleGraph';
 import { EvidenceArchiveView } from './components/EvidenceArchiveView';
 import { DiscussionsView } from './components/DiscussionsView';
 import { SupportersView } from './components/SupportersView';
+import { ModerationDashboardView } from './components/ModerationDashboardView';
 import { SubmitTheoryModal } from './components/SubmitTheoryModal';
 import { DirectMessageModal } from './components/DirectMessageModal';
 import { AdminConsoleModal } from './components/AdminConsoleModal';
 import { VipClearanceModal } from './components/VipClearanceModal';
 import { InvestigatorProfileModal } from './components/InvestigatorProfileModal';
+import { InvestigationWorkspaceView } from './components/InvestigationWorkspaceView';
 import { QuickSearchModal } from './components/QuickSearchModal';
+import { NotificationsPanel } from './components/NotificationsPanel';
 import { sound } from './utils/audio';
+import { calculateLevel } from './lib/levels';
+import { ApiService } from './services/apiService';
 import { 
   FolderArchive, 
   Sparkles, 
@@ -42,12 +51,61 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+
+const EmailVerificationBanner = ({ profile }: { profile: UserProfile }) => {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (profile.emailVerified) return null;
+
+  return (
+    <div className="w-full bg-amber-950/80 border-b border-amber-500/50 px-4 py-2 flex flex-col sm:flex-row items-center justify-between text-xs font-sans text-amber-200 z-50">
+      <div className="flex items-center gap-2 mb-2 sm:mb-0">
+        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+        <span>Your account email ({profile.email}) is unverified. Some features may be restricted.</span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {error && <span className="text-rose-400 mr-2">{error}</span>}
+        {sent && <span className="text-emerald-400 mr-2">Email sent!</span>}
+        <button 
+          disabled={sending || sent}
+          onClick={async () => {
+            setSending(true);
+            setError(null);
+            try {
+              await AuthService.resendVerificationEmail();
+              setSent(true);
+            } catch (err: any) {
+              setError('Failed to send.');
+            } finally {
+              setSending(false);
+            }
+          }}
+          className="px-3 py-1 bg-amber-900/50 hover:bg-amber-800 text-amber-300 rounded border border-amber-500/50 uppercase font-bold tracking-widest transition-colors disabled:opacity-50"
+        >
+          {sending ? 'SENDING...' : 'RESEND VERIFICATION'}
+        </button>
+        <button 
+          onClick={async () => {
+            await AuthService.reloadUser();
+          }}
+          className="px-3 py-1 bg-[#05070A] hover:bg-[#0A0D14] text-gray-300 rounded border border-gray-700 uppercase font-bold tracking-widest transition-colors"
+        >
+          REFRESH
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   // Auth & Profile State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   
   // Navigation & View State
-  const [currentTab, setCurrentTab] = useState<'cases' | 'graph' | 'discussions' | 'supporters'>('cases');
+  const [currentTab, setCurrentTab] = useState<'cases' | 'graph' | 'discussions' | 'supporters' | 'evidence' | 'workspaces' | 'moderation'>('cases');
+  const [activeDiscussionId, setActiveDiscussionId] = useState<string | undefined>();
   const [cases, setCases] = useState<CaseFile[]>(StorageService.getCases());
   const [legacyProfile, setLegacyProfile] = useState(StorageService.getProfile());
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>(StorageService.getGraphNodes());
@@ -61,11 +119,15 @@ export default function App() {
   // Modals
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isDirectMessageModalOpen, setIsDirectMessageModalOpen] = useState<boolean>(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0);
   const [directMessageTarget, setDirectMessageTarget] = useState<UserProfile | null>(null);
   const [isAdminConsoleOpen, setIsAdminConsoleOpen] = useState<boolean>(false);
   const [isVipModalOpen, setIsVipModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [selectedInvestigatorProfile, setSelectedInvestigatorProfile] = useState<any | null>(null);
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState<boolean>(false);
 
   // Sound Mute State
@@ -75,6 +137,9 @@ export default function App() {
   const [graphTargetEntity, setGraphTargetEntity] = useState<string | null>(null);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedEntityType, setSelectedEntityType] = useState<string>('people');
+  const [globalEvidenceId, setGlobalEvidenceId] = useState<string | null>(null);
+  const [globalEventId, setGlobalEventId] = useState<string | null>(null);
+  const [globalEvidence, setGlobalEvidence] = useState<any>(null);
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -147,25 +212,9 @@ import('./services/apiService').then(({ ApiService }) => {
     }, 4000);
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     sound.click();
-    try {
-      const profile = await AuthService.loginWithGoogle();
-      if (profile) {
-        showToast(`Welcome Operative ${profile.callsign} [${profile.role.toUpperCase()}]`);
-        sound.blip();
-      }
-    } catch (e: any) {
-      if (
-        e?.code !== 'auth/popup-closed-by-user' &&
-        e?.code !== 'auth/cancelled-popup-request' &&
-        e?.code !== 'auth/user-cancelled' &&
-        !e?.message?.includes('popup-closed-by-user')
-      ) {
-        console.error('Login error:', e);
-        showToast('Login attempt failed.');
-      }
-    }
+    setIsAuthModalOpen(true);
   };
 
   const handleLogout = async () => {
@@ -178,14 +227,43 @@ import('./services/apiService').then(({ ApiService }) => {
     }
   };
 
-  const handleRewardXp = (amount: number, reason: string) => {
-    const res = StorageService.addXp(amount, reason);
-    setLegacyProfile(StorageService.getProfile());
-    if (res.leveledUp && res.newRank) {
-      showToast(`🎖️ PROMOTION! Security Clearance Elevated to ${res.newRank.replace('_', ' ')}`);
-      sound.blip();
-    } else {
-      showToast(`+${amount} XP: ${reason}`);
+  const handleReputationEarned = (amount: number, reason: string, persist: boolean = false) => {
+    const updateProfileAndCheckLevel = (newTotal: number) => {
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        const oldLevel = calculateLevel(prev.reputation || 0).level;
+        const newLevelInfo = calculateLevel(newTotal);
+        if (newLevelInfo.level > oldLevel) {
+          showToast(`🎖️ PROMOTION! Security Clearance Elevated to ${newLevelInfo.title.toUpperCase()}`);
+          sound.blip();
+        } else {
+          showToast(`+${amount} REP: ${reason}`);
+        }
+        return { ...prev, reputation: newTotal };
+      });
+    };
+
+    if (persist && currentUser) {
+      import('./services/apiService').then(({ ApiService }) => {
+        ApiService.rewardManualReputation(amount, reason).then(() => {
+          ApiService.getUserReputation(currentUser.uid).then((data: any) => {
+            if (typeof data.totalReputation === 'number') {
+              updateProfileAndCheckLevel(data.totalReputation);
+            }
+          });
+        });
+      });
+      return;
+    }
+    
+    if (currentUser) {
+      import('./services/apiService').then(({ ApiService }) => {
+        ApiService.getUserReputation(currentUser.uid).then((data: any) => {
+          if (typeof data.totalReputation === 'number') {
+            updateProfileAndCheckLevel(data.totalReputation);
+          }
+        }).catch(console.error);
+      });
     }
   };
 
@@ -195,10 +273,51 @@ import('./services/apiService').then(({ ApiService }) => {
     setLegacyProfile(StorageService.getProfile());
   };
 
-  const handleOpenEntity = (type: string, id: string) => {
-    setSelectedEntityType(type);
-    setSelectedEntityId(id);
+  const handleOpenEvidence = async (id: string) => {
+    try {
+      setGlobalEvidenceId(id);
+      const data = await ApiService.getEvidenceById(id);
+      setGlobalEvidence(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  const handleOpenEvent = (id: string) => {
+    setGlobalEventId(id);
+  };
+
+  
+  const handleOpenDiscussion = (id: string) => {
+    setActiveDiscussionId(id);
+    setCurrentTab('discussions');
+  };
+
+  
+  const handleOpenEntity = (type: string, id: string) => {
+    if (type === 'events' || type === 'EVENT') {
+      handleOpenEvent(id);
+    } else if (type === 'evidence' || type === 'EVIDENCE') {
+      handleOpenEvidence(id);
+    } else if (type === 'profile' || type === 'PROFILE') {
+      if (id === 'me' || id === currentUser?.uid) {
+        setSelectedInvestigatorProfile(legacyProfile);
+        setIsProfileModalOpen(true);
+      } else {
+        ApiService.getUsers().then(users => {
+          const user = users.find((u: any) => u.uid === id);
+          if (user) {
+            setSelectedInvestigatorProfile(user);
+            setIsProfileModalOpen(true);
+          }
+        }).catch(console.error);
+      }
+    } else {
+      setSelectedEntityType(type.toLowerCase());
+      setSelectedEntityId(id);
+    }
+  };
+
 
   const handleOpenCase = (caseId: string) => {
     setActiveCaseId(caseId);
@@ -229,7 +348,7 @@ import('./services/apiService').then(({ ApiService }) => {
     StorageService.pushTrail(chosen.title, chosen.id, 'CASE');
     setLegacyProfile(StorageService.getProfile());
     showToast(`🌀 Entered rabbit hole: ${chosen.title} (${chosen.caseNumber})`);
-    handleRewardXp(25, `Fell down rabbit hole: ${chosen.title}`);
+    handleReputationEarned(25, `Fell down rabbit hole: ${chosen.title}`, true);
   };
 
   const handleJumpGraphEntity = (entityName: string) => {
@@ -253,7 +372,7 @@ import('./services/apiService').then(({ ApiService }) => {
       tier: 'FREE',
       rank: 'RESEARCHER',
       clearanceLevel: 'LEVEL 2 // CLASSIFIED FIELD',
-      xp: 100,
+      reputation: 100,
       contributionsCount: 1,
       debunkCount: 0,
       sourcesDiscovered: 0,
@@ -304,6 +423,8 @@ import('./services/apiService').then(({ ApiService }) => {
       {/* Main Navbar */}
       <Navbar
         currentTab={currentTab}
+        unreadNotificationCount={unreadNotificationCount}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
         onSelectTab={(tab) => setCurrentTab(tab)}
         onOpenSubmitModal={() => {
           if (!currentUser) {
@@ -312,7 +433,7 @@ import('./services/apiService').then(({ ApiService }) => {
             setIsSubmitModalOpen(true);
           }
         }}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenProfileModal={() => { setSelectedInvestigatorProfile(legacyProfile); setIsProfileModalOpen(true); }}
         onOpenDirectMessages={() => {
           if (!currentUser) {
             handleLogin();
@@ -337,6 +458,21 @@ import('./services/apiService').then(({ ApiService }) => {
       />
 
       {/* Main Content Area */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onSuccess={() => {
+          setIsAuthModalOpen(false);
+          const profile = AuthService.getCurrentProfile();
+          if (profile) {
+            showToast(`Welcome Operative ${profile.callsign} [${profile.role.toUpperCase()}]`);
+            sound.blip();
+          }
+        }} 
+      />
+
+      {currentUser && !currentUser.emailVerified && <EmailVerificationBanner profile={currentUser} />}
+
       <main className="flex-1 flex flex-col">
         {/* VIEW 1: EDITORIAL INTELLIGENCE ARCHIVE */}
         {currentTab === 'cases' && (
@@ -349,6 +485,8 @@ import('./services/apiService').then(({ ApiService }) => {
             selectedStatus={selectedStatus}
             onSelectStatus={setSelectedStatus}
             onOpenCase={handleOpenCase}
+          onOpenEntity={handleOpenEntity}
+          onOpenDiscussion={handleOpenDiscussion}
             onLaunchGraph={handleJumpGraphEntity}
             onRandomRabbitHole={handleRandomRabbitHole}
             savedCaseIds={legacyProfile.savedCaseIds}
@@ -391,8 +529,8 @@ import('./services/apiService').then(({ ApiService }) => {
 
             <RabbitHoleGraph
               onOpenCase={handleOpenCase}
-              onRewardXp={handleRewardXp}
-              onOpenEntity={handleOpenEntity}
+          onReputationEarned={handleReputationEarned}
+                onOpenEntity={handleOpenEntity}
               initialSelectedEntity={graphTargetEntity}
               onRandomRabbitHole={handleRandomRabbitHole}
             />
@@ -401,23 +539,46 @@ import('./services/apiService').then(({ ApiService }) => {
 
         {/* VIEW 4: RESEARCH FORUMS & PEER REVIEW DEBATES */}
         {currentTab === 'discussions' && (
-          <DiscussionsView
+          <DiscussionsView initialThreadId={activeDiscussionId}
             cases={cases}
-            currentUser={currentUser || (legacyProfile as any)}
+            currentUser={currentUser}
             onOpenCase={handleOpenCase}
-            onRewardXp={handleRewardXp}
+          onOpenEntity={handleOpenEntity}
+            onReputationEarned={handleReputationEarned}
           />
         )}
       
-        {/* VIEW 5: EVIDENCE ARCHIVE */}
-        {currentTab === 'evidence' && (
-          <EvidenceArchiveView
-            currentUser={currentUser || (legacyProfile as any)}
+        
+        {/* VIEW 6: WORKSPACES */}
+        {currentTab === 'workspaces' && (
+          <InvestigationWorkspaceView
+            currentUser={currentUser}
             onOpenCase={handleOpenCase}
-            onRewardXp={handleRewardXp}
+              onOpenEntity={handleOpenEntity}
+            onOpenEvidence={handleOpenEvidence}
+            onOpenEvent={handleOpenEvent}
           />
         )}
 
+        {/* VIEW 5: EVIDENCE ARCHIVE */}
+        {currentTab === 'evidence' && (
+          <EvidenceArchiveView
+            currentUser={currentUser}
+            onOpenCase={handleOpenCase}
+          onReputationEarned={handleReputationEarned}
+                onOpenEntity={handleOpenEntity}
+            onOpenEvent={handleOpenEvent}
+          />
+        )}
+
+
+        {/* VIEW 7: MODERATION DASHBOARD */}
+        {currentTab === 'moderation' && (
+          <ModerationDashboardView 
+            currentUser={currentUser} 
+            onOpenEntity={handleOpenEntity}
+          />
+        )}
       </main>
 
       {/* Bottom Tactical Status Bar */}
@@ -444,6 +605,28 @@ import('./services/apiService').then(({ ApiService }) => {
           type={selectedEntityType as any}
           currentUser={currentUser}
           caseFileId={activeCaseId || undefined}
+          onOpenCase={handleOpenCase}
+          onOpenEntity={handleOpenEntity}
+          onOpenEvent={handleOpenEvent}
+        />
+      )}
+
+      {/* Global Evidence Modal */}
+      {globalEvidenceId && globalEvidence && (
+        <EvidenceDetailModal
+          evidence={globalEvidence}
+          currentUser={currentUser}
+          onClose={() => { setGlobalEvidenceId(null); setGlobalEvidence(null); }}
+          onUpdate={(updated) => setGlobalEvidence(updated)}
+        />
+      )}
+      
+      {/* Global Event Modal */}
+      {globalEventId && (
+        <EventDetailModal
+          eventId={globalEventId}
+          onClose={() => setGlobalEventId(null)}
+          onOpenEvidence={handleOpenEvidence}
         />
       )}
 
@@ -455,11 +638,14 @@ import('./services/apiService').then(({ ApiService }) => {
           onJumpCase={handleOpenCase}
           isBookmarked={legacyProfile.savedCaseIds.includes(activeCaseFile.id)}
           onToggleBookmark={(id) => handleToggleBookmark(id)}
-          onRewardXp={handleRewardXp}
+          onReputationEarned={handleReputationEarned}
           onJumpGraphEntity={handleJumpGraphEntity}
           currentUser={currentUser}
           onOpenDirectMessageWithUser={handleOpenDirectMessageWithAuthor}
           onRandomRabbitHole={handleRandomRabbitHole}
+          onOpenEntity={handleOpenEntity}
+          onOpenEvent={handleOpenEvent}
+          onOpenEvidence={handleOpenEvidence}
         />
       )}
 
@@ -470,7 +656,8 @@ import('./services/apiService').then(({ ApiService }) => {
           onClose={() => setIsSubmitModalOpen(false)}
           onSubmitted={() => {
             setIsSubmitModalOpen(false);
-            showToast('✅ Conspiracy theory published to live community archive (+150 XP)');
+            handleReputationEarned(150, 'Published formal case dossier', true);
+            showToast('✅ Conspiracy theory published to live community archive');
           }}
         />
       )}
@@ -511,10 +698,11 @@ import('./services/apiService').then(({ ApiService }) => {
       {/* 6. Investigator Profile & Customizer Modal */}
       {isProfileModalOpen && (
         <InvestigatorProfileModal
-          profile={legacyProfile}
+          profile={selectedInvestigatorProfile || legacyProfile}
           currentUser={currentUser}
           onClose={() => setIsProfileModalOpen(false)}
           onOpenCase={handleOpenCase}
+          onOpenEntity={handleOpenEntity}
           onProfileUpdated={(updated) => {
             if (currentUser) {
               setCurrentUser(updated);
@@ -535,10 +723,10 @@ import('./services/apiService').then(({ ApiService }) => {
       <QuickSearchModal
         isOpen={isQuickSearchOpen}
         onClose={() => setIsQuickSearchOpen(false)}
-        cases={cases}
-        nodes={graphNodes}
         onOpenCase={handleOpenCase}
-        onJumpGraphEntity={handleJumpGraphEntity}
+          onOpenEntity={handleOpenEntity}
+        onOpenEvidence={handleOpenEvidence}
+        onOpenEvent={handleOpenEvent}
         onRandomRabbitHole={handleRandomRabbitHole}
       />
     </div>

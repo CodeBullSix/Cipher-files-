@@ -5,7 +5,7 @@ import { AuthService } from '../services/authService';
 import { TACTICAL_AVATAR_PRESETS, SPECIALIZATION_OPTIONS } from '../data/avatarPresets';
 import { processImageUpload } from '../utils/imageUpload';
 import { 
-  User, 
+  User, Users, 
   Shield, 
   Award, 
   Bookmark, 
@@ -28,16 +28,20 @@ import {
   Save,
   RotateCcw,
   Zap,
-  Radio,
+  Radio, Activity,
   FileText
 } from 'lucide-react';
 import { sound } from '../utils/audio';
+import { ApiService } from '../services/apiService';
+import { calculateLevel, LevelInfo } from '../lib/levels';
 
 interface Props {
   profile: UserProfile;
   currentUser?: UserProfile | null;
   onClose: () => void;
   onOpenCase: (caseId: string) => void;
+  onOpenEntity?: (type: string, id: string) => void;
+  onOpenDiscussion?: (id: string) => void;
   onProfileUpdated?: (updated: UserProfile) => void;
   onResetFactory?: () => void;
 }
@@ -47,14 +51,20 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
   currentUser,
   onClose,
   onOpenCase,
+  onOpenEntity,
+  onOpenDiscussion,
   onProfileUpdated,
   onResetFactory
 }) => {
   // Use either currentUser or fallback profile
-  const activeProfile = currentUser || profile;
+  const activeProfile = profile;
+  const isOwnProfile = currentUser?.uid === profile.uid;
 
   // Active View Tab
-  const [activeTab, setActiveTab] = useState<'dossier' | 'customize'>('dossier');
+  const [activeTab, setActiveTab] = useState<'dossier' | 'contributions' | 'customize' | 'followers' | 'following'>('dossier');
+  const [contributions, setContributions] = useState<any[]>([]);
+  const [contributionFilter, setContributionFilter] = useState<string>('ALL');
+  const [loadingContributions, setLoadingContributions] = useState<boolean>(false);
 
   // Form State for Customization
   const [displayName, setDisplayName] = useState<string>(activeProfile.displayName || '');
@@ -78,6 +88,130 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
   );
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(activeProfile.avatarUrl);
   const [avatarPreset, setAvatarPreset] = useState<string | undefined>(activeProfile.avatarPreset || 'archival-seal');
+
+  const [reputationEvents, setReputationEvents] = useState<any[]>([]);
+  const [totalReputation, setTotalReputation] = useState<number>(0);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [loadingReputation, setLoadingReputation] = useState<boolean>(true);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
+  const [loadingFollows, setLoadingFollows] = useState<boolean>(false);
+  const levelInfo = calculateLevel(totalReputation);
+
+  
+
+  useEffect(() => {
+    let mounted = true;
+    ApiService.getFollowCounts(activeProfile.uid).then((data: any) => {
+      if (mounted && data) {
+        setFollowersCount(data.followersCount || 0);
+        setFollowingCount(data.followingCount || 0);
+      }
+    }).catch(console.error);
+
+    if (isOwnProfile || !currentUser) return;
+    
+    ApiService.getFollowStatus(activeProfile.uid).then((data: any) => {
+      if (mounted && data && data.isFollowing !== undefined) {
+        setIsFollowing(data.isFollowing);
+      }
+    }).catch(console.error);
+
+    return () => { mounted = false; };
+  }, [activeProfile.uid, currentUser, isOwnProfile]);
+
+  useEffect(() => {
+    if (activeTab === 'followers') {
+      setLoadingFollows(true);
+      ApiService.getFollowers(activeProfile.uid).then((data: any) => {
+        setFollowers(data);
+      }).catch(console.error).finally(() => setLoadingFollows(false));
+    } else if (activeTab === 'following') {
+      setLoadingFollows(true);
+      ApiService.getFollowing(activeProfile.uid).then((data: any) => {
+        setFollowing(data);
+      }).catch(console.error).finally(() => setLoadingFollows(false));
+    }
+  }, [activeTab, activeProfile.uid]);
+
+  const handleToggleFollow = async () => {
+    if (!currentUser) return;
+    sound.click();
+    
+    // Optimistic UI (with revert if failed is optional, but we can do it)
+    const originalFollowing = isFollowing;
+    setIsFollowing(!isFollowing);
+    if (!isFollowing) {
+      setFollowersCount(prev => prev + 1);
+    } else {
+      setFollowersCount(prev => prev - 1);
+    }
+
+    try {
+      if (originalFollowing) {
+        await ApiService.unfollowUser(activeProfile.uid);
+      } else {
+        await ApiService.followUser(activeProfile.uid);
+      }
+    } catch (e) {
+      console.error(e);
+      // Revert on fail
+      setIsFollowing(originalFollowing);
+      if (originalFollowing) {
+        setFollowersCount(prev => prev + 1);
+      } else {
+        setFollowersCount(prev => prev - 1);
+      }
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingContributions(true);
+    ApiService.getUserContributions(activeProfile.uid, contributionFilter)
+      .then((data: any) => {
+        if (mounted && Array.isArray(data)) {
+          setContributions(data);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        if (mounted) setLoadingContributions(false);
+      });
+      
+    return () => { mounted = false; };
+  }, [activeProfile.uid, contributionFilter]);
+
+  useEffect(() => {
+    let mounted = true;
+    ApiService.getUserReputation(activeProfile.uid)
+      .then((data: any) => {
+        if (mounted && data) {
+          if (Array.isArray(data.events)) {
+            setReputationEvents(data.events);
+          }
+          if (Array.isArray(data.achievements)) {
+            setAchievements(data.achievements);
+          }
+          if (typeof data.totalReputation === 'number') {
+            setTotalReputation(data.totalReputation);
+          } else if (Array.isArray(data)) {
+            // Fallback for older API response before we updated backend
+            setReputationEvents(data);
+            setTotalReputation(data.reduce((sum, ev) => sum + (ev.points || 0), 0));
+          }
+          setLoadingReputation(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load reputation', err);
+        if (mounted) setLoadingReputation(false);
+      });
+    return () => { mounted = false; };
+  }, [activeProfile.uid]);
   const [imageUrlInput, setImageUrlInput] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
@@ -101,7 +235,6 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
 
   const trail = StorageService.getTrail();
   const savedCases = StorageService.getCases().filter(c => (activeProfile.savedCaseIds || []).includes(c.id));
-  const xpProgress = Math.min(100, Math.round((activeProfile.xp / (activeProfile.nextRankXp || 500)) * 100));
 
   // Handle Photo File Upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,12 +425,42 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 <span>{activeProfile.clearanceLevel || 'LEVEL 2 // CLASSIFIED FIELD'}</span>
                 <span className="text-slate-600">•</span>
                 <span className="text-amber-400/90 font-bold">Callsign: {activeProfile.callsign || activeProfile.codename || 'CIPHER-OPERATIVE'}</span>
+              
               </p>
+              <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-slate-400">
+                <span><strong className="text-cyan-400">{followersCount}</strong> Followers</span>
+                <span><strong className="text-cyan-400">{followingCount}</strong> Following</span>
+              </div>
             </div>
+
           </div>
 
+          
           {/* Mode Switcher Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+            {!isOwnProfile && currentUser && (
+              <button
+                onClick={handleToggleFollow}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all border ${
+                  isFollowing 
+                    ? 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:border-slate-500' 
+                    : 'bg-cyan-500 hover:bg-cyan-400 border-cyan-400 text-black shadow-[0_0_12px_rgba(34,211,238,0.3)]'
+                }`}
+              >
+                {isFollowing ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Follow</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
               <button
                 onClick={() => { setActiveTab('dossier'); sound.click(); }}
@@ -323,6 +486,40 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Customize Profile</span>
               </button>
+
+              <button
+                onClick={() => { setActiveTab('contributions'); sound.click(); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
+                  activeTab === 'contributions' || activeTab === 'followers' || activeTab === 'following'
+                    ? `${currentTheme.bg} ${currentTheme.text} border ${currentTheme.border} shadow-sm`
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Contributions</span>
+              </button>
+            <button
+              onClick={() => { setActiveTab('followers'); sound.click(); }}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
+                activeTab === 'followers' 
+                  ? 'bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.15)] text-cyan-300' 
+                  : 'bg-[#0A0E1A] border-gray-800 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/30'
+              }`}
+            >
+              <Users className={`w-5 h-5 ${activeTab === 'followers' ? 'text-cyan-400' : ''}`} />
+              <span className="text-[10px] font-mono font-bold tracking-wider">Followers</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('following'); sound.click(); }}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
+                activeTab === 'following' 
+                  ? 'bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.15)] text-cyan-300' 
+                  : 'bg-[#0A0E1A] border-gray-800 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/30'
+              }`}
+            >
+              <Users className={`w-5 h-5 ${activeTab === 'following' ? 'text-cyan-400' : ''}`} />
+              <span className="text-[10px] font-mono font-bold tracking-wider">Following</span>
+            </button>
             </div>
 
             <button onClick={onClose} className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800">
@@ -330,6 +527,114 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             </button>
           </div>
         </div>
+
+        
+        {/* TAB 3: CONTRIBUTION HISTORY */}
+        {activeTab === 'contributions' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Filters */}
+            <div className="flex gap-2 pb-2 border-b border-gray-800 overflow-x-auto scrollbar-hide">
+              {['ALL', 'CASES', 'ENTITIES', 'EVIDENCE', 'DISCUSSIONS'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => { setContributionFilter(f); sound.click(); }}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold tracking-wider transition-colors ${
+                    contributionFilter === f
+                      ? `${currentTheme.bg} ${currentTheme.text} border ${currentTheme.border}`
+                      : 'text-slate-500 hover:text-white border border-transparent'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
+            {/* Contributions List */}
+            <div className="space-y-3">
+              {loadingContributions ? (
+                <div className="py-8 text-center text-xs font-mono text-slate-500 flex flex-col items-center">
+                  <RefreshCw className="w-5 h-5 animate-spin mb-2" />
+                  ACCESSING DECLASSIFIED ARCHIVES...
+                </div>
+              ) : contributions.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-slate-500 flex flex-col items-center bg-[#05070e] rounded-xl border border-slate-800">
+                  <History className="w-8 h-8 mb-3 opacity-30" />
+                  NO CONTRIBUTIONS IN THIS CATEGORY
+                </div>
+              ) : (
+                contributions.map((c: any) => (
+                  <div key={c.id} className="p-3 rounded-lg border border-slate-800/80 bg-[#080b12] hover:bg-[#0a0e17] transition-colors group flex items-start justify-between">
+                    <div className="space-y-2 max-w-[80%]">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 ${currentTheme.text}`}>
+                          {c.type.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          {new Date(c.createdAt).toLocaleDateString()}
+                        </span>
+                        {c.status && c.status !== 'ACTIVE' && (
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                            c.status === 'VERIFIED' ? 'text-green-400 bg-green-400/10 border-green-400/20' :
+                            c.status === 'DISPUTED' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' :
+                            'text-red-400 bg-red-400/10 border-red-400/20'
+                          }`}>
+                            {c.status}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs font-semibold text-white line-clamp-2">
+                        {c.title}
+                      </p>
+                      
+                      {c.navigationPath && (
+                        <div className="pt-1">
+                          {c.recordType === 'PERSON' && (
+                            <button onClick={() => { if(onOpenEntity) { onOpenEntity('person', c.recordId); onClose(); } }} className={`text-[10px] font-mono ${currentTheme.text} hover:underline flex items-center gap-1`}>
+                              <ArrowRight className="w-3 h-3" /> View Target Profile
+                            </button>
+                          )}
+                          {c.recordType === 'ORGANISATION' && (
+                            <button onClick={() => { if(onOpenEntity) { onOpenEntity('organisation', c.recordId); onClose(); } }} className={`text-[10px] font-mono ${currentTheme.text} hover:underline flex items-center gap-1`}>
+                              <ArrowRight className="w-3 h-3" /> View Organisation
+                            </button>
+                          )}
+                          {c.recordType === 'LOCATION' && (
+                            <button onClick={() => { if(onOpenEntity) { onOpenEntity('location', c.recordId); onClose(); } }} className={`text-[10px] font-mono ${currentTheme.text} hover:underline flex items-center gap-1`}>
+                              <ArrowRight className="w-3 h-3" /> View Location
+                            </button>
+                          )}
+                          {c.recordType === 'EVIDENCE' && (
+                            <button onClick={() => { if(onOpenEntity) { onOpenEntity('evidence', c.recordId); onClose(); } }} className={`text-[10px] font-mono ${currentTheme.text} hover:underline flex items-center gap-1`}>
+                              <ArrowRight className="w-3 h-3" /> View Evidence
+                            </button>
+                          )}
+                          {c.recordType === 'DISCUSSION' && (
+                            <button onClick={() => { if(onOpenDiscussion) onOpenDiscussion(c.recordId); onClose(); }} className={`text-[10px] font-mono ${currentTheme.text} hover:underline flex items-center gap-1`}>
+                              <ArrowRight className="w-3 h-3" /> View Discussion
+                            </button>
+                          )}
+                          {c.recordType === 'CASE' && (
+                            <button onClick={() => { if(onOpenCase) { onOpenCase(c.recordId); onClose(); } }} className={`text-[10px] font-mono ${currentTheme.text} hover:underline flex items-center gap-1`}>
+                              <ArrowRight className="w-3 h-3" /> View Case File
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-right">
+                      <span className={`text-xs font-mono font-bold ${currentTheme.text}`}>
+                        +{c.points} REP
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
 
         {/* TAB 1: CUSTOMIZE PROFILE VIEW */}
         {activeTab === 'customize' && (
@@ -700,6 +1005,73 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
           </div>
         )}
 
+
+        {/* TAB: FOLLOWERS */}
+        {activeTab === 'followers' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {loadingFollows ? (
+              <div className="p-10 flex justify-center"><Zap className="w-6 h-6 text-cyan-500 animate-spin" /></div>
+            ) : followers.length === 0 ? (
+              <div className="p-10 border border-dashed border-gray-800 rounded-xl text-center flex flex-col items-center">
+                <Users className="w-8 h-8 text-gray-700 mb-3" />
+                <h4 className="text-sm font-bold text-white font-mono">NO FOLLOWERS YET</h4>
+                <p className="text-xs text-gray-500 max-w-sm mt-1">This investigator hasn't gained any followers.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {followers.map(f => (
+                  <div key={f.uid} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800 bg-[#0A0E1A] hover:border-cyan-500/50 cursor-pointer transition-colors" onClick={() => onOpenEntity && onOpenEntity('profile', f.uid)}>
+                    {f.avatar ? (
+                      <img src={f.avatar} className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sm font-bold text-cyan-400">
+                        {f.displayName?.[0] || 'U'}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-sm font-bold text-white leading-tight">{f.displayName}</div>
+                      <div className="text-[10px] font-mono text-cyan-400">Level {f.level || 1} • {f.reputation || 0} REP</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: FOLLOWING */}
+        {activeTab === 'following' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {loadingFollows ? (
+              <div className="p-10 flex justify-center"><Zap className="w-6 h-6 text-cyan-500 animate-spin" /></div>
+            ) : following.length === 0 ? (
+              <div className="p-10 border border-dashed border-gray-800 rounded-xl text-center flex flex-col items-center">
+                <Users className="w-8 h-8 text-gray-700 mb-3" />
+                <h4 className="text-sm font-bold text-white font-mono">NOT FOLLOWING ANY INVESTIGATORS YET</h4>
+                <p className="text-xs text-gray-500 max-w-sm mt-1">This investigator hasn't followed anyone.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {following.map(f => (
+                  <div key={f.uid} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800 bg-[#0A0E1A] hover:border-cyan-500/50 cursor-pointer transition-colors" onClick={() => onOpenEntity && onOpenEntity('profile', f.uid)}>
+                    {f.avatar ? (
+                      <img src={f.avatar} className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sm font-bold text-cyan-400">
+                        {f.displayName?.[0] || 'U'}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-sm font-bold text-white leading-tight">{f.displayName}</div>
+                      <div className="text-[10px] font-mono text-cyan-400">Level {f.level || 1} • {f.reputation || 0} REP</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* TAB 2: TACTICAL DOSSIER OVERVIEW */}
         {activeTab === 'dossier' && (
           <div className="space-y-6 animate-in fade-in duration-200">
@@ -742,59 +1114,131 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* XP Progression Card */}
+            {/* Investigator Level Card */}
             <div className="p-5 rounded-xl border border-cyan-500/30 bg-[#080b12]">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <span className="text-xs font-mono font-bold text-white uppercase">
-                    INVESTIGATIVE CREDIBILITY XP PROGRESSION
+                  <Award className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    INVESTIGATOR LEVEL
                   </span>
                 </div>
-                <span className="text-xs font-mono font-bold text-cyan-400">
-                  {activeProfile.xp} / {activeProfile.nextRankXp || 500} XP ({xpProgress}%)
-                </span>
+                <div className="text-[10px] text-slate-400 font-mono uppercase hidden sm:block">
+                  Community participation level
+                </div>
               </div>
-
-              <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800 mb-2">
-                <div 
-                  style={{ width: `${xpProgress}%` }} 
-                  className={`h-full bg-gradient-to-r ${currentTheme.gradient} rounded-full shadow-[0_0_12px_rgba(0,240,255,0.6)] transition-all duration-500`}
-                ></div>
+              
+              <div className="flex items-end justify-between mb-2">
+                <div>
+                  <div className="text-2xl font-bold text-cyan-400 uppercase tracking-wide">
+                    LEVEL {levelInfo.level}
+                  </div>
+                  <div className="text-xs font-mono text-white mt-1 uppercase">
+                    {levelInfo.title}
+                  </div>
+                </div>
+                {levelInfo.maxRep !== null && (
+                  <div className="text-right">
+                    <div className="text-xs font-mono text-cyan-400 font-bold">
+                      {totalReputation} / {levelInfo.maxRep + 1} REP
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase">
+                      {levelInfo.repToNext} REP TO NEXT LEVEL
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                <span>CURRENT RANK: {activeProfile.rank ? activeProfile.rank.replace('_', ' ') : 'RESEARCHER'}</span>
-                <span>CONTRIBUTIONS: {activeProfile.contributionsCount || 0} DOSSIERS VERIFIED</span>
-              </div>
+              
+              {levelInfo.maxRep !== null ? (
+                <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800 mb-2">
+                  <div 
+                    style={{ width: `${levelInfo.progressPercent}%` }} 
+                    className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full shadow-[0_0_12px_rgba(0,240,255,0.6)] transition-all duration-500"
+                  ></div>
+                </div>
+              ) : (
+                <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800 mb-2">
+                  <div className="h-full w-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full opacity-50"></div>
+                </div>
+              )}
             </div>
 
+            {/* Community Reputation Card */}
+            <div className="p-5 rounded-xl border border-emerald-500/30 bg-[#080b12]">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    REPUTATION
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 font-mono uppercase hidden sm:block">
+                  Community contribution score
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between bg-[#0a0e17] p-3 rounded-lg border border-slate-800 mb-4">
+                <span className="text-xs font-mono text-slate-400 uppercase">Total Lifetime Reputation</span>
+                <span className="text-emerald-400 font-bold text-lg">{loadingReputation ? '...' : totalReputation}</span>
+              </div>
+              
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                {loadingReputation ? (
+                   <div className="text-xs font-mono text-slate-500 py-4 text-center border-t border-slate-800/50 mt-4">
+                     SYNCING CONTRIBUTION RECORDS...
+                   </div>
+                ) : reputationEvents.length > 0 ? (
+                  reputationEvents.map((ev, i) => (
+                    <div key={ev.id || i} className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800/80 flex items-start gap-3">
+                      <div className="text-emerald-400 font-bold text-xs mt-0.5">{ev.points > 0 ? `+${ev.points}` : ev.points}</div>
+                      <div className="flex-1">
+                        <div className="text-[11px] font-mono font-bold text-slate-300">
+                          {ev.reason || ev.type.replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-[9px] text-slate-500 font-mono mt-0.5">
+                          {new Date(ev.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs font-mono text-slate-500 py-4 text-center border border-dashed border-slate-800/50 rounded-lg mt-4">
+                     NO CONTRIBUTIONS YET
+                   </div>
+                )}
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800/80 text-[10px] text-slate-500 font-mono italic leading-relaxed">
+                Reputation represents community contributions. It does not reflect investigative certainty, verification status, or factual accuracy.
+              </div>
+            </div>
             {/* 3-Column Info Matrix: Badges, Saved Binders, Investigative Trail */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Unlocked Badges */}
+              {/* Achievements */}
               <div className="rounded-xl border border-slate-800 bg-[#07090f] p-4">
                 <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 mb-3 uppercase">
                   <Award className="w-4 h-4" />
-                  <span>UNLOCKED BADGES ({activeProfile.badges ? activeProfile.badges.length : 0})</span>
+                  <span>ACHIEVEMENTS ({achievements.length})</span>
                 </div>
-                <div className="space-y-2.5 max-h-56 overflow-y-auto">
-                  {(activeProfile.badges && activeProfile.badges.length > 0) ? (
-                    activeProfile.badges.map((b) => (
-                      <div key={b.id} className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800/80 flex items-start gap-2.5">
-                        <span className="text-lg">{b.icon}</span>
-                        <div>
-                          <div className="text-xs font-mono font-bold text-white">{b.name}</div>
-                          <div className="text-[10px] text-slate-400">{b.description}</div>
+                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                  {loadingReputation ? (
+                    <div className="text-[11px] font-mono text-slate-500 text-center py-6">
+                      SYNCING ACHIEVEMENTS...
+                    </div>
+                  ) : achievements.length > 0 ? (
+                    achievements.map((a: any) => (
+                      <div key={a.id} className="p-2.5 rounded-lg bg-[#0a0e17] border border-amber-900/30 flex items-start gap-2.5 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-8 h-8 bg-amber-500/10 blur-xl rounded-full"></div>
+                        <span className="text-xl relative z-10">{a.definition?.icon || '🏆'}</span>
+                        <div className="relative z-10">
+                          <div className="text-xs font-mono font-bold text-amber-500">{a.definition?.name || a.achievementId}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">{a.definition?.description}</div>
+                          <div className="text-[8px] text-slate-500 mt-1 uppercase">EARNED {new Date(a.earnedAt).toLocaleDateString()}</div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800/80 flex items-start gap-2.5">
-                      <span className="text-lg">🛡️</span>
-                      <div>
-                        <div className="text-xs font-mono font-bold text-white">Field Clearance</div>
-                        <div className="text-[10px] text-slate-400">Activated declassified investigator terminal.</div>
-                      </div>
+                    <div className="text-[11px] font-mono text-slate-500 text-center py-6 border border-dashed border-slate-800/50 rounded-lg">
+                      No achievements unlocked yet.
                     </div>
                   )}
                 </div>

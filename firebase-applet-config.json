@@ -1,11 +1,11 @@
 {
-  "projectId": "noble-lamp-6skkt",
-  "appId": "1:340783445887:web:4555e523847ad851708c4a",
-  "apiKey": "AIzaSyDh5d-wn0OIBcQ0A_4VxvkozTG2JRFRQOs",
-  "authDomain": "noble-lamp-6skkt.firebaseapp.com",
-  "storageBucket": "noble-lamp-6skkt.firebasestorage.app",
-  "messagingSenderId": "340783445887",
-  "measurementId": "",
-  "oAuthClientId": "340783445887-cc0jes8l31ng0ebcu5ai3aam25usevgt.apps.googleusercontent.com",
+  "projectId": "cipher-files",
+  "appId": "1:477560291045:web:70b8141ba6d90a86dfde0c",
+  "apiKey": "AIzaSyD_F_2y3VgOacbMCqBQyUwSXe2q0InIizs",
+  "authDomain": "cipher-files.firebaseapp.com",
+  "storageBucket": "cipher-files.firebasestorage.app",
+  "messagingSenderId": "477560291045",
+  "measurementId": "G-BS1947C71C",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
