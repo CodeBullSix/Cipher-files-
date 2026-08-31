@@ -1,3 +1,10 @@
+@theme {
+  --color-cipher-base: #050505;
+  --color-cipher-surface: #090C16;
+  --color-cipher-elevated: #0D1220;
+  --color-cipher-panel: #05070E;
+  --color-cipher-accent: #00E5FF;
+}
 @import "tailwindcss";
 
 @layer base {
@@ -89,4 +96,33 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 229, 255, 0.6);
+}
+
+.scrollbar-none, .no-scrollbar, .hide-scrollbar {
+  -ms-overflow-style: none; 
+  scrollbar-width: none; 
+}
+.scrollbar-none::-webkit-scrollbar, 
+.no-scrollbar::-webkit-scrollbar, 
+.hide-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none; 
+}
+
+@layer base {
+  :root {
+    --color-surface-base: #050505;
+    --color-surface-card: #090C16;
+    --color-surface-raised: #0D1220;
+    --color-surface-elevated: #05070E;
+    --color-accent-cyan: #00E5FF;
+    --color-accent-hover: #33EBFF;
+  }
+}
+
+@layer base {
+  *:focus-visible {
+    outline: 2px solid var(--color-cipher-accent);
+    outline-offset: 2px;
+  }
 }

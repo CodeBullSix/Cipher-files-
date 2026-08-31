@@ -36,7 +36,7 @@ export const EventDetailModal: React.FC<Props> = ({ eventId, onClose, onOpenEvid
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg my-auto rounded-2xl border border-purple-500/40 bg-[#080B14] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200 font-sans">
+      <div className="relative w-full max-w-lg my-auto rounded-2xl border border-purple-500/40 bg-cipher-surface shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200 font-sans">
         <button onClick={() => { sound.click(); onClose(); }} className="absolute right-4 top-4 text-white/50 hover:text-white transition-colors">
           <X className="w-5 h-5" />
         </button>
@@ -91,7 +91,7 @@ export const EventDetailModal: React.FC<Props> = ({ eventId, onClose, onOpenEvid
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Folder className="w-3.5 h-3.5" /> Associated Case Files</h3>
                     <div className="flex flex-wrap gap-2">
                       {event.caseFiles.map((c: any) => (
-                        <span key={c.id} className="text-xs font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2 py-1 rounded">
+                        <span key={c.id} className="text-xs font-mono bg-cipher-accent/10 text-cipher-accent border border-cipher-accent/30 px-2 py-1 rounded">
                           {c.title}
                         </span>
                       ))}
@@ -143,11 +143,11 @@ export const EventDetailModal: React.FC<Props> = ({ eventId, onClose, onOpenEvid
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Associated Evidence</h3>
                     <div className="space-y-2">
                       {event.evidenceList.map((ev: any) => (
-                        <div key={ev.id} onClick={() => onOpenEvidence?.(ev.id)} className="bg-black/40 border border-white/5 p-3 rounded hover:border-cyan-500/30 cursor-pointer transition-colors">
-                          <h4 className="text-sm font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">{ev.title}</h4>
+                        <div key={ev.id} onClick={() => onOpenEvidence?.(ev.id)} className="bg-black/40 border border-white/5 p-3 rounded hover:border-cipher-accent/30 cursor-pointer transition-colors">
+                          <h4 className="text-sm font-bold text-white mb-1 group-hover:text-cipher-accent transition-colors">{ev.title}</h4>
                           <p className="text-xs text-gray-500 line-clamp-1">{ev.description}</p>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-mono text-cyan-500">{ev.stance}</span>
+                            <span className="text-[10px] font-mono text-cipher-accent">{ev.stance}</span>
                             <span className="text-[10px] text-gray-600 border border-gray-800 px-1 rounded">{ev.type}</span>
                           </div>
                         </div>

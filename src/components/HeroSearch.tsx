@@ -59,20 +59,20 @@ export const HeroSearch: React.FC<Props> = ({
   ];
 
   return (
-    <div className="relative w-full border-b border-white/10 bg-[#050505] pt-8 pb-10 px-4 sm:px-6 overflow-hidden">
+    <div className="relative w-full border-b border-white/10 bg-cipher-base pt-8 pb-10 px-4 sm:px-6 overflow-hidden">
       {/* Subtle Carbon Mesh Pattern */}
       <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#00E5FF_1px,transparent_1px)] [background-size:24px_24px]"></div>
       
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Header Title */}
         <div className="text-center max-w-3xl mx-auto mb-7">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-[10px] mono tracking-[0.2em] mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-cipher-accent/10 border border-cipher-accent/30 text-cipher-accent text-[10px] mono tracking-[0.2em] mb-4">
             <Binary className="w-3.5 h-3.5" />
             <span>PRIMARY EVIDENCE • CROWDSOURCED FORENSICS • UNREDACTED TRUTH</span>
           </div>
 
           <h2 className="text-2xl sm:text-4xl font-bold mono tracking-[0.2em] text-white uppercase mb-2">
-            NOTHING IS <span className="text-[#00E5FF] cyan-glow">EVERYTHING.</span>
+            NOTHING IS <span className="text-cipher-accent cyan-glow">EVERYTHING.</span>
           </h2>
 
           <p className="text-xs sm:text-sm text-white/70 font-sans max-w-2xl mx-auto leading-relaxed">
@@ -82,15 +82,15 @@ export const HeroSearch: React.FC<Props> = ({
 
         {/* Master Investigative Search Input */}
         <div className="max-w-3xl mx-auto mb-6">
-          <div className="relative flex flex-col sm:flex-row items-stretch bg-[#111111] border border-[#00E5FF]/30 shadow-[0_0_20px_rgba(0,229,255,0.1)]">
+          <div className="relative flex flex-col sm:flex-row items-stretch bg-cipher-base border border-cipher-accent/30 shadow-[0_0_20px_rgba(0,229,255,0.1)]">
             <div className="flex items-center flex-1 px-4 py-3 gap-3">
-              <span className="text-[#00E5FF] opacity-70 mono text-xs font-bold">SEARCH:</span>
+              <span className="text-cipher-accent opacity-70 mono text-xs font-bold">SEARCH:</span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Search theories, people (Oswald, Dulles), agencies (CIA, KGB), locations..."
-                className="w-full bg-transparent text-[#00E5FF] font-mono text-xs sm:text-sm placeholder-white/40 focus:outline-none"
+                className="w-full bg-transparent text-cipher-accent font-mono text-xs sm:text-sm placeholder-white/40 focus:outline-none"
               />
               {searchQuery && (
                 <button
@@ -103,18 +103,18 @@ export const HeroSearch: React.FC<Props> = ({
             </div>
 
             {/* Filter */}
-            <div className="border-t sm:border-t-0 sm:border-l border-white/10 bg-[#0a0a0a] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
-              <Filter className="w-3.5 h-3.5 text-[#00E5FF]" />
+            <div className="border-t sm:border-t-0 sm:border-l border-white/10 bg-cipher-base px-3 py-2 flex items-center justify-between gap-2 shrink-0">
+              <Filter className="w-3.5 h-3.5 text-cipher-accent" />
               <select
                 value={selectedStatus}
                 onChange={(e) => {
                   onSelectStatus(e.target.value as EvidenceRating | 'ALL');
                   sound.playClick(650);
                 }}
-                className="bg-transparent text-[11px] mono text-[#00E5FF] focus:outline-none cursor-pointer uppercase"
+                className="bg-transparent text-[11px] mono text-cipher-accent focus:outline-none cursor-pointer uppercase"
               >
                 {statuses.map(s => (
-                  <option key={s.id} value={s.id} className="bg-[#0D0D0D] text-white">
+                  <option key={s.id} value={s.id} className="bg-cipher-elevated text-white">
                     {s.label}
                   </option>
                 ))}
@@ -136,8 +136,8 @@ export const HeroSearch: React.FC<Props> = ({
                 }}
                 className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs mono transition-all shrink-0 border ${
                   isSelected
-                    ? 'bg-[#00E5FF]/15 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_10px_rgba(0,229,255,0.2)] font-bold'
-                    : 'bg-[#0D0D0D] text-white/60 border-white/5 hover:border-white/20 hover:text-white'
+                    ? 'bg-cipher-accent/15 text-cipher-accent border-cipher-accent shadow-[0_0_10px_rgba(0,229,255,0.2)] font-bold'
+                    : 'bg-cipher-elevated text-white/60 border-white/5 hover:border-white/20 hover:text-white'
                 }`}
               >
                 <span>{cat.icon}</span>
@@ -153,7 +153,7 @@ export const HeroSearch: React.FC<Props> = ({
           {dailyCase && (
             <div 
               onClick={() => { onOpenCase(dailyCase.id); sound.playClick(800); }}
-              className="lg:col-span-8 cursor-pointer group relative border border-white/10 bg-[#0D0D0D] p-5 hover:border-[#00E5FF]/60 transition-all shadow-lg flex flex-col justify-between"
+              className="lg:col-span-8 cursor-pointer group relative border border-white/10 bg-cipher-elevated p-5 hover:border-cipher-accent/60 transition-all shadow-lg flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
@@ -161,14 +161,14 @@ export const HeroSearch: React.FC<Props> = ({
                     <span className="classified-stamp text-[9px] mono">
                       TOP SECRET
                     </span>
-                    <span className="text-xs mono text-[#00E5FF] font-bold tracking-widest">
+                    <span className="text-xs mono text-cipher-accent font-bold tracking-widest">
                       {dailyCase.caseNumber} // ACTIVE_CASE
                     </span>
                   </div>
                   <StatusBadge status={dailyCase.status} size="sm" />
                 </div>
 
-                <h3 className="text-base sm:text-lg font-bold mono text-white group-hover:text-[#00E5FF] transition-colors mb-2">
+                <h3 className="text-base sm:text-lg font-bold mono text-white group-hover:text-cipher-accent transition-colors mb-2">
                   {dailyCase.title}
                 </h3>
                 <p className="text-xs text-white/70 font-sans line-clamp-2 mb-4 leading-relaxed">
@@ -180,9 +180,9 @@ export const HeroSearch: React.FC<Props> = ({
                 <div className="flex items-center gap-4">
                   <span>EXHIBITS: <strong className="text-white">{dailyCase.evidenceList.length}</strong></span>
                   <span>DEBATES: <strong className="text-white">{dailyCase.commentCount}</strong></span>
-                  <span>NODES: <strong className="text-[#00E5FF]">{dailyCase.connectedCaseIds.length}</strong></span>
+                  <span>NODES: <strong className="text-cipher-accent">{dailyCase.connectedCaseIds.length}</strong></span>
                 </div>
-                <div className="flex items-center gap-1 text-[#00E5FF] group-hover:translate-x-1 transition-transform font-bold">
+                <div className="flex items-center gap-1 text-cipher-accent group-hover:translate-x-1 transition-transform font-bold">
                   <span>EXAMINE DOSSIER</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
@@ -191,10 +191,10 @@ export const HeroSearch: React.FC<Props> = ({
           )}
 
           {/* System Telemetry Stats Block */}
-          <div className="lg:col-span-4 bg-[#0D0D0D] border border-white/10 p-5 flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-cipher-elevated border border-white/10 p-5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
-                <h3 className="text-[10px] mono text-[#00E5FF] tracking-[0.2em] font-bold">
+                <h3 className="text-[10px] mono text-cipher-accent tracking-[0.2em] font-bold">
                   SYSTEM_STATS
                 </h3>
                 <span className="text-[10px] mono text-green-400 flex items-center gap-1">
@@ -206,10 +206,10 @@ export const HeroSearch: React.FC<Props> = ({
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-[10px] mono text-white/60">GLOBAL_ANALYSTS</span>
-                  <span className="text-xs mono text-[#00E5FF] font-bold">4,821</span>
+                  <span className="text-xs mono text-cipher-accent font-bold">4,821</span>
                 </div>
                 <div className="w-full bg-white/5 h-1">
-                  <div className="bg-[#00E5FF] h-full w-[72%] shadow-[0_0_8px_#00E5FF]"></div>
+                  <div className="bg-cipher-accent h-full w-[72%] shadow-[0_0_8px_#00E5FF]"></div>
                 </div>
 
                 <div className="flex justify-between items-center text-xs">
@@ -224,14 +224,14 @@ export const HeroSearch: React.FC<Props> = ({
 
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-[10px] mono text-white/60">SERVER_LATENCY</span>
-                  <span className="text-xs mono text-[#00E5FF]">14ms</span>
+                  <span className="text-xs mono text-cipher-accent">14ms</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => { onRandomRabbitHole(); sound.playWarp(); }}
-              className="mt-4 w-full py-2 bg-[#00E5FF]/10 border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] text-xs mono font-bold hover:bg-[#00E5FF]/20 shadow-[0_0_10px_rgba(0,229,255,0.15)] transition-all flex items-center justify-center gap-2"
+              className="mt-4 w-full py-2 bg-cipher-accent/10 border border-cipher-accent/40 hover:border-cipher-accent text-cipher-accent text-xs mono font-bold hover:bg-cipher-accent-hover/20 shadow-[0_0_10px_rgba(0,229,255,0.15)] transition-all flex items-center justify-center gap-2"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>DIVE RANDOM RABBIT HOLE</span>

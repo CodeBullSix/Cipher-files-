@@ -22,6 +22,20 @@
       "when": 1787785034053,
       "tag": "0002_lethal_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788161455634,
+      "tag": "0003_spooky_payback",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788183555434,
+      "tag": "0004_community_submissions",
+      "breakpoints": true
     }
   ]
 }

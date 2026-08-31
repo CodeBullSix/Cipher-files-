@@ -1,17 +1,20 @@
 const fs = require('fs');
-const file = 'server.ts';
-let content = fs.readFileSync(file, 'utf8');
+let content = fs.readFileSync('server.ts', 'utf8');
 
-if (!content.includes('import { moderationRouter }')) {
-  content = content.replace(
-    "import { followsRouter } from \"./src/routes/follows.js\";",
-    "import { followsRouter } from \"./src/routes/follows.js\";\nimport { moderationRouter } from \"./src/routes/moderation.js\";"
-  );
-  
-  content = content.replace(
-    "app.use('/api/workspaces', workspacesRoutes);",
-    "app.use('/api/workspaces', workspacesRoutes);\napp.use('/api/moderation', moderationRouter);"
-  );
-  
-  fs.writeFileSync(file, content);
-}
+content = content.replace(
+  `app.get('/api/cases', async (req, res) => {
+  try {
+    const cases = await getCases();
+    res.json(cases);
+  } catch (error: any) {`,
+  `app.get('/api/cases', async (req, res) => {
+  try {
+    const query = req.query.query as string;
+    const category = req.query.category as string;
+    const status = req.query.status as string;
+    const cases = await getCases(query, category, status);
+    res.json(cases);
+  } catch (error: any) {`
+);
+
+fs.writeFileSync('server.ts', content);

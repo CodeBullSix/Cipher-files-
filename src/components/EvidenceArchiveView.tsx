@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import React, { useState, useEffect } from 'react';
 import { Database, Search, Filter, Plus, ShieldCheck, AlertTriangle, ShieldAlert, FileText, Download } from 'lucide-react';
 import { ApiService } from '../services/apiService';
@@ -53,7 +54,7 @@ const [page, setPage] = useState(1);
       case 'VERIFIED': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
       case 'DISPUTED': return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
       case 'REJECTED': return 'text-red-400 bg-red-400/10 border-red-400/20';
-      case 'UNDER_REVIEW': return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
+      case 'UNDER_REVIEW': return 'text-cipher-accent bg-cipher-accent/10 border-cyan-400/20';
       default: return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
     }
   };
@@ -72,14 +73,14 @@ const [page, setPage] = useState(1);
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-800">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2 tracking-wider">
-            <Database className="w-6 h-6 text-cyan-400" />
+            <Database className="w-6 h-6 text-cipher-accent" />
             EVIDENCE ARCHIVE
           </h2>
           <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">Global Repository of Source Material</p>
         </div>
         
         {currentUser && (
-          <button onClick={() => setIsSubmitModalOpen(true)} className="px-4 py-2 bg-cyan-950/40 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-900/60 rounded-lg flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors">
+          <button onClick={() => setIsSubmitModalOpen(true)} className="px-4 py-2 bg-cyan-950/40 border border-cipher-accent/40 text-cipher-accent hover:bg-cyan-900/60 rounded-lg flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors">
             <Plus className="w-4 h-4" />
             Submit Evidence
           </button>
@@ -91,10 +92,10 @@ const [page, setPage] = useState(1);
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="text"
-            placeholder="Search documents, transcripts, and records..."
+            placeholder="Search documents, transcripts, and records..." aria-label="Search documents, transcripts, and records..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-[#090D1A] border border-gray-800 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50"
+            className="w-full pl-10 pr-4 py-2.5 bg-cipher-surface border border-gray-800 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cipher-accent/50"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -102,7 +103,7 @@ const [page, setPage] = useState(1);
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 bg-[#090D1A] border border-gray-800 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500/50 appearance-none min-w-[160px]"
+            className="px-4 py-2.5 bg-cipher-surface border border-gray-800 rounded-lg text-sm text-white focus:outline-none focus:border-cipher-accent/50 appearance-none min-w-[160px]"
           >
             <option value="ALL">All Status</option>
             <option value="VERIFIED">Verified Only</option>
@@ -114,13 +115,13 @@ const [page, setPage] = useState(1);
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-cyan-400/50 text-sm font-bold uppercase tracking-widest animate-pulse">
+        <div className="text-center py-12 text-cipher-accent/50 text-sm font-bold uppercase tracking-widest animate-pulse">
           Decrypting Archive...
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {evidenceItems.map(item => (
-            <div key={item.id} onClick={() => setSelectedEvidence(item)} className="bg-[#090D1A] border border-gray-800 rounded-xl p-5 hover:border-cyan-500/30 transition-colors flex flex-col h-full cursor-pointer group relative overflow-hidden">
+            <div key={item.id} onClick={() => setSelectedEvidence(item)} className="bg-cipher-surface border border-gray-800 rounded-xl p-5 hover:border-cipher-accent/30 transition-colors flex flex-col h-full cursor-pointer group relative overflow-hidden">
               <div className="absolute top-0 right-0 p-2 opacity-5">
                 <FileText className="w-24 h-24" />
               </div>
@@ -133,7 +134,7 @@ const [page, setPage] = useState(1);
                 <span className="text-[10px] text-gray-500">{item.type}</span>
               </div>
               
-              <h3 className="text-sm font-bold text-white mb-2 leading-tight group-hover:text-cyan-400 transition-colors relative z-10">{item.title}</h3>
+              <h3 className="text-sm font-bold text-white mb-2 leading-tight group-hover:text-cipher-accent transition-colors relative z-10">{item.title}</h3>
               <p className="text-xs text-gray-400 line-clamp-3 mb-4 flex-1 relative z-10">
                 {item.description}
               </p>
@@ -142,17 +143,19 @@ const [page, setPage] = useState(1);
                 <div className="text-[10px] text-gray-500">
                   Sub: {item.submitter?.displayName || 'Unknown'}
                 </div>
-                <div className="text-[10px] font-bold text-cyan-500">
+                <div className="text-[10px] font-bold text-cipher-accent">
                   {item.stance}
                 </div>
               </div>
             </div>
           ))}
           {evidenceItems.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center border border-dashed border-gray-800 rounded-xl bg-[#090D1A]">
-              <Database className="w-12 h-12 text-gray-600 mb-4" />
-              <h3 className="text-white font-mono font-bold text-sm mb-2 uppercase">NO EVIDENCE RECORDS FOUND</h3>
-              <p className="text-gray-500 font-sans text-xs">No documentation or primary evidence matches the current filters.</p>
+            <div className="col-span-full">
+              <EmptyState
+                icon={Database}
+                title="NO EVIDENCE RECORDS FOUND"
+                message="No documentation or primary evidence matches the current filters."
+              />
             </div>
           )}
         </div>

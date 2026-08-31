@@ -98,15 +98,15 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#090D1A] border border-cyan-900/50 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-cipher-surface border border-cyan-900/50 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/50">
           <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-            {type === 'people' && <User className="w-5 h-5 text-cyan-400" />}
+            {type === 'people' && <User className="w-5 h-5 text-cipher-accent" />}
             {type === 'organisations' && <Building className="w-5 h-5 text-amber-400" />}
             {type === 'locations' && <MapPin className="w-5 h-5 text-emerald-400" />}
             {getTitle()}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button aria-label="Close" onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -120,13 +120,13 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
           
           <form id="entity-form" onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-mono text-gray-400 mb-1">Primary Name <span className="text-cyan-400">*</span></label>
+              <label className="block text-xs font-mono text-gray-400 mb-1">Primary Name <span className="text-cipher-accent">*</span></label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cipher-accent/50"
                 placeholder={`e.g. ${type === 'people' ? 'John Doe' : type === 'organisations' ? 'Acme Corp' : 'Facility X'}`}
               />
             </div>
@@ -138,7 +138,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
                   type="text"
                   value={formData.aliases}
                   onChange={e => setFormData({...formData, aliases: e.target.value})}
-                  className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cyan-500/50"
+                  className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cipher-accent/50"
                   placeholder="Comma separated..."
                 />
               </div>
@@ -153,7 +153,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
                   type="text"
                   value={formData.typeOrLocationType}
                   onChange={e => setFormData({...formData, typeOrLocationType: e.target.value})}
-                  className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cyan-500/50"
+                  className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cipher-accent/50"
                   placeholder={type === 'organisations' ? 'e.g. Government, PMC, NGO' : 'e.g. Military Base, Office, City'}
                 />
               </div>
@@ -167,7 +167,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
                     type="text"
                     value={formData.country}
                     onChange={e => setFormData({...formData, country: e.target.value})}
-                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cyan-500/50"
+                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cipher-accent/50"
                   />
                 </div>
                 <div>
@@ -176,7 +176,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
                     type="text"
                     value={formData.coordinates}
                     onChange={e => setFormData({...formData, coordinates: e.target.value})}
-                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-white font-mono focus:outline-none focus:border-cyan-500/50"
+                    className="w-full bg-black border border-gray-800 rounded p-2.5 text-white font-mono focus:outline-none focus:border-cipher-accent/50"
                     placeholder="Lat, Lng"
                   />
                 </div>
@@ -190,7 +190,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
                   type="url"
                   value={formData.imageUrl}
                   onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-                  className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cyan-500/50"
+                  className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cipher-accent/50"
                   placeholder="https://..."
                 />
               </div>
@@ -202,7 +202,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
                 rows={5}
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
-                className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cyan-500/50 resize-y"
+                className="w-full bg-black border border-gray-800 rounded p-2.5 text-white focus:outline-none focus:border-cipher-accent/50 resize-y"
                 placeholder="Background, known activities, context..."
               />
             </div>
@@ -212,7 +212,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
               <select
                 value={formData.verificationStatus}
                 onChange={e => setFormData({...formData, verificationStatus: e.target.value})}
-                className="w-full bg-black border border-gray-800 rounded p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50 appearance-none"
+                className="w-full bg-black border border-gray-800 rounded p-2.5 text-sm text-white focus:outline-none focus:border-cipher-accent/50 appearance-none"
               >
                 <option value="UNVERIFIED">Unverified / Suspected</option>
                 <option value="VERIFIED">Verified / Confirmed</option>
@@ -237,7 +237,7 @@ export const EntityModal: React.FC<Props> = ({ isOpen, onClose, entity, type, ca
             type="submit"
             form="entity-form"
             disabled={saving}
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 bg-cyan-600 hover:bg-cipher-accent-hover text-white rounded font-bold text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Record'}

@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, primaryKey, uuid, text, varchar, timestamp, integer, boolean, pgEnum, unique, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, primaryKey, index, uuid, text, varchar, timestamp, integer, boolean, pgEnum, unique, jsonb } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['USER', 'CONTRIBUTOR', 'MODERATOR', 'ADMIN']);
 export const caseStatusEnum = pgEnum('case_status', ['CONFIRMED', 'DOCUMENTED', 'DISPUTED', 'UNVERIFIED', 'DEBUNKED', 'UNKNOWN']);
@@ -18,6 +18,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
+
 });
 
 
@@ -41,6 +42,9 @@ export const caseFiles = pgTable('case_files', {
   speculations: jsonb('speculations'),
   timeline: jsonb('timeline'),
   featured: boolean('featured').default(false).notNull(),
+  featuredOrder: integer('featured_order'),
+  editorialCollection: text('editorial_collection'),
+  editorialDescription: text('editorial_description'),
 
   createdBy: text('created_by').references(() => users.uid).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -58,7 +62,6 @@ export const discussions = pgTable('discussions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
-  deletedAt: timestamp('deleted_at'),
 });
 
 export const discussionReplies = pgTable('discussion_replies', {
@@ -69,7 +72,6 @@ export const discussionReplies = pgTable('discussion_replies', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
-  deletedAt: timestamp('deleted_at'),
 });
 
 export const discussionVotes = pgTable('discussion_votes', {
@@ -79,7 +81,7 @@ export const discussionVotes = pgTable('discussion_votes', {
   value: integer('value').notNull(), // 1 or -1
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
-  unique('unique_vote').on(t.discussionId, t.authorId)
+  // unique('unique_vote').on(t.discussionId, t.authorId)
 ]);
 
 export const reputationEvents = pgTable('reputation_events', {
@@ -91,7 +93,7 @@ export const reputationEvents = pgTable('reputation_events', {
   reason: text('reason'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
-  unique('unique_user_rep_event').on(t.userId, t.type, t.relatedRecordId)
+  // unique('unique_user_rep_event').on(t.userId, t.type, t.relatedRecordId)
 ]);
 
 // Relations
@@ -172,6 +174,7 @@ export const evidenceItems = pgTable('evidence_items', {
   type: evidenceTypeEnum('type').notNull(),
   stance: evidenceStanceEnum('stance').notNull(),
   status: evidenceStatusEnum('status').default('UNVERIFIED').notNull(),
+  assigneeId: text('assignee_id').references(() => users.uid, { onDelete: 'set null' }),
   sourceId: text('source_id').references(() => sources.id),
   documentId: text('document_id').references(() => documents.id),
   submittedById: text('submitted_by_id').references(() => users.uid).notNull(),
@@ -181,21 +184,20 @@ export const evidenceItems = pgTable('evidence_items', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
-  deletedAt: timestamp('deleted_at'),
 });
 
 export const evidenceCaseFiles = pgTable('evidence_case_files', {
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
 }, (t) => [
-  unique('unique_evidence_case').on(t.evidenceId, t.caseFileId)
+  // unique('unique_evidence_case').on(t.evidenceId, t.caseFileId)
 ]);
 
 export const evidenceDiscussions = pgTable('evidence_discussions', {
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
   discussionId: text('discussion_id').references(() => discussions.id).notNull(),
 }, (t) => [
-  unique('unique_evidence_discussion').on(t.evidenceId, t.discussionId)
+  // unique('unique_evidence_discussion').on(t.evidenceId, t.discussionId)
 ]);
 
 export const evidenceAuditLogs = pgTable('evidence_audit_logs', {
@@ -292,17 +294,23 @@ export const locations = pgTable('locations', {
 export const casePeople = pgTable('case_people', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   personId: text('person_id').references(() => people.id).notNull(),
-});
+}, (t) => [
+  index('case_people_case_id_idx').on(t.caseFileId)
+]);
 
 export const caseOrganisations = pgTable('case_organisations', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   organisationId: text('organisation_id').references(() => organisations.id).notNull(),
-});
+}, (t) => [
+  index('case_orgs_case_id_idx').on(t.caseFileId)
+]);
 
 export const caseLocations = pgTable('case_locations', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   locationId: text('location_id').references(() => locations.id).notNull(),
-});
+}, (t) => [
+  index('case_locs_case_id_idx').on(t.caseFileId)
+]);
 
 export const peopleRelations = relations(people, ({ one, many }) => ({
   creator: one(users, { fields: [people.createdBy], references: [users.uid] }),
@@ -354,14 +362,14 @@ export const entityRelationships = pgTable('entity_relationships', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
 }, (t) => [
-  unique('unique_entity_relationship').on(t.sourceType, t.sourceId, t.targetType, t.targetId, t.relationshipType)
+  // // unique('unique_entity_relationship').on(t.sourceType, t.sourceId, t.targetType, t.targetId, t.relationshipType)
 ]);
 
 export const caseRelationships = pgTable('case_relationships', {
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
   relationshipId: text('relationship_id').references(() => entityRelationships.id).notNull(),
 }, (t) => [
-  unique('unique_case_relationship').on(t.caseFileId, t.relationshipId)
+  // unique('unique_case_relationship').on(t.caseFileId, t.relationshipId)
 ]);
 
 export const entityRelationshipsRelations = relations(entityRelationships, ({ one, many }) => ({
@@ -381,28 +389,28 @@ export const evidencePeople = pgTable('evidence_people', {
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
   personId: text('person_id').references(() => people.id).notNull(),
 }, (t) => [
-  unique('unique_evidence_person').on(t.evidenceId, t.personId)
+  // unique('unique_evidence_person').on(t.evidenceId, t.personId)
 ]);
 
 export const evidenceOrganisations = pgTable('evidence_organisations', {
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
   organisationId: text('organisation_id').references(() => organisations.id).notNull(),
 }, (t) => [
-  unique('unique_evidence_organisation').on(t.evidenceId, t.organisationId)
+  // unique('unique_evidence_organisation').on(t.evidenceId, t.organisationId)
 ]);
 
 export const evidenceLocations = pgTable('evidence_locations', {
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
   locationId: text('location_id').references(() => locations.id).notNull(),
 }, (t) => [
-  unique('unique_evidence_location').on(t.evidenceId, t.locationId)
+  // unique('unique_evidence_location').on(t.evidenceId, t.locationId)
 ]);
 
 export const evidenceEntityRelationships = pgTable('evidence_entity_relationships', {
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
   relationshipId: text('relationship_id').references(() => entityRelationships.id).notNull(),
 }, (t) => [
-  unique('unique_evidence_relationship').on(t.evidenceId, t.relationshipId)
+  // unique('unique_evidence_relationship').on(t.evidenceId, t.relationshipId)
 ]);
 
 export const evidencePeopleRelations = relations(evidencePeople, ({ one }) => ({
@@ -454,42 +462,42 @@ export const eventPeople = pgTable('event_people', {
   eventId: text('event_id').references(() => events.id).notNull(),
   personId: text('person_id').references(() => people.id).notNull(),
 }, (t) => [
-  unique('unique_event_person').on(t.eventId, t.personId)
+  // unique('unique_event_person').on(t.eventId, t.personId)
 ]);
 
 export const eventOrganisations = pgTable('event_organisations', {
   eventId: text('event_id').references(() => events.id).notNull(),
   organisationId: text('organisation_id').references(() => organisations.id).notNull(),
 }, (t) => [
-  unique('unique_event_organisation').on(t.eventId, t.organisationId)
+  // unique('unique_event_organisation').on(t.eventId, t.organisationId)
 ]);
 
 export const eventLocations = pgTable('event_locations', {
   eventId: text('event_id').references(() => events.id).notNull(),
   locationId: text('location_id').references(() => locations.id).notNull(),
 }, (t) => [
-  unique('unique_event_location').on(t.eventId, t.locationId)
+  // unique('unique_event_location').on(t.eventId, t.locationId)
 ]);
 
 export const eventCaseFiles = pgTable('event_case_files', {
   eventId: text('event_id').references(() => events.id).notNull(),
   caseFileId: text('case_file_id').references(() => caseFiles.id).notNull(),
 }, (t) => [
-  unique('unique_event_case_file').on(t.eventId, t.caseFileId)
+  // unique('unique_event_case_file').on(t.eventId, t.caseFileId)
 ]);
 
 export const eventRelationships = pgTable('event_relationships', {
   eventId: text('event_id').references(() => events.id).notNull(),
   relationshipId: text('relationship_id').references(() => entityRelationships.id).notNull(),
 }, (t) => [
-  unique('unique_event_relationship').on(t.eventId, t.relationshipId)
+  // unique('unique_event_relationship').on(t.eventId, t.relationshipId)
 ]);
 
 export const eventEvidence = pgTable('event_evidence', {
   eventId: text('event_id').references(() => events.id).notNull(),
   evidenceId: text('evidence_id').references(() => evidenceItems.id).notNull(),
 }, (t) => [
-  unique('unique_event_evidence').on(t.eventId, t.evidenceId)
+  // unique('unique_event_evidence').on(t.eventId, t.evidenceId)
 ]);
 
 // RELATIONS
@@ -605,7 +613,7 @@ export const userAchievements = pgTable('user_achievements', {
   earnedAt: timestamp('earned_at').defaultNow().notNull(),
 }, (table) => {
   return {
-    uniqueUserAchievement: unique('unique_user_achievement').on(table.userId, table.achievementId)
+    // uniqueUserAchievement: // unique('unique_user_achievement').on(table.userId, table.achievementId)
   };
 });
 
@@ -658,7 +666,7 @@ export const userFollowsRelations = relations(userFollows, ({ one }) => ({
   }),
 }));
 
-export const moderationActionEnum = pgEnum('moderation_action', ['APPROVE', 'REJECT', 'REMOVE', 'DISPUTE', 'RESTORE', 'LOCK', 'UNLOCK', 'BAN', 'UNBAN']);
+export const moderationActionEnum = pgEnum('moderation_action', ['APPROVE', 'REJECT', 'REMOVE', 'DISPUTE', 'RESTORE', 'LOCK', 'UNLOCK', 'BAN', 'UNBAN', 'RESOLVE', 'DISMISS', 'REPORT', 'ASSIGN', 'UNASSIGN', 'APPEAL', 'UPHOLD', 'OVERTURN']);
 
 export const moderationLogs = pgTable('moderation_logs', {
   id: text('id').primaryKey(),
@@ -671,3 +679,74 @@ export const moderationLogs = pgTable('moderation_logs', {
   newStatus: text('new_status'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+export const reportStatusEnum = pgEnum('report_status', ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED']);
+export const appealStatusEnum = pgEnum('appeal_status', ['SUBMITTED', 'UNDER_REVIEW', 'UPHELD', 'OVERTURNED']);
+export const reportReasonEnum = pgEnum('report_reason', ['SPAM', 'HARASSMENT', 'MISINFORMATION', 'INAPPROPRIATE', 'OTHER']);
+
+export const reports = pgTable('reports', {
+  id: text('id').primaryKey(),
+  reporterId: text('reporter_id').references(() => users.uid, { onDelete: 'cascade' }).notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  targetAuthorId: text('target_author_id').references(() => users.uid, { onDelete: 'cascade' }),
+  reason: reportReasonEnum('reason').notNull(),
+  description: text('description'),
+  status: reportStatusEnum('status').default('OPEN').notNull(),
+  assigneeId: text('assignee_id').references(() => users.uid, { onDelete: 'set null' }),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedById: text('resolved_by_id').references(() => users.uid, { onDelete: 'set null' }),
+}, (t) => [
+  // unique('unique_report').on(t.reporterId, t.targetId)
+]);
+
+export const appeals = pgTable('appeals', {
+  id: text('id').primaryKey(),
+  appellantId: text('appellant_id').references(() => users.uid, { onDelete: 'cascade' }).notNull(),
+  targetType: text('target_type').notNull(), // 'EVIDENCE', 'DISCUSSION', 'REPLY'
+  targetId: text('target_id').notNull(),
+  originalModeratorId: text('original_moderator_id').references(() => users.uid, { onDelete: 'set null' }),
+  reason: text('reason').notNull(),
+  status: appealStatusEnum('status').default('SUBMITTED').notNull(),
+  resolutionReason: text('resolution_reason'),
+  resolvedById: text('resolved_by_id').references(() => users.uid, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  resolvedAt: timestamp('resolved_at'),
+}, (t) => ({
+  // uniqueAppeal: // unique('unique_active_appeal').on(t.appellantId, t.targetType, t.targetId)
+}));
+
+export const submissionTypeEnum = pgEnum('submission_type', ['CASE', 'EVIDENCE', 'ENTITY', 'RELATIONSHIP', 'EVENT', 'OTHER']);
+export const submissionStatusEnum = pgEnum('submission_status', ['DRAFT', 'PENDING_REVIEW', 'IN_REVIEW', 'RETURNED', 'APPROVED', 'REJECTED']);
+
+export const communitySubmissions = pgTable('community_submissions', {
+  id: text('id').primaryKey(),
+  type: submissionTypeEnum('type').notNull(),
+  status: submissionStatusEnum('status').default('PENDING_REVIEW').notNull(),
+  title: text('title').notNull(),
+  summary: text('summary'),
+  content: jsonb('content').notNull(),
+  
+  submittedById: text('submitted_by_id').references(() => users.uid).notNull(),
+  reviewerId: text('reviewer_id').references(() => users.uid),
+  
+  reviewDecision: text('review_decision'),
+  reviewNotes: text('review_notes'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+});
+
+export const communitySubmissionsRelations = relations(communitySubmissions, ({ one }) => ({
+  submittedBy: one(users, {
+    fields: [communitySubmissions.submittedById],
+    references: [users.uid]
+  }),
+  reviewer: one(users, {
+    fields: [communitySubmissions.reviewerId],
+    references: [users.uid]
+  })
+}));

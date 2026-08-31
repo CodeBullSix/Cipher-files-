@@ -87,14 +87,14 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#04060C]/90 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-[#0A0E1A] border border-cyan-500/30 rounded-xl shadow-[0_0_40px_rgba(0,229,255,0.1)] overflow-hidden font-mono flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#090D1A]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-cipher-base/90 backdrop-blur-sm">
+      <div className="w-full max-w-2xl bg-cipher-surface border border-cipher-accent/30 rounded-xl shadow-[0_0_40px_rgba(0,229,255,0.1)] overflow-hidden font-mono flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-cipher-surface">
           <div className="flex items-center gap-3">
-            <Database className="w-5 h-5 text-cyan-400" />
+            <Database className="w-5 h-5 text-cipher-accent" />
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">Submit Evidence Record</h2>
           </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white transition-colors">
+          <button aria-label="Close" onClick={onClose} className="p-1 text-gray-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -109,7 +109,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
           
           <form id="evidence-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest border-b border-gray-800 pb-2">Record Details</h3>
+              <h3 className="text-xs font-bold text-cipher-accent uppercase tracking-widest border-b border-gray-800 pb-2">Record Details</h3>
               
               <div>
                 <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">Title / Designation</label>
@@ -118,7 +118,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                  className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   placeholder="e.g. MKULTRA Subproject 68 Memo"
                 />
               </div>
@@ -129,7 +129,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   required
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm min-h-[100px] resize-none"
+                  className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm min-h-[100px] resize-none"
                   placeholder="Provide context for this evidence..."
                 />
               </div>
@@ -140,7 +140,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   <select
                     value={type}
                     onChange={e => setType(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   >
                     <option value="DOCUMENT">Document</option>
                     <option value="PHOTOGRAPH">Photograph</option>
@@ -157,7 +157,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   <select
                     value={stance}
                     onChange={e => setStance(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   >
                     <option value="SUPPORTING">Supporting</option>
                     <option value="CONTRADICTING">Contradicting</option>
@@ -172,7 +172,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                 <select
                   value={caseFileId}
                   onChange={e => setCaseFileId(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                  className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                 >
                   <option value="">-- None --</option>
                   {cases.map(c => (
@@ -184,7 +184,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
             </div>
             
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest border-b border-gray-800 pb-2">Source Attributions</h3>
+              <h3 className="text-xs font-bold text-cipher-accent uppercase tracking-widest border-b border-gray-800 pb-2">Source Attributions</h3>
               
               <div>
                 <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">Source Name / Entity</label>
@@ -193,7 +193,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   type="text"
                   value={sourceName}
                   onChange={e => setSourceName(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                  className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   placeholder="e.g. FOIA Request #1982, John Doe"
                 />
               </div>
@@ -204,7 +204,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   <select
                     value={sourceType}
                     onChange={e => setSourceType(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   >
                     <option value="PRIMARY">Primary</option>
                     <option value="SECONDARY">Secondary</option>
@@ -219,7 +219,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                     type="url"
                     value={sourceUrl}
                     onChange={e => setSourceUrl(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                     placeholder="https://..."
                   />
                 </div>
@@ -232,7 +232,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                     type="text"
                     value={sourceAuthor}
                     onChange={e => setSourceAuthor(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                     placeholder="e.g. John Doe"
                   />
                 </div>
@@ -242,7 +242,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                     type="text"
                     value={sourcePublisher}
                     onChange={e => setSourcePublisher(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                     placeholder="e.g. CIA, NY Times"
                   />
                 </div>
@@ -252,7 +252,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                     type="date"
                     value={sourcePubDate}
                     onChange={e => setSourcePubDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   />
                 </div>
                 <div>
@@ -261,7 +261,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                     type="date"
                     value={sourceAccessDate}
                     onChange={e => setSourceAccessDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 text-sm"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cipher-accent/50 text-sm"
                   />
                 </div>
               </div>
@@ -269,9 +269,9 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
             </div>
             
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest border-b border-gray-800 pb-2">File Attachment</h3>
+              <h3 className="text-xs font-bold text-cipher-accent uppercase tracking-widest border-b border-gray-800 pb-2">File Attachment</h3>
               
-              <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-cyan-500/30 transition-colors">
+              <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-cipher-accent/30 transition-colors">
                 <input
                   type="file"
                   id="evidence-file"
@@ -280,7 +280,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
                   accept=".pdf,.jpg,.jpeg,.png,.webp"
                 />
                 <label htmlFor="evidence-file" className="cursor-pointer flex flex-col items-center">
-                  <Upload className="w-8 h-8 text-cyan-400 mb-2" />
+                  <Upload className="w-8 h-8 text-cipher-accent mb-2" />
                   <span className="text-sm font-bold text-white mb-1">
                     {file ? file.name : 'Select File'}
                   </span>
@@ -293,7 +293,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
           </form>
         </div>
         
-        <div className="p-4 border-t border-gray-800 bg-[#090D1A] flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-800 bg-cipher-surface flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -305,7 +305,7 @@ export const SubmitEvidenceModal: React.FC<Props> = ({ currentUser, onClose, onS
             type="submit"
             form="evidence-form"
             disabled={isSubmitting}
-            className="px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-wider bg-cipher-accent text-black hover:bg-cipher-accent-hover transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {isSubmitting ? 'Uploading...' : 'Submit to Archive'}
           </button>

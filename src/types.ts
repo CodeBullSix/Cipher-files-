@@ -55,8 +55,8 @@ export const OFFICIAL_STATUS_DEFINITIONS: Record<'VERIFIED' | 'DOCUMENTED' | 'AL
     definition: 'A claim or testimony exists, but corroborating primary physical or documentary evidence is currently insufficient.',
     description: 'Testimony, insider reports, or secondary accounts allege specific covert activity, but independent physical, forensic, or unredacted documentary verification has not yet met primary evidentiary standards.',
     color: '#00E5FF',
-    badgeClass: 'text-cyan-400 bg-cyan-950/70 border-cyan-500/50',
-    dotClass: 'bg-cyan-400 shadow-[0_0_8px_rgba(0,229,255,0.8)]'
+    badgeClass: 'text-cipher-accent bg-cyan-950/70 border-cipher-accent/50',
+    dotClass: 'bg-cipher-accent shadow-[0_0_8px_rgba(0,229,255,0.8)]'
   },
   SPECULATIVE: {
     label: 'SPECULATIVE',
@@ -179,7 +179,10 @@ export interface CaseFile {
   views: number;
   commentCount: number;
   bookmarkCount: number;
-  isFeatured?: boolean;
+  featured?: boolean;
+  featuredOrder?: number;
+  editorialCollection?: string;
+  editorialDescription?: string;
   isDailyMystery?: boolean;
   isOfficialDossier?: boolean;
   isVipExclusive?: boolean;

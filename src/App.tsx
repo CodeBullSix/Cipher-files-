@@ -35,6 +35,7 @@ import { VipClearanceModal } from './components/VipClearanceModal';
 import { InvestigatorProfileModal } from './components/InvestigatorProfileModal';
 import { InvestigationWorkspaceView } from './components/InvestigationWorkspaceView';
 import { QuickSearchModal } from './components/QuickSearchModal';
+import { OnboardingModal } from './components/OnboardingModal';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { sound } from './utils/audio';
 import { calculateLevel } from './lib/levels';
@@ -90,7 +91,7 @@ const EmailVerificationBanner = ({ profile }: { profile: UserProfile }) => {
           onClick={async () => {
             await AuthService.reloadUser();
           }}
-          className="px-3 py-1 bg-[#05070A] hover:bg-[#0A0D14] text-gray-300 rounded border border-gray-700 uppercase font-bold tracking-widest transition-colors"
+          className="px-3 py-1 bg-cipher-panel hover:bg-cipher-surface text-gray-300 rounded border border-gray-700 uppercase font-bold tracking-widest transition-colors"
         >
           REFRESH
         </button>
@@ -118,8 +119,10 @@ export default function App() {
 
   // Modals
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
+  const [isLoadingCase, setIsLoadingCase] = useState(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(!localStorage.getItem('cipher_onboarding_dismissed'));
   const [isDirectMessageModalOpen, setIsDirectMessageModalOpen] = useState<boolean>(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0);
@@ -143,6 +146,161 @@ export default function App() {
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+
+
+  // 1. On Mount: Parse URL
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/cases/')) {
+      const id = path.split('/')[2];
+      if (id) {
+        setCurrentTab('cases');
+        setActiveCaseId(id);
+      }
+    } else if (path.startsWith('/evidence/')) {
+      const id = path.split('/')[2];
+      if (id) {
+        setGlobalEvidenceId(id);
+      }
+    } else if (path.startsWith('/people/') || path.startsWith('/organisations/') || path.startsWith('/locations/')) {
+      const parts = path.split('/');
+      const id = parts[2];
+      const type = parts[1].toUpperCase().replace(/S$/, '');
+      if (id) {
+        setSelectedEntityType(type);
+        setSelectedEntityId(id);
+      }
+    } else if (path.startsWith('/events/')) {
+      const id = path.split('/')[2];
+      if (id) {
+        setGlobalEventId(id);
+      }
+    } else if (path.startsWith('/discussions/')) {
+       const id = path.split('/')[2];
+       if (id) {
+         setCurrentTab('discussions');
+         setActiveDiscussionId(id);
+       }
+    } else if (path.startsWith('/workspaces')) {
+       setCurrentTab('workspaces');
+    } else if (path.startsWith('/moderation')) {
+       setCurrentTab('moderation');
+    }
+  }, []);
+
+  // 2. State to URL & SEO Sync
+  useEffect(() => {
+    let newPath = '/';
+    
+    // We do NOT expose private/restricted views via deep links that bypass state,
+    // but updating the URL is fine. However, we should explicitly prevent indexing of /workspace etc. (handled in robots.txt)
+    
+    if (selectedEntityId && selectedEntityType) {
+       const typePath = selectedEntityType === "PERSON" ? "people" : selectedEntityType === "ORGANISATION" ? "organisations" : selectedEntityType === "LOCATION" ? "locations" : "entities";
+       newPath = `/${typePath}/${selectedEntityId}`;
+    } else if (globalEvidenceId) {
+       newPath = `/evidence/${globalEvidenceId}`;
+    } else if (globalEventId) {
+       newPath = `/events/${globalEventId}`;
+    } else if (activeCaseId) {
+       newPath = `/cases/${activeCaseId}`;
+    } else if (activeDiscussionId) {
+       newPath = `/discussions/${activeDiscussionId}`;
+    } else {
+       if (currentTab !== 'cases') {
+          newPath = `/${currentTab}`;
+       }
+    }
+
+    if (window.location.pathname !== newPath) {
+       window.history.pushState(null, '', newPath);
+    }
+    
+    let title = 'Cipher Files';
+    if (activeCaseId) {
+       const c = cases.find(c => c.id === activeCaseId);
+       if (c) title = `Cipher Files — ${c.title}`;
+    } else if (selectedEntityId) {
+       title = `Cipher Files — Entity Record`;
+    } else if (globalEvidenceId) {
+       title = `Cipher Files — Evidence Record`;
+    } else if (globalEventId) {
+       title = `Cipher Files — Event Record`;
+    } else if (currentTab === 'workspaces') {
+       title = `Cipher Files — Private Workspace`;
+    } else if (currentTab === 'moderation') {
+       title = `Cipher Files — Moderation`;
+    } else if (currentTab === 'evidence') {
+       title = `Cipher Files — Evidence Archive`;
+    } else if (currentTab === 'discussions') {
+       title = `Cipher Files — Community Forums`;
+    } else if (currentTab === 'graph') {
+       title = `Cipher Files — The Rabbit Hole`;
+    }
+
+    if (document.title !== title) {
+        document.title = title;
+    }
+    
+    // Canonical link update
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', `https://cipherfiles.com${newPath}`);
+    
+    // Dynamic meta description (basic syncing)
+    
+    // Structured Data JSON-LD
+    let scriptTag = document.querySelector('#structured-data');
+    if (!scriptTag) {
+        scriptTag = document.createElement('script');
+        scriptTag.id = 'structured-data';
+        scriptTag.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(scriptTag);
+    }
+    
+    let schemaObj: any = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Cipher Files",
+      "url": "https://cipherfiles.com/"
+    };
+    
+    if (activeCaseId && cases) {
+       const c = cases.find(c => c.id === activeCaseId);
+       if (c) {
+           schemaObj = {
+             "@context": "https://schema.org",
+             "@type": "Article",
+             "headline": c.title,
+             "description": c.description || "Cipher Files Case Dossier",
+             "url": `https://cipherfiles.com/cases/${c.id}`,
+             "author": { "@type": "Organization", "name": "Cipher Files" }
+           };
+       }
+    }
+    scriptTag.textContent = JSON.stringify(schemaObj);
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+
+    if (metaDesc) {
+        if (activeCaseId && cases) {
+             const c = cases.find(c => c.id === activeCaseId);
+             if (c) metaDesc.setAttribute('content', `Case Dossier: ${c.title}. ${c.category}`);
+        } else if (currentTab === 'cases') {
+             metaDesc.setAttribute('content', 'Explore declassified dossiers and official case files.');
+        } else if (currentTab === 'discussions') {
+             metaDesc.setAttribute('content', 'Community forums for investigating the unexplained.');
+        } else {
+             metaDesc.setAttribute('content', 'A community-driven investigative platform.');
+        }
+    }
+
+  }, [currentTab, activeCaseId, selectedEntityId, selectedEntityType, globalEvidenceId, globalEventId, activeDiscussionId, cases]);
 
   // Real-time UTC clock string
   const [utcTime, setUtcTime] = useState<string>('');
@@ -320,14 +478,31 @@ import('./services/apiService').then(({ ApiService }) => {
 
 
   const handleOpenCase = (caseId: string) => {
-    setActiveCaseId(caseId);
     const targetCase = cases.find(c => c.id === caseId) || INITIAL_CASES.find(c => c.id === caseId);
-    StorageService.pushTrail(
-      targetCase?.title || caseId,
-      caseId,
-      'CASE'
-    );
-    setLegacyProfile(StorageService.getProfile());
+    if (!targetCase) {
+      setIsLoadingCase(true);
+      setActiveCaseId(caseId); // set early to show loading state if needed
+      import('./services/apiService').then(({ ApiService }) => {
+        ApiService.getCase(caseId).then(fetched => {
+          if (fetched) {
+            setCases(prev => {
+              if (!prev.find(c => c.id === fetched.id)) return [...prev, fetched];
+              return prev.map(c => c.id === fetched.id ? fetched : c);
+            });
+            StorageService.pushTrail(fetched.title, caseId, 'CASE');
+            setLegacyProfile(StorageService.getProfile());
+          }
+          setIsLoadingCase(false);
+        }).catch(err => {
+          console.error(err);
+          setIsLoadingCase(false);
+        });
+      });
+    } else {
+      setActiveCaseId(caseId);
+      StorageService.pushTrail(targetCase.title, caseId, 'CASE');
+      setLegacyProfile(StorageService.getProfile());
+    }
   };
 
   const handleRandomRabbitHole = () => {
@@ -410,12 +585,12 @@ import('./services/apiService').then(({ ApiService }) => {
   const activeCaseFile = cases.find(c => c.id === activeCaseId) || INITIAL_CASES.find(c => c.id === activeCaseId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#04060B] text-[#e0e0e0] font-sans selection:bg-[#00E5FF]/30">
+    <div className="min-h-screen flex flex-col bg-cipher-base text-[#e0e0e0] font-sans selection:bg-cipher-accent/30">
       
       {/* Toast Notification Banner */}
       {toastMessage && (
-        <div className="fixed bottom-14 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-[#0A0E18] border border-[#00E5FF]/80 rounded-xl shadow-2xl text-[#00E5FF] font-mono text-xs animate-in slide-in-from-bottom-5 duration-200">
-          <Sparkles className="w-4 h-4 text-[#00E5FF] animate-spin" />
+        <div className="fixed bottom-14 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-cipher-surface border border-cipher-accent/80 rounded-xl shadow-2xl text-cipher-accent font-mono text-xs animate-in slide-in-from-bottom-5 duration-200">
+          <Sparkles className="w-4 h-4 text-cipher-accent animate-spin" />
           <span className="font-bold">{toastMessage}</span>
         </div>
       )}
@@ -473,7 +648,7 @@ import('./services/apiService').then(({ ApiService }) => {
 
       {currentUser && !currentUser.emailVerified && <EmailVerificationBanner profile={currentUser} />}
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden w-full">
         {/* VIEW 1: EDITORIAL INTELLIGENCE ARCHIVE */}
         {currentTab === 'cases' && (
           <EditorialHome
@@ -509,8 +684,8 @@ import('./services/apiService').then(({ ApiService }) => {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-800 shrink-0">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse"></span>
-                  <span className="text-[10px] font-mono text-[#00E5FF] uppercase font-bold tracking-[0.25em]">
+                  <span className="w-2 h-2 rounded-full bg-cipher-accent animate-pulse"></span>
+                  <span className="text-[10px] font-mono text-cipher-accent uppercase font-bold tracking-[0.25em]">
                     KNOWLEDGE GRAPH INTERFACE
                   </span>
                 </div>
@@ -521,7 +696,7 @@ import('./services/apiService').then(({ ApiService }) => {
 
               <button
                 onClick={() => setCurrentTab('cases')}
-                className="px-3 py-1.5 rounded-lg border border-gray-800 bg-[#090C16] text-gray-300 hover:text-white text-xs font-mono"
+                className="px-3 py-1.5 rounded-lg border border-gray-800 bg-cipher-surface text-gray-300 hover:text-white text-xs font-mono"
               >
                 RETURN TO DOSSIERS
               </button>
@@ -582,7 +757,7 @@ import('./services/apiService').then(({ ApiService }) => {
       </main>
 
       {/* Bottom Tactical Status Bar */}
-      <footer className="h-10 bg-[#00E5FF]/5 border-t border-[#00E5FF]/20 flex items-center justify-between px-4 sm:px-6 font-mono text-[10px] uppercase tracking-widest text-[#e0e0e0] shrink-0">
+      <footer className="h-10 bg-cipher-accent/5 border-t border-cipher-accent/20 flex items-center justify-between px-4 sm:px-6 font-mono text-[10px] uppercase tracking-widest text-[#e0e0e0] shrink-0">
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -592,7 +767,7 @@ import('./services/apiService').then(({ ApiService }) => {
           <span className="hidden sm:inline text-white/80">SECURE CHANNEL / TLS</span>
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
-          <span className="text-[#00E5FF] font-bold">[{utcTime || '12:00:44 UTC'}]</span>
+          <span className="text-cipher-accent font-bold">[{utcTime || '12:00:44 UTC'}]</span>
         </div>
       </footer>
 
@@ -631,6 +806,15 @@ import('./services/apiService').then(({ ApiService }) => {
       )}
 
       {/* 1. Case Detail Modal */}
+      {isLoadingCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-cipher-accent font-mono text-sm tracking-widest">DECRYPTING DOSSIER...</div>
+          </div>
+        </div>
+      )}
+
       {activeCaseFile && (
         <CaseDetailModal
           caseFile={activeCaseFile}
@@ -723,11 +907,19 @@ import('./services/apiService').then(({ ApiService }) => {
       <QuickSearchModal
         isOpen={isQuickSearchOpen}
         onClose={() => setIsQuickSearchOpen(false)}
-        onOpenCase={handleOpenCase}
-          onOpenEntity={handleOpenEntity}
+        onOpenCase={handleOpenCase}  
+        onOpenEntity={handleOpenEntity}
         onOpenEvidence={handleOpenEvidence}
         onOpenEvent={handleOpenEvent}
         onRandomRabbitHole={handleRandomRabbitHole}
+      />
+
+      <OnboardingModal 
+        isOpen={isOnboardingOpen} 
+        onClose={() => {
+          localStorage.setItem('cipher_onboarding_dismissed', 'true');
+          setIsOnboardingOpen(false);
+        }} 
       />
     </div>
   );

@@ -299,7 +299,7 @@ export const INITIAL_CASES: CaseFile[] = [
     views: 48920,
     commentCount: 847,
     bookmarkCount: 3120,
-    isFeatured: true,
+    featured: true,
     communityVerdictVote: {
       confirmed: 120,
       disputed: 2480,
@@ -431,7 +431,7 @@ export const INITIAL_CASES: CaseFile[] = [
     views: 61400,
     commentCount: 1120,
     bookmarkCount: 4900,
-    isFeatured: true,
+    featured: true,
     communityVerdictVote: {
       confirmed: 4200,
       disputed: 110,
@@ -659,7 +659,7 @@ export const INITIAL_CASES: CaseFile[] = [
     views: 74200,
     commentCount: 1540,
     bookmarkCount: 5200,
-    isFeatured: true,
+    featured: true,
     communityVerdictVote: {
       confirmed: 1400,
       disputed: 3100,
@@ -2578,7 +2578,7 @@ export const INITIAL_CASES: CaseFile[] = [
     views: 82000,
     commentCount: 1620,
     bookmarkCount: 5900,
-    isFeatured: true,
+    featured: true,
     communityVerdictVote: { confirmed: 5200, disputed: 920, unverified: 340, debunked: 110 }
   },
   {

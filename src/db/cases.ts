@@ -1,35 +1,26 @@
 import { db } from './index.js';
 import { caseFiles, entityRelationships } from './schema.js';
-import { eq, ilike, and, or } from 'drizzle-orm';
+import { eq, ilike, and, or, desc } from 'drizzle-orm';
 
-export async function getCases(query?: string, category?: string, status?: any) {
+export async function getCases(query?: string, category?: string, statusFilter?: any) {
+  let conditions = [];
+  if (category) {
+    conditions.push(eq(caseFiles.category, category));
+  }
+  if (statusFilter) {
+    conditions.push(eq(caseFiles.status, statusFilter));
+  }
+  if (query) {
+    conditions.push(ilike(caseFiles.title, `%${query}%`));
+  }
+
   let results = await db.query.caseFiles.findMany({
-    with: {
-      people: { with: { person: true } },
-      organisations: { with: { organisation: true } },
-      locations: { with: { location: true } }
-    }
+    where: conditions.length > 0 ? and(...conditions) : undefined,
+    orderBy: [desc(caseFiles.createdAt)]
   });
   
   return results.map(result => {
-    const entities = [];
-    if (result.people) {
-      result.people.forEach((p: any) => {
-        if (p.person) entities.push({ ...p.person, type: 'PERSON', role: p.person.description || p.role });
-      });
-    }
-    if (result.organisations) {
-      result.organisations.forEach((o: any) => {
-        if (o.organisation) entities.push({ ...o.organisation, type: 'ORGANISATION', role: o.organisation.description || o.role });
-      });
-    }
-    if (result.locations) {
-      result.locations.forEach((l: any) => {
-        if (l.location) entities.push({ ...l.location, type: 'LOCATION', role: l.location.description || l.role });
-      });
-    }
-    
-    return { ...result, entities };
+    return { ...result, entities: [] };
   });
 }
 

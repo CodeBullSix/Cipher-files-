@@ -150,7 +150,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#090D1A] border border-cyan-900/50 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-cipher-surface border border-cyan-900/50 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/50">
           <h2 className="text-lg font-bold text-white font-mono">
@@ -188,7 +188,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
                         type="button"
                         onClick={() => { setTargetType(t as any); setTargetResults([]); setTargetSearch(''); sound.click(); }}
                         className={`flex-1 py-1.5 text-xs font-mono rounded border transition-colors capitalize ${
-                          targetType === t ? 'bg-cyan-950/30 border-cyan-500/50 text-cyan-300' : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                          targetType === t ? 'bg-cyan-950/30 border-cipher-accent/50 text-cipher-accent-hover' : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
                         }`}
                       >
                         {t}
@@ -203,7 +203,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
                       value={targetSearch}
                       onChange={(e) => setTargetSearch(e.target.value)}
                       placeholder={`Search ${targetType}...`}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 font-mono transition-colors"
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-white text-sm focus:outline-none focus:border-cipher-accent font-mono transition-colors"
                     />
                   </div>
                   
@@ -223,7 +223,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
                 </>
               ) : (
                 <div className="flex items-center justify-between bg-cyan-950/20 border border-cyan-900/50 p-2 rounded">
-                  <span className="text-sm text-cyan-300 font-bold">{selectedTarget.name}</span>
+                  <span className="text-sm text-cipher-accent-hover font-bold">{selectedTarget.name}</span>
                   <button
                     type="button"
                     onClick={() => { setSelectedTarget(null); setTargetSearch(''); sound.click(); }}
@@ -253,7 +253,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
                 <button
                   type="button"
                   onClick={() => setIsAttachingEvidence(!isAttachingEvidence)}
-                  className="text-[10px] bg-cyan-900/30 text-cyan-400 border border-cyan-800 px-2 py-1 rounded"
+                  className="text-[10px] bg-cyan-900/30 text-cipher-accent border border-cyan-800 px-2 py-1 rounded"
                 >
                   {isAttachingEvidence ? 'CANCEL' : '+ ATTACH'}
                 </button>
@@ -285,7 +285,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
                 <div className="space-y-2">
                   {existingRelationship.evidenceList.map((evItem: any) => (
                     <div key={evItem.evidence.id} className="flex items-center justify-between p-2 bg-gray-900/30 border border-gray-800 rounded">
-                      <span className="text-xs text-cyan-400 truncate pr-2">{evItem.evidence.title}</span>
+                      <span className="text-xs text-cipher-accent truncate pr-2">{evItem.evidence.title}</span>
                       <button type="button" onClick={() => handleRemoveEvidence(evItem.evidence.id)} className="text-red-400 hover:text-red-300">
                         <X className="w-3 h-3" />
                       </button>
@@ -305,7 +305,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
             <select
               value={relationshipType}
               onChange={(e) => setRelationshipType(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500 font-mono transition-colors"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cipher-accent font-mono transition-colors"
               required
             >
               {RELATIONSHIP_TYPES.map(type => (
@@ -359,7 +359,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 font-mono transition-colors min-h-[100px] resize-none"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-cipher-accent font-mono transition-colors min-h-[100px] resize-none"
               placeholder="Provide context for this relationship..."
             />
           </div>
@@ -375,7 +375,7 @@ export const RelationshipModal: React.FC<Props> = ({ isOpen, onClose, sourceEnti
             <button
               type="submit"
               disabled={loading || (!selectedTarget && !existingRelationship)}
-              className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-mono font-bold text-sm transition-colors"
+              className="px-6 py-2 bg-cyan-600 hover:bg-cipher-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-mono font-bold text-sm transition-colors"
             >
               {loading ? 'Saving...' : 'Save Relationship'}
             </button>

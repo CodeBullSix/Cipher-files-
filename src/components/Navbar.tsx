@@ -48,13 +48,13 @@ export const Navbar: React.FC<Props> = ({
   const isModerator = isAdmin || currentUser?.role === 'moderator';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-cyan-500/20 bg-[#060812]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-cipher-accent/20 bg-cipher-panel/95 backdrop-blur-md">
       
       {/* Top Classification Line (Desktop only to save vertical screen space on mobile) */}
-      <div className="hidden sm:flex w-full bg-[#030408] border-b border-cyan-500/15 px-4 sm:px-6 py-1 items-center justify-between text-[10px] font-mono text-cyan-400/80">
+      <div className="hidden sm:flex w-full bg-cipher-base border-b border-cyan-500/15 px-4 sm:px-6 py-1 items-center justify-between text-[10px] font-mono text-cipher-accent/80">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-cipher-accent animate-pulse"></span>
             <span className="tracking-[0.2em] font-bold uppercase">
               CLEARANCE: {currentUser ? currentUser.clearanceLevel : 'LEVEL 1 // PUBLIC DECLASSIFIED ARCHIVE'}
             </span>
@@ -65,7 +65,7 @@ export const Navbar: React.FC<Props> = ({
         <div className="flex items-center gap-3">
           {currentUser && (
             <span className="text-gray-400 font-mono">
-              Operative: <span className="text-cyan-300 font-bold">{currentUser.callsign}</span>
+              Operative: <span className="text-cipher-accent-hover font-bold">{currentUser.callsign}</span>
             </span>
           )}
           <span className="text-emerald-400 font-bold tracking-widest">[FIREBASE PERSISTENT]</span>
@@ -82,9 +82,9 @@ export const Navbar: React.FC<Props> = ({
             className="flex flex-col cursor-pointer select-none"
           >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00E5FF]"></span>
+              <span className="w-2 h-2 rounded-full bg-cipher-accent shadow-[0_0_8px_#00E5FF]"></span>
               <h1 className="font-mono text-base sm:text-xl font-black tracking-[0.18em] text-white">
-                CIPHER <span className="text-cyan-400">FILES</span>
+                CIPHER <span className="text-cipher-accent">FILES</span>
               </h1>
             </div>
             <span className="hidden sm:inline text-[9px] font-mono uppercase tracking-[0.3em] text-gray-400">
@@ -95,9 +95,9 @@ export const Navbar: React.FC<Props> = ({
           {/* Quick Search Bar Widget (Desktop) */}
           <div 
             onClick={() => { onOpenSearch(); sound.click(); }}
-            className="hidden lg:flex relative h-9 w-60 bg-[#0A0E1A] border border-cyan-500/25 px-3 items-center gap-2.5 cursor-pointer hover:border-cyan-400/60 rounded-lg transition-colors shadow-inner"
+            className="hidden lg:flex relative h-9 w-60 bg-cipher-surface border border-cyan-500/25 px-3 items-center gap-2.5 cursor-pointer hover:border-cyan-400/60 rounded-lg transition-colors shadow-inner"
           >
-            <Search className="w-3.5 h-3.5 text-cyan-400/70" />
+            <Search className="w-3.5 h-3.5 text-cipher-accent/70" />
             <span className="text-xs text-gray-400 font-mono">Search classified files...</span>
             <kbd className="ml-auto text-[9px] font-mono bg-black/60 px-1.5 py-0.5 rounded border border-gray-800 text-gray-400">
               ⌘K
@@ -106,12 +106,12 @@ export const Navbar: React.FC<Props> = ({
         </div>
 
         {/* Primary Navigation Tabs (Desktop & Tablet) */}
-        <nav className="hidden md:flex items-center gap-1 bg-[#090D1A] border border-gray-800 p-1 rounded-xl">
+        <nav className="hidden md:flex items-center gap-1 bg-cipher-surface border border-gray-800 p-1 rounded-xl">
           <button
             onClick={() => { onSelectTab('workspaces'); sound.click(); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
               currentTab === 'workspaces'
-                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                ? 'bg-cipher-accent/15 text-cipher-accent-hover border border-cipher-accent/40 shadow-sm'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
             }`}
           >
@@ -123,7 +123,7 @@ export const Navbar: React.FC<Props> = ({
             onClick={() => { onSelectTab('cases'); sound.click(); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
               currentTab === 'cases'
-                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                ? 'bg-cipher-accent/15 text-cipher-accent-hover border border-cipher-accent/40 shadow-sm'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
             }`}
           >
@@ -135,7 +135,7 @@ export const Navbar: React.FC<Props> = ({
             onClick={() => { onSelectTab('graph'); sound.click(); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
               currentTab === 'graph'
-                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                ? 'bg-cipher-accent/15 text-cipher-accent-hover border border-cipher-accent/40 shadow-sm'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
             }`}
           >
@@ -146,7 +146,7 @@ export const Navbar: React.FC<Props> = ({
             onClick={() => { onSelectTab('evidence'); sound.click(); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
               currentTab === 'evidence'
-                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                ? 'bg-cipher-accent/15 text-cipher-accent-hover border border-cipher-accent/40 shadow-sm'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
             }`}
           >
@@ -159,7 +159,7 @@ export const Navbar: React.FC<Props> = ({
             onClick={() => { onSelectTab('discussions'); sound.click(); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${
               currentTab === 'discussions'
-                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                ? 'bg-cipher-accent/15 text-cipher-accent-hover border border-cipher-accent/40 shadow-sm'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800/40'
             }`}
           >
@@ -199,7 +199,7 @@ export const Navbar: React.FC<Props> = ({
           {/* Mobile Search Button */}
           <button
             onClick={() => { onOpenSearch(); sound.click(); }}
-            className="lg:hidden p-2 rounded-lg bg-[#0A0E1A] border border-cyan-500/30 text-cyan-300 hover:bg-[#0F1628] transition-colors"
+            className="lg:hidden p-2 rounded-lg bg-cipher-surface border border-cipher-accent/30 text-cipher-accent-hover hover:bg-cipher-elevated transition-colors"
             title="Search classified dossiers"
           >
             <Search className="w-4 h-4" />
@@ -208,17 +208,17 @@ export const Navbar: React.FC<Props> = ({
           {/* Random Rabbit Hole Quick Action */}
           <button
             onClick={() => { onRandomRabbitHole(); sound.playWarp(); }}
-            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-950/60 to-purple-950/60 hover:from-cyan-900/60 hover:to-purple-900/60 border border-cyan-500/50 text-cyan-300 font-mono text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,229,255,0.15)] group"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-950/60 to-purple-950/60 hover:from-cyan-900/60 hover:to-purple-900/60 border border-cipher-accent/50 text-cipher-accent-hover font-mono text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,229,255,0.15)] group"
             title="Jump into a random declassified rabbit hole dossier"
           >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-45 transition-transform" />
+            <Sparkles className="w-3.5 h-3.5 text-cipher-accent group-hover:rotate-45 transition-transform" />
             <span className="hidden sm:inline">Random Hole</span>
           </button>
 
           {/* Submit Theory Button */}
           <button
             onClick={() => { onOpenSubmitModal(); sound.click(); }}
-            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 font-mono text-xs font-bold flex items-center gap-1.5 transition-colors"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-cipher-accent/15 hover:bg-cipher-accent-hover/25 border border-cipher-accent/40 text-cipher-accent-hover font-mono text-xs font-bold flex items-center gap-1.5 transition-colors"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">File Theory</span>
@@ -245,7 +245,7 @@ export const Navbar: React.FC<Props> = ({
           {currentUser && (
             <button
               onClick={() => { onOpenDirectMessages(); sound.click(); }}
-              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-cyan-400 transition-colors"
+              className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-cipher-accent transition-colors"
               title="Secure Messages"
             >
               <Send className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ export const Navbar: React.FC<Props> = ({
             className="p-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors"
             title={isMuted ? 'Unmute tactical audio' : 'Mute tactical audio'}
           >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-cyan-400" />}
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-cipher-accent" />}
           </button>
 
           {/* User Auth Section */}
@@ -287,7 +287,7 @@ export const Navbar: React.FC<Props> = ({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => { onOpenProfileModal(); sound.click(); }}
-                className="flex items-center gap-2 p-1 pr-2.5 rounded-lg bg-[#0E121E] border border-cyan-500/30 hover:border-cyan-400 transition-colors group"
+                className="flex items-center gap-2 p-1 pr-2.5 rounded-lg bg-cipher-elevated border border-cipher-accent/30 hover:border-cyan-400 transition-colors group"
                 title="Open Investigator Profile & Archival Credentials"
               >
                 <UserAvatar
@@ -296,10 +296,10 @@ export const Navbar: React.FC<Props> = ({
                   showBadge
                 />
                 <div className="text-left hidden lg:block">
-                  <div className="text-[11px] font-bold text-white font-mono leading-tight group-hover:text-cyan-300 transition-colors">
+                  <div className="text-[11px] font-bold text-white font-mono leading-tight group-hover:text-cipher-accent-hover transition-colors">
                     {currentUser.displayName.split(' ')[0]}
                   </div>
-                  <div className="text-[9px] text-cyan-400/80 font-mono leading-none">
+                  <div className="text-[9px] text-cipher-accent/80 font-mono leading-none">
                     {currentUser.username ? `@${currentUser.username}` : (currentUser.role || 'Investigator')}
                   </div>
                 </div>
@@ -317,7 +317,7 @@ export const Navbar: React.FC<Props> = ({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => { onOpenProfileModal(); sound.click(); }}
-                className="flex px-2 py-1.5 rounded-lg bg-[#0E121E] hover:bg-[#131929] border border-gray-800 hover:border-cyan-500/40 text-gray-300 font-mono text-xs font-bold items-center gap-1.5 transition-colors"
+                className="flex px-2 py-1.5 rounded-lg bg-cipher-elevated hover:bg-cipher-elevated border border-gray-800 hover:border-cipher-accent/40 text-gray-300 font-mono text-xs font-bold items-center gap-1.5 transition-colors"
                 title="View & Edit Investigator Profile"
               >
                 <UserAvatar
@@ -329,7 +329,7 @@ export const Navbar: React.FC<Props> = ({
 
               <button
                 onClick={onLogin}
-                className="px-3 py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors shadow-md"
+                className="px-3 py-1.5 rounded-lg bg-cipher-accent hover:bg-cyan-300 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 transition-colors shadow-md"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Login</span>
@@ -342,12 +342,12 @@ export const Navbar: React.FC<Props> = ({
       </div>
 
       {/* Clean Mobile Bottom/Sub Navigation Bar */}
-      <div className="md:hidden flex items-center justify-around px-2 py-1.5 bg-[#04060C] border-t border-gray-800/80">
+      <div className="md:hidden flex items-center justify-around px-2 py-1.5 bg-cipher-base border-t border-gray-800/80">
         <button
           onClick={() => { onSelectTab('workspaces'); sound.click(); }}
           className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
             currentTab === 'workspaces'
-              ? 'text-cyan-300 bg-cyan-950/40'
+              ? 'text-cipher-accent-hover bg-cyan-950/40'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -359,7 +359,7 @@ export const Navbar: React.FC<Props> = ({
           onClick={() => { onSelectTab('cases'); sound.click(); }}
           className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
             currentTab === 'cases'
-              ? 'text-cyan-300 bg-cyan-950/40'
+              ? 'text-cipher-accent-hover bg-cyan-950/40'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -371,7 +371,7 @@ export const Navbar: React.FC<Props> = ({
           onClick={() => { onSelectTab('graph'); sound.click(); }}
           className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
             currentTab === 'graph'
-              ? 'text-cyan-300 bg-cyan-950/40'
+              ? 'text-cipher-accent-hover bg-cyan-950/40'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -382,7 +382,7 @@ export const Navbar: React.FC<Props> = ({
           onClick={() => { onSelectTab('evidence'); sound.click(); }}
           className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
             currentTab === 'evidence'
-              ? 'text-cyan-300 bg-cyan-950/40'
+              ? 'text-cipher-accent-hover bg-cyan-950/40'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -395,7 +395,7 @@ export const Navbar: React.FC<Props> = ({
           onClick={() => { onSelectTab('discussions'); sound.click(); }}
           className={`flex-1 py-1 px-1 rounded-lg text-[11px] font-mono font-bold flex flex-col items-center gap-0.5 transition-colors ${
             currentTab === 'discussions'
-              ? 'text-cyan-300 bg-cyan-950/40'
+              ? 'text-cipher-accent-hover bg-cyan-950/40'
               : 'text-gray-400 hover:text-white'
           }`}
         >

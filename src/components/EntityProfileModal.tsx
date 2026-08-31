@@ -140,7 +140,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
   if (!isOpen) return null;
 
   const getIcon = (className = "w-5 h-5") => {
-    if (type === 'people') return <User className={`${className} text-cyan-400`} />;
+    if (type === 'people') return <User className={`${className} text-cipher-accent`} />;
     if (type === 'organisations') return <Building className={`${className} text-amber-400`} />;
     return <MapPin className={`${className} text-emerald-400`} />;
   };
@@ -149,7 +149,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl my-auto rounded-2xl border border-cyan-500/40 bg-[#080B14] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200">
+      <div className="relative w-full max-w-4xl my-auto rounded-2xl border border-cipher-accent/40 bg-cipher-surface shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/50">
@@ -256,7 +256,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                 <button
                   onClick={() => { setActiveTab('overview'); sound.click(); }}
                   className={`px-4 py-3 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-2 ${
-                    activeTab === 'overview' ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
+                    activeTab === 'overview' ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
                   }`}
                 >
                   <Database className="w-4 h-4" /> Overview
@@ -264,7 +264,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                 <button
                   onClick={() => { setActiveTab('relationships'); sound.click(); }}
                   className={`px-4 py-3 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-2 ${
-                    activeTab === 'relationships' ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
+                    activeTab === 'relationships' ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
                   }`}
                 >
                   <Share2 className="w-4 h-4" /> Relationships
@@ -272,7 +272,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                 <button
                   onClick={() => { setActiveTab('evidence'); sound.click(); }}
                   className={`px-4 py-3 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-2 ${
-                    activeTab === 'evidence' ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
+                    activeTab === 'evidence' ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
                   }`}
                 >
                   <Scale className="w-4 h-4" /> Evidence
@@ -280,7 +280,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                 <button
                   onClick={() => { setActiveTab('timeline'); sound.click(); }}
                   className={`px-4 py-3 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-2 ${
-                    activeTab === 'timeline' ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
+                    activeTab === 'timeline' ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20' : 'border-transparent text-gray-400 hover:text-gray-200'
                   }`}
                 >
                   <Calendar className="w-4 h-4" /> Timeline
@@ -309,8 +309,8 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                       {entity.associatedCases && entity.associatedCases.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {entity.associatedCases.map((c: any) => (
-                            <div key={c.id} onClick={() => { if(onOpenCase) { onOpenCase(c.id); onClose(); sound.click(); } }} className="p-3 bg-gray-900/50 border border-gray-800 rounded-lg flex items-center gap-3 hover:border-cyan-500/50 hover:bg-cyan-950/20 cursor-pointer transition-colors">
-                              <FolderArchive className="w-4 h-4 text-cyan-500 shrink-0" />
+                            <div key={c.id} onClick={() => { if(onOpenCase) { onOpenCase(c.id); onClose(); sound.click(); } }} className="p-3 bg-gray-900/50 border border-gray-800 rounded-lg flex items-center gap-3 hover:border-cipher-accent/50 hover:bg-cyan-950/20 cursor-pointer transition-colors">
+                              <FolderArchive className="w-4 h-4 text-cipher-accent shrink-0" />
                               <span className="text-sm text-gray-200 truncate">{c.title}</span>
                             </div>
                           ))}
@@ -330,7 +330,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                       {(currentUser?.tier === 'ADMIN' || currentUser?.tier === 'MODERATOR' || currentUser?.tier === 'CONTRIBUTOR') && (
                         <button
                           onClick={() => { setEditingRelationship(null); setIsRelationshipModalOpen(true); sound.click(); }}
-                          className="px-3 py-1.5 bg-cyan-950/30 border border-cyan-500/30 hover:border-cyan-500/80 rounded text-cyan-400 text-xs font-mono transition-colors flex items-center gap-1.5"
+                          className="px-3 py-1.5 bg-cyan-950/30 border border-cipher-accent/30 hover:border-cyan-500/80 rounded text-cipher-accent text-xs font-mono transition-colors flex items-center gap-1.5"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           Add Connection
@@ -358,13 +358,13 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                                 <img src={connectedEntity.imageUrl} alt={connectedEntity.name} className="w-10 h-10 rounded object-cover border border-gray-700 mt-1" />
                               ) : (
                                 <div className="w-10 h-10 rounded bg-gray-900 border border-gray-700 flex items-center justify-center shrink-0 mt-1">
-                                  {connectedEntity?.entityType === 'people' ? <User className="w-5 h-5 text-cyan-400" /> : connectedEntity?.entityType === 'organisations' ? <Building className="w-5 h-5 text-amber-400" /> : <MapPin className="w-5 h-5 text-emerald-400" />}
+                                  {connectedEntity?.entityType === 'people' ? <User className="w-5 h-5 text-cipher-accent" /> : connectedEntity?.entityType === 'organisations' ? <Building className="w-5 h-5 text-amber-400" /> : <MapPin className="w-5 h-5 text-emerald-400" />}
                                 </div>
                               )}
                               
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-mono text-cyan-500">{directionText}</span>
+                                  <span className="text-xs font-mono text-cipher-accent">{directionText}</span>
                                   {rel.verificationStatus === 'VERIFIED' && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
                                   {rel.verificationStatus === 'DISPUTED' && <AlertTriangle className="w-3.5 h-3.5 text-red-400" />}
                                 </div>
@@ -377,7 +377,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                                   <div className="mt-2 space-y-1">
                                     <div className="text-[10px] font-mono text-gray-500 uppercase">Supporting Evidence</div>
                                     {rel.evidenceList.map((evItem: any) => (
-                                      <div key={evItem.evidence.id} onClick={(e) => { e.stopPropagation(); setSelectedEvidence(evItem.evidence); }} className="text-xs text-cyan-400 hover:text-cyan-300 cursor-pointer flex items-center gap-1">
+                                      <div key={evItem.evidence.id} onClick={(e) => { e.stopPropagation(); setSelectedEvidence(evItem.evidence); }} className="text-xs text-cipher-accent hover:text-cipher-accent-hover cursor-pointer flex items-center gap-1">
                                         <Scale className="w-3 h-3" /> {evItem.evidence.title}
                                       </div>
                                     ))}
@@ -390,7 +390,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                                   <>
                                     <button
                                       onClick={() => { setEditingRelationship(rel); setIsRelationshipModalOpen(true); sound.click(); }}
-                                      className="p-1.5 text-gray-500 hover:text-cyan-400 transition-colors"
+                                      className="p-1.5 text-gray-500 hover:text-cipher-accent transition-colors"
                                       title="Edit Relationship"
                                     >
                                       <Edit className="w-4 h-4" />
@@ -427,7 +427,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                       {isEditable && (
                         <button
                           onClick={() => setIsAttachingEvidence(!isAttachingEvidence)}
-                          className="px-3 py-1.5 bg-cyan-900/30 text-cyan-400 border border-cyan-800 rounded text-xs font-bold hover:bg-cyan-800/50 transition-colors"
+                          className="px-3 py-1.5 bg-cyan-900/30 text-cipher-accent border border-cyan-800 rounded text-xs font-bold hover:bg-cyan-800/50 transition-colors"
                         >
                           {isAttachingEvidence ? 'Cancel' : '+ Attach Evidence'}
                         </button>
@@ -445,7 +445,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                               value={evidenceSearchQuery}
                               onChange={(e) => handleAttachEvidenceSearch(e.target.value)}
                               placeholder="Search by title, description..."
-                              className="w-full bg-black border border-gray-800 rounded p-2 pl-9 text-sm text-white focus:border-cyan-500 outline-none"
+                              className="w-full bg-black border border-gray-800 rounded p-2 pl-9 text-sm text-white focus:border-cipher-accent outline-none"
                             />
                           </div>
                         </div>
@@ -514,7 +514,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                               
                               <button
                                 onClick={() => setSelectedEvidence(ev)}
-                                className="w-full py-2 bg-black text-cyan-400 text-xs font-mono font-bold border border-cyan-900/50 hover:bg-cyan-950/30 rounded transition-colors"
+                                className="w-full py-2 bg-black text-cipher-accent text-xs font-mono font-bold border border-cyan-900/50 hover:bg-cyan-950/30 rounded transition-colors"
                               >
                                 VIEW EVIDENCE
                               </button>
@@ -530,7 +530,7 @@ export const EntityProfileModal: React.FC<Props> = ({ isOpen, onClose, entityId,
                 {activeTab === 'timeline' && (
                   <div className="text-center py-12 animate-in fade-in duration-300">
                     <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center mx-auto mb-4 border border-gray-800">
-                      <Calendar className="w-6 h-6 text-cyan-500/50" />
+                      <Calendar className="w-6 h-6 text-cipher-accent/50" />
                     </div>
                     <h3 className="text-lg font-bold text-white mb-2">Chronology</h3>
                     <p className="text-gray-400 max-w-md mx-auto text-sm">

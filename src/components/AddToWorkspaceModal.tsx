@@ -49,17 +49,17 @@ export const AddToWorkspaceModal: React.FC<Props> = ({ entityType, entityId, onC
       <div className="w-full max-w-md bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-2">
-            <FolderArchive className="w-4 h-4 text-cyan-400" />
+            <FolderArchive className="w-4 h-4 text-cipher-accent" />
             <span className="text-sm font-bold text-white uppercase tracking-wider">Add to Workspace</span>
           </div>
-          <button onClick={onClose} className="p-1 text-gray-500 hover:text-white transition-colors">
+          <button aria-label="Close" onClick={onClose} className="p-1 text-gray-500 hover:text-white transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
         
         <div className="p-4 max-h-[60vh] overflow-y-auto">
           {loading ? (
-            <div className="flex justify-center p-6"><Loader className="w-5 h-5 text-cyan-400 animate-spin" /></div>
+            <div className="flex justify-center p-6"><Loader className="w-5 h-5 text-cipher-accent animate-spin" /></div>
           ) : workspaces.length === 0 ? (
             <div className="text-center p-6 text-gray-500 text-sm">
               You have no active workspaces.<br/>Go to the Workspaces tab to create one.
@@ -71,18 +71,18 @@ export const AddToWorkspaceModal: React.FC<Props> = ({ entityType, entityId, onC
                   key={ws.id}
                   onClick={() => handleAdd(ws)}
                   disabled={addingTo !== null || successId !== null}
-                  className="flex items-center justify-between p-3 border border-white/10 rounded bg-black hover:bg-white/[0.02] hover:border-cyan-500/30 transition-all text-left group disabled:opacity-50"
+                  className="flex items-center justify-between p-3 border border-white/10 rounded bg-black hover:bg-white/[0.02] hover:border-cipher-accent/30 transition-all text-left group disabled:opacity-50"
                 >
                   <div>
-                    <h4 className="text-sm font-bold text-white group-hover:text-cyan-400">{ws.title}</h4>
+                    <h4 className="text-sm font-bold text-white group-hover:text-cipher-accent">{ws.title}</h4>
                   </div>
                   <div>
                     {successId === ws.id ? (
                       <Check className="w-4 h-4 text-emerald-400" />
                     ) : addingTo === ws.id ? (
-                      <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                      <Loader className="w-4 h-4 text-cipher-accent animate-spin" />
                     ) : (
-                      <Plus className="w-4 h-4 text-gray-500 group-hover:text-cyan-400" />
+                      <Plus className="w-4 h-4 text-gray-500 group-hover:text-cipher-accent" />
                     )}
                   </div>
                 </button>

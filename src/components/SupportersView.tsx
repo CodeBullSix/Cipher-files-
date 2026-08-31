@@ -133,20 +133,20 @@ export const SupportersView: React.FC<Props> = ({
         </h1>
         <p className="text-sm text-gray-300 font-sans leading-relaxed">
           Cipher Files operates as a 100% public, evidence-first research collective. 
-          There are <strong className="text-cyan-300">zero paywalled dossiers</strong> or locked intelligence — all files and investigative tools are free for all operatives. 
+          There are <strong className="text-cipher-accent-hover">zero paywalled dossiers</strong> or locked intelligence — all files and investigative tools are free for all operatives. 
           Supporter contributions directly keep our infrastructure running, with the <strong className="text-amber-300">#1 Highest Donator</strong> honored at the head of our permanent ledger.
         </p>
       </div>
 
       {/* #1 HIGHEST DONATOR PEDESTAL */}
       {highestDonator && (
-        <div className="relative rounded-2xl bg-gradient-to-r from-amber-950/40 via-[#120F08] to-amber-950/40 border-2 border-amber-500/60 p-6 sm:p-8 shadow-[0_0_40px_rgba(245,158,11,0.15)] overflow-hidden">
+        <div className="relative rounded-2xl bg-gradient-to-r from-amber-950/40 via-amber-950/40 to-amber-950/40 border-2 border-amber-500/60 p-6 sm:p-8 shadow-[0_0_40px_rgba(245,158,11,0.15)] overflow-hidden">
           <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
           
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
             <div className="flex items-center space-x-5 text-center md:text-left">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-xl flex items-center justify-center shrink-0">
-                <div className="w-full h-full bg-[#0E0C06] rounded-2xl flex flex-col items-center justify-center">
+                <div className="w-full h-full bg-amber-950/40 rounded-2xl flex flex-col items-center justify-center">
                   <Crown className="w-8 h-8 sm:w-10 sm:h-10 text-amber-400" />
                 </div>
               </div>
@@ -166,7 +166,7 @@ export const SupportersView: React.FC<Props> = ({
                 </h2>
                 
                 <div className="flex items-center justify-center md:justify-start gap-3 mt-1 text-xs font-mono text-gray-300">
-                  <span className="text-cyan-300 font-bold">[{highestDonator.callsign}]</span>
+                  <span className="text-cipher-accent-hover font-bold">[{highestDonator.callsign}]</span>
                   <span>•</span>
                   <span>Recorded: {highestDonator.timestamp}</span>
                 </div>
@@ -200,7 +200,7 @@ export const SupportersView: React.FC<Props> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* LEFT: MAKE A CONTRIBUTION / BECOME A SUPPORTER */}
-        <div className="lg:col-span-5 bg-[#090C16] border border-gray-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+        <div className="lg:col-span-5 bg-cipher-surface border border-gray-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
           <div>
             <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-800">
               <Sparkles className="w-4 h-4 text-amber-400" />
@@ -226,7 +226,7 @@ export const SupportersView: React.FC<Props> = ({
                       className={`p-3 rounded-xl border text-left transition-all ${
                         isSelected
                           ? 'bg-amber-500/15 border-amber-500 text-amber-200 ring-1 ring-amber-500/40'
-                          : 'bg-[#0E121E] border-gray-800 text-gray-300 hover:border-gray-700'
+                          : 'bg-cipher-elevated border-gray-800 text-gray-300 hover:border-gray-700'
                       }`}
                     >
                       <div className="flex items-center justify-between font-mono mb-1">
@@ -257,10 +257,10 @@ export const SupportersView: React.FC<Props> = ({
                     type="number"
                     min="1"
                     step="1"
-                    placeholder="e.g. 250"
+                    placeholder="e.g. 250" aria-label="e.g. 250"
                     value={customAmount}
                     onChange={(e) => handleCustomChange(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 bg-[#0E121E] border border-gray-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-amber-500"
+                    className="w-full pl-7 pr-3 py-2 bg-cipher-elevated border border-gray-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -274,10 +274,10 @@ export const SupportersView: React.FC<Props> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Dr. Jane Doe"
+                    placeholder="e.g. Dr. Jane Doe" aria-label="e.g. Dr. Jane Doe"
                     value={donorName}
                     onChange={(e) => setDonorName(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
@@ -288,10 +288,10 @@ export const SupportersView: React.FC<Props> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. VECTOR-09"
+                    placeholder="e.g. VECTOR-09" aria-label="e.g. VECTOR-09"
                     value={donorCallsign}
                     onChange={(e) => setDonorCallsign(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0E121E] border border-gray-800 rounded-lg text-white font-mono text-xs uppercase focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-cipher-elevated border border-gray-800 rounded-lg text-white font-mono text-xs uppercase focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -306,7 +306,7 @@ export const SupportersView: React.FC<Props> = ({
                   placeholder="e.g. For Gary Webb and all seekers of declassified truth."
                   value={donorMessage}
                   onChange={(e) => setDonorMessage(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0E121E] border border-gray-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500 resize-none"
+                  className="w-full px-3 py-2 bg-cipher-elevated border border-gray-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-amber-500 resize-none"
                 />
               </div>
 
@@ -326,7 +326,7 @@ export const SupportersView: React.FC<Props> = ({
 
           <div className="mt-6 pt-4 border-t border-gray-800/80 text-[11px] font-mono text-gray-400 flex items-center justify-between">
             <span className="flex items-center space-x-1.5">
-              <ShieldCheck className="w-4 h-4 text-cyan-400" />
+              <ShieldCheck className="w-4 h-4 text-cipher-accent" />
               <span>Simulated Instant Ledger Sync</span>
             </span>
             <span className="text-gray-500">Public & Permanent</span>
@@ -342,7 +342,7 @@ export const SupportersView: React.FC<Props> = ({
                 LIVE DONOR ROLL OF HONOR ({sortedSupporters.length})
               </h3>
             </div>
-            <span className="text-xs font-mono text-cyan-400">
+            <span className="text-xs font-mono text-cipher-accent">
               REAL-TIME FIRESTORE SYNC
             </span>
           </div>
@@ -356,8 +356,8 @@ export const SupportersView: React.FC<Props> = ({
                   key={supporter.id}
                   className={`p-4 rounded-xl border transition-all ${
                     isTop
-                      ? 'bg-gradient-to-r from-amber-950/40 via-[#10131E] to-[#0A0D18] border-amber-500/80 ring-1 ring-amber-500/40 shadow-lg'
-                      : 'bg-[#090C16] border-gray-800 hover:border-gray-700'
+                      ? 'bg-gradient-to-r from-amber-950/40 via-cipher-elevated to-cipher-surface border-amber-500/80 ring-1 ring-amber-500/40 shadow-lg'
+                      : 'bg-cipher-surface border-gray-800 hover:border-gray-700'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -391,7 +391,7 @@ export const SupportersView: React.FC<Props> = ({
                         </div>
 
                         <div className="flex items-center space-x-2 text-[11px] font-mono text-gray-400">
-                          <span className="text-cyan-400">[{supporter.callsign}]</span>
+                          <span className="text-cipher-accent">[{supporter.callsign}]</span>
                           <span>•</span>
                           <span>{supporter.tierName}</span>
                           <span>•</span>

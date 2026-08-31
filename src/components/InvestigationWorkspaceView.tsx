@@ -66,7 +66,7 @@ export const InvestigationWorkspaceView: React.FC<Props> = ({ currentUser, onOpe
   if (!currentUser) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in">
-        <FolderArchive className="w-16 h-16 text-cyan-500/30 mb-6" />
+        <FolderArchive className="w-16 h-16 text-cipher-accent/30 mb-6" />
         <h2 className="text-2xl font-bold text-white mb-3 font-mono">PRIVATE INVESTIGATION WORKSPACE</h2>
         <p className="text-gray-400 max-w-md font-sans">You must be logged in to create and access your private working theories and notes.</p>
       </div>
@@ -95,16 +95,16 @@ export const InvestigationWorkspaceView: React.FC<Props> = ({ currentUser, onOpe
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 mb-6 border-b border-gray-800 shrink-0 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Database className="w-4 h-4 text-cyan-400" />
-            <span className="text-[10px] font-mono tracking-widest text-cyan-500/80 uppercase">PRIVATE CLEARANCE</span>
+            <Database className="w-4 h-4 text-cipher-accent" />
+            <span className="text-[10px] font-mono tracking-widest text-cipher-accent/80 uppercase">PRIVATE CLEARANCE</span>
           </div>
           <h2 className="text-2xl font-bold text-white uppercase tracking-wider font-mono">PRIVATE INVESTIGATION WORKSPACE</h2>
-          <p className="text-sm text-gray-400 mt-1">Private working theories, notes, and unverified paths.</p>
+          <p className="text-sm text-gray-400 mt-1">Keep your own notes, theories and proposed connections separate from official data. Only visible to you.</p>
         </div>
         
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-cipher-accent/10 hover:bg-cipher-accent-hover/20 text-cipher-accent border border-cipher-accent/30 rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span className="text-xs uppercase tracking-wider font-medium">New Workspace</span>
@@ -113,7 +113,7 @@ export const InvestigationWorkspaceView: React.FC<Props> = ({ currentUser, onOpe
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader className="w-6 h-6 text-cyan-400 animate-spin" />
+          <Loader className="w-6 h-6 text-cipher-accent animate-spin" />
         </div>
       ) : workspaces.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
@@ -121,7 +121,7 @@ export const InvestigationWorkspaceView: React.FC<Props> = ({ currentUser, onOpe
           <p className="text-gray-400 mb-4">No active workspaces found.</p>
           <button
             onClick={handleCreate}
-            className="text-cyan-400 hover:text-cyan-300 text-sm font-medium uppercase tracking-wider"
+            className="text-cipher-accent hover:text-cipher-accent-hover text-sm font-medium uppercase tracking-wider"
           >
             Create your first workspace
           </button>
@@ -135,7 +135,7 @@ export const InvestigationWorkspaceView: React.FC<Props> = ({ currentUser, onOpe
                 sound.click();
                 setActiveWorkspaceId(ws.id);
               }}
-              className="group relative bg-[#111] border border-white/10 hover:border-cyan-500/30 rounded-xl p-5 cursor-pointer transition-all hover:bg-white/[0.02]"
+              className="group relative bg-[#111] border border-white/10 hover:border-cipher-accent/30 rounded-xl p-5 cursor-pointer transition-all hover:bg-white/[0.02]"
             >
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
@@ -145,7 +145,7 @@ export const InvestigationWorkspaceView: React.FC<Props> = ({ currentUser, onOpe
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{ws.title}</h3>
+              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-cipher-accent transition-colors">{ws.title}</h3>
               <p className="text-sm text-gray-400 line-clamp-2 mb-4">{ws.description || 'No description'}</p>
               
               <div className="flex items-center justify-between text-xs text-gray-500">

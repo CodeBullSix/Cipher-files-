@@ -84,8 +84,8 @@ export const NotificationsPanel: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-[#05070e] border-l border-slate-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#080b12]">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-cipher-base border-l border-slate-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-cipher-surface">
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-emerald-400" />
           <h2 className="text-sm font-mono font-bold text-white tracking-wider">SECURE COMMS</h2>
@@ -99,7 +99,7 @@ export const NotificationsPanel: React.FC<Props> = ({
               <Check className="w-3 h-3" /> MARK ALL READ
             </button>
           )}
-          <button onClick={onClose} className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-colors">
+          <button aria-label="Close" onClick={onClose} className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -122,8 +122,8 @@ export const NotificationsPanel: React.FC<Props> = ({
               key={n.id}
               className={`p-3 rounded-xl border transition-all cursor-pointer group ${
                 n.isRead 
-                  ? 'bg-[#080b12] border-slate-800/60 opacity-70' 
-                  : 'bg-[#0a0e1a] border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                  ? 'bg-cipher-surface border-slate-800/60 opacity-70' 
+                  : 'bg-cipher-surface border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
               }`}
               onClick={() => handleNotificationClick(n)}
             >
@@ -133,7 +133,7 @@ export const NotificationsPanel: React.FC<Props> = ({
                 }`}>
                   {n.type === 'LEVEL_UP' ? <ChevronUp className={`w-3.5 h-3.5 ${!n.isRead ? 'text-emerald-400' : 'text-slate-400'}`} /> :
                    n.type === 'ACHIEVEMENT_UNLOCKED' ? <Award className={`w-3.5 h-3.5 ${!n.isRead ? 'text-amber-400' : 'text-slate-400'}`} /> :
-                   n.type === 'DISCUSSION_REPLY' ? <MessageSquare className={`w-3.5 h-3.5 ${!n.isRead ? 'text-cyan-400' : 'text-slate-400'}`} /> :
+                   n.type === 'DISCUSSION_REPLY' ? <MessageSquare className={`w-3.5 h-3.5 ${!n.isRead ? 'text-cipher-accent' : 'text-slate-400'}`} /> :
                    n.type === 'CONTRIBUTION_STATUS' ? <FileText className={`w-3.5 h-3.5 ${!n.isRead ? 'text-purple-400' : 'text-slate-400'}`} /> :
                    <Bell className={`w-3.5 h-3.5 ${!n.isRead ? 'text-emerald-400' : 'text-slate-400'}`} />}
                 </div>

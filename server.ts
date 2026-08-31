@@ -25,12 +25,20 @@ import { notificationsRouter } from "./src/routes/notifications.js";
 import { followsRouter } from "./src/routes/follows.js";
 import { moderationRouter } from "./src/routes/moderation.js";
 import workspacesRoutes from "./src/routes/workspaces.js";
+import { reportsRouter } from "./src/routes/reports.js";
+import { apiLimiter, mutationLimiter, strictLimiter } from "./src/middleware/rateLimiter.js";
+import { appealsRouter } from "./src/routes/appeals.js";
+import { submissionsRouter } from "./src/routes/submissions.js";
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy layer to resolve client IPs correctly
 const PORT = 3000;
 
 app.use(express.json());
+
+  // Apply global rate limiting to all /api routes
+  app.use('/api/', apiLimiter);
 
 // API Routes
 app.use('/api/evidence', evidenceRoutes);
@@ -41,6 +49,11 @@ app.use('/api/graph', graphRouter);
 app.use("/api/search", searchRoutes);
 app.use('/api/workspaces', workspacesRoutes);
 app.use('/api/moderation', moderationRouter);
+  app.use('/api/reports', reportsRouter);
+  app.use('/api/appeals', appealsRouter);
+  app.use("/api/submissions", submissionsRouter);
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/follows', followsRouter);
 
 
 app.get('/api/users', requireAuth, async (req: AuthRequest, res) => {
@@ -90,7 +103,10 @@ app.get('/api/users/:id/reputation', async (req, res) => {
 
 app.get('/api/cases', async (req, res) => {
   try {
-    const cases = await getCases();
+    const query = req.query.query as string;
+    const category = req.query.category as string;
+    const status = req.query.status as string;
+    const cases = await getCases(query, category, status);
     res.json(cases);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch cases' });
@@ -103,6 +119,36 @@ app.get('/api/cases/:id', async (req, res) => {
     res.json(c);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch case' });
+  }
+});
+
+app.patch('/api/cases/:id/feature', requireAuth, requireModerator, async (req: AuthRequest, res) => {
+  try {
+    const { featured, featuredOrder, editorialCollection, editorialDescription } = req.body;
+    const { updateCase } = await import('./src/db/cases.js');
+    const updated = await updateCase(req.params.id, { 
+      featured, 
+      featuredOrder: featuredOrder !== undefined ? featuredOrder : null, 
+      editorialCollection: editorialCollection !== undefined ? editorialCollection : null,
+      editorialDescription: editorialDescription !== undefined ? editorialDescription : null
+    });
+    // Log the audit
+    
+    const { db } = await import('./src/db/index.js');
+    const { moderationLogs } = await import('./src/db/schema.js');
+    await db.insert(moderationLogs).values({
+      id: `mod-log-${Date.now()}`,
+      actorId: req.user!.uid,
+      action: featured ? 'APPROVE' : 'REMOVE', // repurposing these enum values for feature/unfeature
+      targetType: 'case_files_featured',
+      targetId: req.params.id,
+      reason: `Set featured to ${featured}, order ${featuredOrder}, collection ${editorialCollection}`
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    console.error('Failed to feature case:', error);
+    res.status(500).json({ error: 'Failed to feature case' });
   }
 });
 
@@ -126,7 +172,7 @@ app.get('/api/discussions/:id/evidence', async (req, res) => {
   }
 });
 
-app.post('/api/discussions', requireAuth, async (req: AuthRequest, res) => {
+app.post('/api/discussions', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const discussion = await createDiscussion({ ...req.body, id: `disc-${Date.now()}`, authorId: req.user!.uid });
     await awardReputation(req.user!.uid, 'CREATED_DISCUSSION', 10, discussion.id, 'Started a new discussion');
@@ -145,7 +191,7 @@ app.get('/api/discussions/:id/replies', async (req, res) => {
   }
 });
 
-app.post('/api/discussions/:id/replies', requireAuth, async (req: AuthRequest, res) => {
+app.post('/api/discussions/:id/replies', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const disc = await getDiscussionById(req.params.id);
     if (!disc) return res.status(404).json({ error: 'Discussion not found' });
@@ -242,6 +288,27 @@ function getAi(): GoogleGenAI {
   }
   return aiClient;
 }
+
+// Health check endpoint
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const cases = await getCases();
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://cipherfiles.com/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>`;
+
+    for (const c of cases) {
+      xml += `\n  <url>\n    <loc>https://cipherfiles.com/cases/${c.id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`;
+    }
+
+    xml += `\n</urlset>`;
+
+    res.header('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (err) {
+    console.error('Sitemap generation error:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -364,35 +431,6 @@ setTimeout(() => {
   syncRssFeeds().catch(console.error);
 }, 5000);
 
-async function start() {
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  
-app.post('/api/users/me/reputation/reward', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const { amount, reason } = req.body;
-    if (!amount || typeof amount !== 'number' || amount <= 0) {
-      return res.status(400).json({ error: 'Invalid amount' });
-    }
-    const result = await awardReputation(req.user!.uid, 'MANUAL_REWARD', amount, undefined, reason);
-    res.json(result);
-  } catch (error: any) {
-    res.status(500).json({ error: 'Failed to award reputation' });
-  }
-});
-
 
 app.get('/api/users/:id/contributions', async (req, res) => {
   try {
@@ -406,7 +444,22 @@ app.get('/api/users/:id/contributions', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+async function start() {
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath, { setHeaders: (res, path) => { if (path.includes('/assets/')) res.setHeader('Cache-Control', 'public, max-age=31536000'); } }));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`CIPHER FILES Intelligence Server active on http://0.0.0.0:${PORT}`);
   });
 }

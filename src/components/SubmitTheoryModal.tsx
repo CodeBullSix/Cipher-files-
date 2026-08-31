@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Category, EvidenceRating, CaseFile, UserProfile } from '../types';
-import { FirestoreService } from '../services/firestoreService';
+import { ApiService } from '../services/apiService';
 import { GeminiService } from '../services/geminiService';
 import { processImageUpload } from '../utils/imageUpload';
 import { processVideoUpload, parseMediaUrl } from '../utils/mediaUtils';
@@ -202,7 +202,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
     };
 
     try {
-      await FirestoreService.createCase(newCase);
+      await ApiService.createSubmission({ title: newCase.title, summary: newCase.summary, type: 'CASE', content: newCase });
       sound.blip();
       onSubmitted();
       onClose();
@@ -215,18 +215,18 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-4xl bg-[#090C16] border border-cyan-500/40 rounded-2xl shadow-2xl overflow-hidden text-gray-200 flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-4xl bg-cipher-surface border border-cipher-accent/40 rounded-2xl shadow-2xl overflow-hidden text-gray-200 flex flex-col max-h-[92vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 bg-[#05070E] border-b border-cyan-500/20 flex items-center justify-between">
+        <div className="px-6 py-4 bg-cipher-panel border-b border-cipher-accent/20 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="w-10 h-10 rounded-xl bg-cipher-accent/10 border border-cipher-accent/30 flex items-center justify-center text-cipher-accent">
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-mono text-base font-bold text-white tracking-wider">CREATE CONSPIRACY THEORY DOSSIER</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 font-mono border border-cyan-800 uppercase">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cipher-accent font-mono border border-cyan-800 uppercase">
                   COMMUNITY HUB
                 </span>
               </div>
@@ -234,7 +234,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
             </div>
           </div>
 
-          <button 
+          <button aria-label="Close" 
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
@@ -243,15 +243,15 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
         </div>
 
         {/* AI Declassification Assistant Banner */}
-        <div className="px-6 py-3 bg-[#0D1322] border-b border-cyan-500/20 flex items-center justify-between text-xs font-mono">
-          <div className="flex items-center space-x-2 text-cyan-300">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
+        <div className="px-6 py-3 bg-cipher-elevated border-b border-cipher-accent/20 flex items-center justify-between text-xs font-mono">
+          <div className="flex items-center space-x-2 text-cipher-accent-hover">
+            <Sparkles className="w-4 h-4 text-cipher-accent" />
             <span>Have raw leak notes or transcripts? Use AI Auto-Dossier Synthesizer:</span>
           </div>
           <button
             type="button"
             onClick={() => setStep(step === 2 ? 1 : 2)}
-            className="px-3 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition-colors flex items-center space-x-1.5"
+            className="px-3 py-1 rounded bg-cipher-accent/20 hover:bg-cipher-accent-hover/30 text-cipher-accent-hover border border-cipher-accent/40 transition-colors flex items-center space-x-1.5"
           >
             <Wand2 className="w-3.5 h-3.5" />
             <span>{step === 2 ? 'Return to Manual Form' : 'AI Note Synthesizer'}</span>
@@ -259,7 +259,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
         </div>
 
         {/* Body Form */}
-        <div className="flex-1 overflow-y-auto p-6 bg-[#05070E]">
+        <div className="flex-1 overflow-y-auto p-6 bg-cipher-panel">
           {step === 2 ? (
             /* AI RAW PARSER STEP */
             <div className="space-y-4 max-w-2xl mx-auto font-mono">
@@ -288,7 +288,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
                   type="button"
                   disabled={!rawDeclassifyText.trim() || isAiStructuring}
                   onClick={handleAiAutoStructure}
-                  className="px-5 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-black font-bold text-xs flex items-center space-x-2"
+                  className="px-5 py-2 rounded-lg bg-cipher-accent hover:bg-cyan-300 disabled:opacity-50 text-black font-bold text-xs flex items-center space-x-2"
                 >
                   {isAiStructuring ? (
                     <>
@@ -311,13 +311,13 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
               {/* Row 1: Title & Category */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2 space-y-1.5">
-                  <label className="block text-xs font-mono text-cyan-400 font-bold">
+                  <label className="block text-xs font-mono text-cipher-accent font-bold">
                     THEORY / DOSSIER TITLE *
                   </label>
                   <input 
                     type="text"
                     required
-                    placeholder="e.g. Hollow Earth Agartha Expedition, Tartaria Mud Flood..."
+                    placeholder="e.g. Hollow Earth Agartha Expedition, Tartaria Mud Flood..." aria-label="e.g. Hollow Earth Agartha Expedition, Tartaria Mud Flood..."
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-gray-950 border border-gray-800 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
@@ -325,13 +325,13 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-cyan-400 font-bold">
+                  <label className="block text-xs font-mono text-cipher-accent font-bold">
                     CATEGORY *
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as Category)}
-                    className="w-full px-3.5 py-2.5 bg-gray-950 border border-gray-800 rounded-lg text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 font-mono"
+                    className="w-full px-3.5 py-2.5 bg-gray-950 border border-gray-800 rounded-lg text-xs text-cipher-accent-hover focus:outline-none focus:border-cyan-400 font-mono"
                   >
                     <option value="UFOS_UAP">UFOs & Non-Human Intelligence</option>
                     <option value="GOVERNMENT_INTELLIGENCE">Government & Intelligence Programs</option>
@@ -355,7 +355,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
                   </label>
                   <input 
                     type="text"
-                    placeholder="e.g. Subterranean Entrances & Admiral Byrd's Polar Telemetry"
+                    placeholder="e.g. Subterranean Entrances & Admiral Byrd's Polar Telemetry" aria-label="e.g. Subterranean Entrances & Admiral Byrd's Polar Telemetry"
                     value={subtitle}
                     onChange={(e) => setSubtitle(e.target.value)}
                     className="w-full px-3.5 py-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
@@ -369,7 +369,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as EvidenceRating)}
-                    className="w-full px-3.5 py-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 font-mono"
+                    className="w-full px-3.5 py-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-cipher-accent-hover focus:outline-none focus:border-cyan-400 font-mono"
                   >
                     <option value="UNVERIFIED">UNVERIFIED // COMPELLING LORE</option>
                     <option value="DISPUTED">DISPUTED // COMPETING THEORIES</option>
@@ -381,7 +381,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
 
               {/* Row 3: Core Claim */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-mono text-cyan-400 font-bold">
+                <label className="block text-xs font-mono text-cipher-accent font-bold">
                   CORE HYPOTHESIS & THEORY CLAIM *
                 </label>
                 <textarea 
@@ -398,7 +398,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Cover Image Upload */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-cyan-400 font-bold">
+                  <label className="block text-xs font-mono text-cipher-accent font-bold">
                     EVIDENCE / COVER PHOTO (SCAN / PNG / JPG)
                   </label>
                   <input 
@@ -411,16 +411,16 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
 
                   <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-800 hover:border-cyan-500/50 rounded-xl p-4 bg-gray-950/40 text-center cursor-pointer transition-colors group flex flex-col items-center justify-center space-y-2 min-h-[140px]"
+                    className="border-2 border-dashed border-gray-800 hover:border-cipher-accent/50 rounded-xl p-4 bg-gray-950/40 text-center cursor-pointer transition-colors group flex flex-col items-center justify-center space-y-2 min-h-[140px]"
                   >
                     {coverImage ? (
                       <div className="relative group/img w-full flex flex-col items-center">
-                        <img src={coverImage} alt="Cover preview" className="max-h-32 rounded-lg object-cover border border-cyan-500/40" />
-                        <span className="text-[10px] font-mono text-cyan-400 block mt-1">Click to replace photo</span>
+                        <img src={coverImage} alt="Cover preview" className="max-h-32 rounded-lg object-cover border border-cipher-accent/40" />
+                        <span className="text-[10px] font-mono text-cipher-accent block mt-1">Click to replace photo</span>
                       </div>
                     ) : (
                       <>
-                        <ImageIcon className="w-6 h-6 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+                        <ImageIcon className="w-6 h-6 text-gray-500 group-hover:text-cipher-accent transition-colors" />
                         <div className="text-xs font-mono text-gray-300">
                           {isUploadingImage ? 'Processing image...' : 'Click to select or drag & drop photo scan'}
                         </div>
@@ -474,8 +474,8 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
 
               {/* Media Preview if attached */}
               {(coverImage || uploadedVideo || videoUrl.trim()) && (
-                <div className="p-3 rounded-xl bg-black/60 border border-cyan-500/30 space-y-2">
-                  <div className="text-[10px] font-mono text-cyan-400 font-bold">
+                <div className="p-3 rounded-xl bg-black/60 border border-cipher-accent/30 space-y-2">
+                  <div className="text-[10px] font-mono text-cipher-accent font-bold">
                     ATTACHED MEDIA PREVIEW:
                   </div>
                   <MediaAttachmentViewer
@@ -489,11 +489,11 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
               {/* Row 5: Conviction / Belief Score Slider */}
               <div className="p-4 rounded-xl bg-gray-950/60 border border-gray-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-cyan-400 font-bold flex items-center space-x-1.5">
+                  <label className="text-xs font-mono text-cipher-accent font-bold flex items-center space-x-1.5">
                     <Flame className="w-4 h-4 text-amber-400" />
                     <span>THEORIST CONVICTION / BELIEF METER</span>
                   </label>
-                  <span className="text-sm font-mono font-extrabold text-cyan-300">{beliefScore}%</span>
+                  <span className="text-sm font-mono font-extrabold text-cipher-accent-hover">{beliefScore}%</span>
                 </div>
                 <input 
                   type="range"
@@ -546,7 +546,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
                 </label>
                 <input 
                   type="text"
-                  placeholder="e.g. Antarctica, Hollow Earth, Byrd, UFOs"
+                  placeholder="e.g. Antarctica, Hollow Earth, Byrd, UFOs" aria-label="e.g. Antarctica, Hollow Earth, Byrd, UFOs"
                   value={tagsText}
                   onChange={(e) => setTagsText(e.target.value)}
                   className="w-full px-3.5 py-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
@@ -565,7 +565,7 @@ export const SubmitTheoryModal: React.FC<Props> = ({ onClose, onSubmitted, curre
                 <button
                   type="submit"
                   disabled={isSubmitting || !title.trim() || !claim.trim()}
-                  className="px-6 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-black font-extrabold text-xs font-mono flex items-center space-x-2 transition-all shadow-lg"
+                  className="px-6 py-2.5 rounded-lg bg-cipher-accent hover:bg-cyan-300 disabled:opacity-50 text-black font-extrabold text-xs font-mono flex items-center space-x-2 transition-all shadow-lg"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Publishing Dossier...' : 'Publish to Community Archive'}</span>

@@ -23,10 +23,10 @@ export const VipClearanceModal: React.FC<VipClearanceModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-5xl bg-[#090C16] border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden text-gray-200 flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-5xl bg-cipher-surface border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden text-gray-200 flex flex-col max-h-[92vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-amber-950/40 via-[#0C101D] to-amber-950/40 border-b border-amber-500/30 flex items-center justify-between">
+        <div className="px-6 py-4 bg-gradient-to-r from-amber-950/40 via-cipher-elevated to-amber-950/40 border-b border-amber-500/30 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Crown className="w-5 h-5" />
@@ -46,7 +46,7 @@ export const VipClearanceModal: React.FC<VipClearanceModalProps> = ({
             </div>
           </div>
 
-          <button 
+          <button aria-label="Close" 
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
           >

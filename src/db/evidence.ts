@@ -1,6 +1,6 @@
 import { db } from './index.js';
 import {
-  evidenceItems, sources, documents, evidenceCaseFiles, evidenceDiscussions, evidenceAuditLogs, users, evidencePeople, evidenceOrganisations, evidenceLocations, evidenceEntityRelationships,
+  evidenceItems, sources, documents, evidenceCaseFiles, evidenceDiscussions, evidenceAuditLogs, moderationLogs, users, evidencePeople, evidenceOrganisations, evidenceLocations, evidenceEntityRelationships,
   people, organisations, locations, events, eventEvidence
 } from './schema.js';
 import { eq, and, desc, isNull, inArray, ilike, or } from 'drizzle-orm';

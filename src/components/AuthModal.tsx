@@ -115,17 +115,17 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-md my-auto rounded-2xl border border-cyan-500/30 bg-[#0A0D14] shadow-2xl overflow-hidden flex flex-col font-sans">
+      <div className="relative w-full max-w-md my-auto rounded-2xl border border-cipher-accent/30 bg-cipher-surface shadow-2xl overflow-hidden flex flex-col font-sans">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#05070A]">
+        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-cipher-panel">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-cyan-400" />
+            <ShieldCheck className="w-5 h-5 text-cipher-accent" />
             <h2 className="text-sm font-bold text-white font-mono tracking-wider uppercase">
               {mode === 'SIGNUP' ? 'SECURE REGISTRATION' : mode === 'LOGIN' ? 'OPERATIVE LOGIN' : 'RESET PASSWORD'}
             </h2>
           </div>
-          <button onClick={handleClose} disabled={loading} className="text-gray-500 hover:text-white transition-colors disabled:opacity-50">
+          <button aria-label="Close" onClick={handleClose} disabled={loading} className="text-gray-500 hover:text-white transition-colors disabled:opacity-50">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -154,12 +154,12 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
-                  type="email"
+                  aria-label="Email" type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                   required
-                  className="w-full bg-[#05070A] border border-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors text-sm"
+                  className="w-full bg-cipher-panel border border-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-cipher-accent transition-colors text-sm"
                   placeholder="operative@domain.com"
                 />
               </div>
@@ -175,7 +175,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                     <button 
                       type="button" 
                       onClick={() => { setMode('FORGOT_PASSWORD'); setError(null); setSuccessMsg(null); sound.click(); }}
-                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono"
+                      className="text-[10px] text-cipher-accent hover:text-cipher-accent-hover font-mono"
                     >
                       FORGOT PASSWORD?
                     </button>
@@ -184,12 +184,12 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
-                    type="password"
+                    aria-label="Password" type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
                     required
-                    className="w-full bg-[#05070A] border border-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors text-sm"
+                    className="w-full bg-cipher-panel border border-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-cipher-accent transition-colors text-sm"
                     placeholder="••••••••"
                   />
                 </div>
@@ -204,12 +204,12 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
-                    type="password"
+                    aria-label="Password" type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={loading}
                     required
-                    className="w-full bg-[#05070A] border border-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors text-sm"
+                    className="w-full bg-cipher-panel border border-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-cipher-accent transition-colors text-sm"
                     placeholder="••••••••"
                   />
                 </div>
@@ -219,7 +219,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-sm py-3 rounded-lg uppercase tracking-widest flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(0,229,255,0.2)]"
+              className="w-full mt-2 bg-cipher-accent hover:bg-cipher-accent-hover text-black font-mono font-bold text-sm py-3 rounded-lg uppercase tracking-widest flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-[0_0_15px_rgba(0,229,255,0.2)]"
             >
               {loading ? (
                 <span className="animate-pulse">PROCESSING...</span>
@@ -270,7 +270,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 Don't have an account?{' '}
                 <button 
                   onClick={() => { setMode('SIGNUP'); setError(null); setSuccessMsg(null); sound.click(); }}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold ml-1 transition-colors"
+                  className="text-cipher-accent hover:text-cipher-accent-hover font-bold ml-1 transition-colors"
                 >
                   SIGN UP
                 </button>
@@ -280,7 +280,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 Already have an account?{' '}
                 <button 
                   onClick={() => { setMode('LOGIN'); setError(null); setSuccessMsg(null); sound.click(); }}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold ml-1 transition-colors"
+                  className="text-cipher-accent hover:text-cipher-accent-hover font-bold ml-1 transition-colors"
                 >
                   SIGN IN
                 </button>
@@ -288,7 +288,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             ) : (
               <button 
                 onClick={() => { setMode('LOGIN'); setError(null); setSuccessMsg(null); sound.click(); }}
-                className="text-xs text-cyan-400 hover:text-cyan-300 font-bold transition-colors flex items-center justify-center gap-1 mx-auto"
+                className="text-xs text-cipher-accent hover:text-cipher-accent-hover font-bold transition-colors flex items-center justify-center gap-1 mx-auto"
               >
                 <ArrowRight className="w-3 h-3 rotate-180" />
                 BACK TO LOGIN

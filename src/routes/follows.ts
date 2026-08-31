@@ -1,10 +1,11 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
 import { checkIsFollowing, followUser, unfollowUser, getFollowers, getFollowing, getFollowCounts } from '../db/follows.js';
+import { mutationLimiter } from '../middleware/rateLimiter.js';
 
 export const followsRouter = express.Router();
 
-followsRouter.post('/:id/follow', requireAuth, async (req: AuthRequest, res) => {
+followsRouter.post('/:id/follow', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     if (req.user!.uid === req.params.id) {
       return res.status(400).json({ error: 'Cannot follow yourself' });
@@ -16,7 +17,7 @@ followsRouter.post('/:id/follow', requireAuth, async (req: AuthRequest, res) => 
   }
 });
 
-followsRouter.delete('/:id/follow', requireAuth, async (req: AuthRequest, res) => {
+followsRouter.delete('/:id/follow', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     await unfollowUser(req.user!.uid, req.params.id);
     res.json({ success: true });

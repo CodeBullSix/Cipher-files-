@@ -1,1 +1,1 @@
-require('child_process').execSync('npm run build', {stdio: 'inherit'});
+require('child_process').execSync('rm -rf dist && npm run build', {stdio: 'inherit'});

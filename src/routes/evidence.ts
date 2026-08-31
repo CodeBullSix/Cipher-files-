@@ -9,6 +9,7 @@ import multer from 'multer';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
+import { mutationLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -67,7 +68,7 @@ router.get('/', async (req, res) => {
 
 
 // POST new evidence
-router.post('/', requireAuth, async (req: AuthRequest, res) => {
+router.post('/', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const evidence = await createEvidence(req.body, req.dbUser.uid);
     await awardReputation(req.dbUser.uid, 'CONTRIBUTED_EVIDENCE', 25, evidence.id, 'Contributed new evidence');
@@ -102,7 +103,7 @@ router.get('/sources/:id', async (req, res) => {
 });
 
 // POST new source
-router.post('/sources', requireAuth, async (req: AuthRequest, res) => {
+router.post('/sources', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const id = crypto.randomUUID();
     const result = await db.insert(sources).values({

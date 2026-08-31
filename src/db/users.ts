@@ -48,6 +48,7 @@ export async function getAllUsersPublic() {
     reputation: users.reputation,
     level: users.level,
     createdAt: users.createdAt,
+    deletedAt: users.deletedAt,
   }).from(users);
   return result;
 }

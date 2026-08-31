@@ -154,7 +154,7 @@ export class StorageService {
     const pruned = trail.slice(0, 15);
     this.save(STORAGE_KEYS.TRAIL, pruned);
     
-    // XP reward for diving
+    // REP reward for diving
     const profile = this.getProfile();
     profile.rabbitHolesFollowed += 1;
     this.save(STORAGE_KEYS.PROFILE, profile);
@@ -354,7 +354,7 @@ export class StorageService {
       this.save(STORAGE_KEYS.CASES, cases);
     }
 
-    const xpAmount = stance === 'DEVILS_ADVOCATE' ? 40 : 25;
+    const repAmount = stance === 'DEVILS_ADVOCATE' ? 40 : 25;
     sound.playClick(1100);
     return newComment;
   }
@@ -567,7 +567,7 @@ export class StorageService {
     return saved;
   }
 
-  // INVESTIGATOR PROFILE & XP
+  // INVESTIGATOR PROFILE & REP
   public static getProfile(): InvestigatorProfile {
     return this.load<InvestigatorProfile>(STORAGE_KEYS.PROFILE, INITIAL_USER_PROFILE);
   }
@@ -582,9 +582,7 @@ export class StorageService {
     return updated;
   }
 
-  public static addXp(amount: number, reason: string): { newXp: number, leveledUp: boolean, newRank?: InvestigatorRank } {
-    return { newXp: 0, leveledUp: false };
-  }
+  
 
   // RESET TO DEFAULTS
   public static resetToFactory() {

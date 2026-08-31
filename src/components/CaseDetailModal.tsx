@@ -314,12 +314,12 @@ export const CaseDetailModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-5xl my-auto rounded-2xl border border-cyan-500/40 bg-[#080B14] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200">
+      <div className="relative w-full max-w-5xl my-auto rounded-2xl border border-cipher-accent/40 bg-cipher-surface shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-gray-200">
         
         {/* Top Intelligence Header Banner */}
-        <div className="bg-[#04060C] border-b border-cyan-500/20 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        <div className="bg-cipher-base border-b border-cipher-accent/20 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="font-mono font-black text-xs sm:text-sm text-cyan-400 bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/40">
+            <span className="font-mono font-black text-xs sm:text-sm text-cipher-accent bg-cyan-950/80 px-2.5 py-1 rounded border border-cipher-accent/40">
               {currentCase.caseNumber}
             </span>
             <StatusBadge status={currentCase.status} size="sm" />
@@ -339,10 +339,10 @@ export const CaseDetailModal: React.FC<Props> = ({
                     currentCase.authorCallsign || 'AGENT-UNKNOWN'
                   );
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-900/60 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-cyan-950/60 text-cipher-accent-hover border border-cipher-accent/40 hover:bg-cyan-900/60 transition-colors"
                 title="Open secure direct communication with author"
               >
-                <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                <Radio className="w-3.5 h-3.5 text-cipher-accent" />
                 <span className="hidden sm:inline">DM Theorist</span>
               </button>
             )}
@@ -352,10 +352,10 @@ export const CaseDetailModal: React.FC<Props> = ({
                 onClick={() => {
                   if (onRandomRabbitHole) onRandomRabbitHole();
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-gradient-to-r from-cyan-950/80 to-purple-950/80 hover:from-cyan-900/80 hover:to-purple-900/80 text-cyan-300 border border-cyan-500/50 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-gradient-to-r from-cyan-950/80 to-purple-950/80 hover:from-cyan-900/80 hover:to-purple-900/80 text-cipher-accent-hover border border-cipher-accent/50 transition-colors shadow-sm"
                 title="Jump to another declassified dossier"
               >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <Sparkles className="w-3.5 h-3.5 text-cipher-accent" />
                 <span className="hidden sm:inline">Next Random Dossier</span>
               </button>
             )}
@@ -364,7 +364,7 @@ export const CaseDetailModal: React.FC<Props> = ({
               onClick={() => onToggleBookmark(currentCase.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border transition-all ${
                 isBookmarked 
-                  ? 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40' 
+                  ? 'bg-cyan-950/60 text-cipher-accent-hover border-cipher-accent/40' 
                   : 'bg-gray-900 text-gray-400 border-gray-800 hover:text-white'
               }`}
             >
@@ -375,13 +375,13 @@ export const CaseDetailModal: React.FC<Props> = ({
             {currentUser && (
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAddingToWorkspace(true); }}
-                className="p-1.5 border border-white/10 rounded hover:bg-white/[0.02] text-gray-400 hover:text-cyan-400 transition-colors"
+                className="p-1.5 border border-white/10 rounded hover:bg-white/[0.02] text-gray-400 hover:text-cipher-accent transition-colors"
                 title="Add to Workspace"
               >
                 <FolderArchive className="w-4 h-4" />
               </button>
             )}
-            <button
+            <button aria-label="Close"
               onClick={onClose}
               className="p-1.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 transition-colors"
             >
@@ -391,13 +391,13 @@ export const CaseDetailModal: React.FC<Props> = ({
         </div>
 
         {/* Dossier Header Info */}
-        <div className="px-4 sm:px-6 py-4 bg-[#060912] border-b border-gray-800/80">
+        <div className="px-4 sm:px-6 py-4 bg-cipher-panel border-b border-gray-800/80">
           
           {/* Status & Epistemic Disclaimer Banner */}
           <div className="mb-4">
             <StatusBadge status={currentCase.status} variant="banner" size="lg" />
             <div className="mt-2 px-3 py-2 rounded-lg bg-black/60 border border-gray-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] font-mono text-gray-400">
-              <span className="text-cyan-400 font-bold">EPISTEMIC PRINCIPLE:</span>
+              <span className="text-cipher-accent font-bold">EPISTEMIC PRINCIPLE:</span>
               <span className="text-gray-300 italic text-center sm:text-left">
                 "Cipher Files does not endorse the theories presented in this dossier. Here is the evidence. Investigate it yourself."
               </span>
@@ -414,7 +414,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                 {currentCase.subtitle}
               </p>
               {currentCase.authorCallsign && (
-                <div className="flex items-center space-x-2 mt-1.5 text-xs font-mono text-cyan-400">
+                <div className="flex items-center space-x-2 mt-1.5 text-xs font-mono text-cipher-accent">
                   <UserCheck className="w-3.5 h-3.5" />
                   <span>Investigator: <strong className="text-white">{currentCase.authorCallsign}</strong></span>
                   {currentCase.authorRole && (
@@ -428,10 +428,10 @@ export const CaseDetailModal: React.FC<Props> = ({
             <div className="flex items-center gap-2 bg-gray-950 border border-gray-800 p-1.5 rounded-xl text-xs font-mono shrink-0">
               <button
                 onClick={() => handleReaction('up')}
-                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-cyan-950 hover:text-cyan-400 transition-colors text-gray-300"
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-cyan-950 hover:text-cipher-accent transition-colors text-gray-300"
                 title="Support Theory"
               >
-                <ThumbsUp className="w-3.5 h-3.5 text-cyan-400" />
+                <ThumbsUp className="w-3.5 h-3.5 text-cipher-accent" />
                 <span>{currentCase.upvotes || 0}</span>
               </button>
 
@@ -456,12 +456,12 @@ export const CaseDetailModal: React.FC<Props> = ({
           </div>
 
           {/* Interactive Belief / Conviction Meter */}
-          <div className="mt-4 p-3 rounded-xl bg-black/40 border border-cyan-500/20">
+          <div className="mt-4 p-3 rounded-xl bg-black/40 border border-cipher-accent/20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 text-xs font-mono">
               <div className="flex items-center space-x-2">
                 <Flame className="w-4 h-4 text-amber-400" />
                 <span className="font-bold text-white uppercase">COMMUNITY OPINION (NOT VERIFIED FACT)</span>
-                <span className="text-cyan-300 font-bold">({localBeliefScore}%)</span>
+                <span className="text-cipher-accent-hover font-bold">({localBeliefScore}%)</span>
               </div>
               <span className="text-[11px] text-gray-400">
                 {localBeliefScore > 80 ? 'Strong Community Belief' : localBeliefScore > 40 ? 'Divided Community Opinion' : 'High Community Skepticism'}
@@ -482,7 +482,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                 className={`px-3 py-1 rounded-lg text-xs font-mono font-bold whitespace-nowrap transition-colors ${
                   hasVotedBelief 
                     ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' 
-                    : 'bg-cyan-500 hover:bg-cyan-400 text-black'
+                    : 'bg-cipher-accent hover:bg-cipher-accent-hover text-black'
                 }`}
               >
                 {hasVotedBelief ? '✓ Recorded' : 'Vote'}
@@ -492,13 +492,13 @@ export const CaseDetailModal: React.FC<Props> = ({
         </div>
 
         {/* Master Investigative Tabs (Pillars) */}
-        <div className="flex items-center gap-2 px-4 sm:px-6 border-b border-gray-800 bg-[#050810] overflow-x-auto overflow-y-hidden whitespace-nowrap hide-scrollbar pb-1 pt-1">
+        <div className="flex items-center gap-2 px-4 sm:px-6 border-b border-gray-800 bg-cipher-panel overflow-x-auto overflow-y-hidden whitespace-nowrap hide-scrollbar pb-1 pt-1">
           
           <button
             onClick={() => { setActiveTab('overview'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'overview'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -522,7 +522,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('evidence'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'evidence'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -534,7 +534,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('timeline'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'timeline'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -548,7 +548,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('people'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'people'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -560,7 +560,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('organisations'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'organisations'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -572,7 +572,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('locations'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'locations'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -584,11 +584,11 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('rabbithole'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'rabbithole'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
-            <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+            <Share2 className="w-3.5 h-3.5 text-cipher-accent" />
             <span>Rabbit Holes ({(currentCase.connectedCaseIds || []).length})</span>
           </button>
 
@@ -624,7 +624,7 @@ export const CaseDetailModal: React.FC<Props> = ({
             onClick={() => { setActiveTab('discussions'); sound.click(); }}
             className={`px-3.5 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'discussions'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
+                ? 'border-cyan-400 text-cipher-accent-hover bg-cyan-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -635,7 +635,7 @@ export const CaseDetailModal: React.FC<Props> = ({
         </div>
 
         {/* Tab Body Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#04060C]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-cipher-base">
           
           {/* TAB 0: OVERVIEW & HYPOTHESIS */}
           {activeTab === 'overview' && (
@@ -643,7 +643,7 @@ export const CaseDetailModal: React.FC<Props> = ({
               
               {/* Cover photo banner */}
               {currentCase.coverImage && (
-                <div className="rounded-2xl overflow-hidden border border-cyan-500/30 max-h-72 bg-black/60 shadow-lg">
+                <div className="rounded-2xl overflow-hidden border border-cipher-accent/30 max-h-72 bg-black/60 shadow-lg">
                   <img src={currentCase.coverImage} alt={currentCase.title} className="w-full h-full object-cover" />
                 </div>
               )}
@@ -673,7 +673,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                 </div>
 
                 {/* Official Verdict / Public Stance */}
-                <div className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 flex flex-col justify-between">
+                <div className="p-4 rounded-xl bg-cipher-surface border border-gray-800 flex flex-col justify-between">
                   <div>
                     <h4 className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <FileCheck2 className="w-4 h-4 text-emerald-400" />
@@ -685,14 +685,14 @@ export const CaseDetailModal: React.FC<Props> = ({
                   </div>
                   <div className="mt-3 pt-2 border-t border-gray-800 flex items-center justify-between text-[11px] font-mono text-gray-500">
                     <span>CATEGORY: {currentCase.category.replace(/_/g, ' ')}</span>
-                    <span className="text-cyan-400">{currentCase.evidenceList?.length || 0} Primary Exhibits</span>
+                    <span className="text-cipher-accent">{currentCase.evidenceList?.length || 0} Primary Exhibits</span>
                   </div>
                 </div>
 
               </div>
 
               {/* Summary Breakdown */}
-              <div className="p-4 rounded-xl bg-[#080B14] border border-gray-800">
+              <div className="p-4 rounded-xl bg-cipher-surface border border-gray-800">
                 <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-2">
                   EXECUTIVE SUMMARY
                 </h4>
@@ -747,7 +747,7 @@ export const CaseDetailModal: React.FC<Props> = ({
               {currentCase.tags && currentCase.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {currentCase.tags.map((t, idx) => (
-                    <span key={idx} className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800 text-cyan-300">
+                    <span key={idx} className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800 text-cipher-accent-hover">
                       #{t}
                     </span>
                   ))}
@@ -766,12 +766,12 @@ export const CaseDetailModal: React.FC<Props> = ({
         {/* TAB: PEOPLE */}
         {activeTab === 'people' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
-              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">PERSONS OF INTEREST</h3>
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cipher-accent/40">
+              <h3 className="font-mono text-sm font-bold text-cipher-accent uppercase mb-1">PERSONS OF INTEREST</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(currentCase.entities || []).filter((e) => e.type === 'PERSON').map((ent, idx) => (
-                <div key={idx} onClick={() => onOpenEntity?.('PERSON', ent.id)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-cyan-400 cursor-pointer transition-colors">
+                <div key={idx} onClick={() => onOpenEntity?.('PERSON', ent.id)} className="p-4 rounded-xl bg-cipher-surface border border-gray-800 hover:border-cyan-400 cursor-pointer transition-colors">
                   <h4 className="text-sm font-mono font-bold text-white">{ent.name}</h4>
                   <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
                 </div>
@@ -785,45 +785,49 @@ export const CaseDetailModal: React.FC<Props> = ({
         {/* TAB: ORGANISATIONS */}
         {activeTab === 'organisations' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
-              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">INVOLVED ORGANISATIONS</h3>
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cipher-accent/40">
+              <h3 className="font-mono text-sm font-bold text-cipher-accent uppercase mb-1">INVOLVED ORGANISATIONS</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(currentCase.entities || []).filter((e) => e.type === 'ORGANISATION').map((ent, idx) => (
-                <div key={idx} onClick={() => onOpenEntity?.('ORGANISATION', ent.id)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-amber-400 cursor-pointer transition-colors">
+                <div key={idx} onClick={() => onOpenEntity?.('ORGANISATION', ent.id)} className="p-4 rounded-xl bg-cipher-surface border border-gray-800 hover:border-amber-400 cursor-pointer transition-colors">
                   <h4 className="text-sm font-mono font-bold text-amber-400">{ent.name}</h4>
                   <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
                 </div>
-              ))}
+              ))} {(currentCase.entities || []).filter((e) => e.type === 'ORGANISATION').length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN ORGANISATIONS</div>
+              )}
             </div>
           </div>
         )}
         {/* TAB: LOCATIONS */}
         {activeTab === 'locations' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/40">
-              <h3 className="font-mono text-sm font-bold text-cyan-400 uppercase mb-1">KEY LOCATIONS</h3>
+            <div className="p-4 rounded-xl bg-cyan-950/20 border border-cipher-accent/40">
+              <h3 className="font-mono text-sm font-bold text-cipher-accent uppercase mb-1">KEY LOCATIONS</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(currentCase.entities || []).filter((e) => e.type === 'LOCATION').map((ent, idx) => (
-                <div key={idx} onClick={() => onOpenEntity?.('LOCATION', ent.id)} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 hover:border-blue-400 cursor-pointer transition-colors">
+                <div key={idx} onClick={() => onOpenEntity?.('LOCATION', ent.id)} className="p-4 rounded-xl bg-cipher-surface border border-gray-800 hover:border-blue-400 cursor-pointer transition-colors">
                   <h4 className="text-sm font-mono font-bold text-blue-400">{ent.name}</h4>
                   <p className="text-xs text-gray-400 mt-1">{ent.role || ent.description}</p>
                 </div>
-              ))}
+              ))} {(currentCase.entities || []).filter((e) => e.type === 'LOCATION').length === 0 && (
+                <div className="col-span-2 text-center py-8 text-gray-500 font-mono text-xs">NO KNOWN LOCATIONS</div>
+              )}
             </div>
           </div>
         )}
         {/* TAB: RABBIT HOLE */}
         {activeTab === 'rabbithole' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="p-4 rounded-xl bg-[#090D1A] border border-cyan-500/30">
+            <div className="p-4 rounded-xl bg-cipher-surface border border-cipher-accent/30">
               <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">RABBIT HOLE CONNECTIONS</h3>
             </div>
             <div className="flex justify-center mt-6">
                <button
                    onClick={() => { if (onRandomRabbitHole) onRandomRabbitHole(); }}
-                   className="px-6 py-3 bg-cyan-900/40 border border-cyan-500/50 hover:bg-cyan-800/60 text-cyan-300 font-mono font-bold transition-colors shadow-lg"
+                   className="px-6 py-3 bg-cyan-900/40 border border-cipher-accent/50 hover:bg-cyan-800/60 text-cipher-accent-hover font-mono font-bold transition-colors shadow-lg"
                >
                   ENTER THE NEXUS FOR THIS CASE
                </button>
@@ -839,10 +843,10 @@ export const CaseDetailModal: React.FC<Props> = ({
                   {/* PHASE 2 EVIDENCE ARCHIVE TAB */}
         {activeTab === 'evidence' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
+            <div className="bg-cipher-surface border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
                 <h3 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-                  <Database className="w-5 h-5 text-cyan-400" />
+                  <Database className="w-5 h-5 text-cipher-accent" />
                   EVIDENCE REPOSITORY
                 </h3>
               </div>
@@ -857,7 +861,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                     <div 
                       key={item.id} 
                       onClick={() => { if (onOpenEvidence) onOpenEvidence(item.id); }}
-                      className="bg-[#050810] border border-gray-800 hover:border-cyan-500/50 rounded-lg p-4 cursor-pointer transition-colors"
+                      className="bg-cipher-panel border border-gray-800 hover:border-cipher-accent/50 rounded-lg p-4 cursor-pointer transition-colors"
                     >
                       <h4 className="text-sm font-bold text-white mb-2 leading-tight">{item.title}</h4>
                       <p className="text-xs text-gray-400 line-clamp-2 mb-3">{item.summary || item.description}</p>
@@ -885,7 +889,7 @@ export const CaseDetailModal: React.FC<Props> = ({
 
               <div className="space-y-3">
                 {(currentCase.whatWeKnow || []).map((fact, index) => (
-                  <div key={index} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 flex items-start gap-3">
+                  <div key={index} className="p-4 rounded-xl bg-cipher-surface border border-gray-800 flex items-start gap-3">
                     <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono text-xs font-bold border border-emerald-500/30 shrink-0 mt-0.5">
                       FACT #{index + 1}
                     </span>
@@ -897,8 +901,8 @@ export const CaseDetailModal: React.FC<Props> = ({
               </div>
 
               {/* Official Inquest Verdict */}
-              <div className="p-5 rounded-xl bg-[#070A14] border border-gray-800">
-                <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest mb-2">
+              <div className="p-5 rounded-xl bg-cipher-panel border border-gray-800">
+                <h4 className="text-xs font-mono font-bold text-cipher-accent uppercase tracking-widest mb-2">
                   OFFICIAL GOVERNMENT / INQUEST STANCE
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-300 font-sans leading-relaxed">
@@ -924,7 +928,7 @@ export const CaseDetailModal: React.FC<Props> = ({
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-[#090D1A] border border-amber-500/30">
+                <div className="p-4 rounded-xl bg-cipher-surface border border-amber-500/30">
                   <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider mb-2">
                     CENTRAL WHISTLEBLOWER / INFORMANTS CLAIM:
                   </h4>
@@ -944,7 +948,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                     CORROBORATING TESTIMONY & WITNESS EXHIBITS
                   </h4>
                   {currentCase.evidenceList?.filter(e => e.isSupporting).map((ev) => (
-                    <div key={ev.id} className="p-4 rounded-xl bg-[#070A14] border border-gray-800 space-y-2">
+                    <div key={ev.id} className="p-4 rounded-xl bg-cipher-panel border border-gray-800 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-mono font-bold text-amber-300">{ev.title}</span>
                         <StatusBadge status={ev.rating} size="sm" />
@@ -977,7 +981,7 @@ export const CaseDetailModal: React.FC<Props> = ({
 
               <div className="space-y-3">
                 {(currentCase.speculations || []).map((spec, index) => (
-                  <div key={index} className="p-4 rounded-xl bg-[#090D1A] border border-gray-800 flex items-start gap-3">
+                  <div key={index} className="p-4 rounded-xl bg-cipher-surface border border-gray-800 flex items-start gap-3">
                     <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 font-mono text-xs font-bold border border-purple-500/30 shrink-0 mt-0.5">
                       HYPOTHESIS #{index + 1}
                     </span>
@@ -995,7 +999,7 @@ export const CaseDetailModal: React.FC<Props> = ({
                   <span>COUNTER-EVIDENCE & DEBUNKING FACTORS</span>
                 </h4>
                 {currentCase.evidenceList?.filter(e => !e.isSupporting).map((ev) => (
-                  <div key={ev.id} className="p-4 rounded-xl bg-[#070A14] border border-rose-950/40 space-y-2">
+                  <div key={ev.id} className="p-4 rounded-xl bg-cipher-panel border border-rose-950/40 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-bold text-rose-300">{ev.title}</span>
                       <StatusBadge status={ev.rating} size="sm" />

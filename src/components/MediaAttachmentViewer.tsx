@@ -105,9 +105,9 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
             return (
               <div 
                 key={item.id || idx} 
-                className="relative rounded-xl overflow-hidden border border-cyan-500/40 bg-black/90 shadow-lg group"
+                className="relative rounded-xl overflow-hidden border border-cipher-accent/40 bg-black/90 shadow-lg group"
               >
-                <div className="flex items-center justify-between px-3 py-1.5 bg-[#090D18] border-b border-gray-800 text-[10px] font-mono text-cyan-400">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-cipher-surface border-b border-gray-800 text-[10px] font-mono text-cipher-accent">
                   <span className="flex items-center gap-1.5 font-bold">
                     <Film className="w-3 h-3 text-rose-400" />
                     <span>DEBATE FOOTAGE / VIDEO EXHIBIT</span>
@@ -116,7 +116,7 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
                     href={item.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-cyan-300 flex items-center gap-1"
+                    className="text-gray-400 hover:text-cipher-accent-hover flex items-center gap-1"
                   >
                     <span>External</span>
                     <ExternalLink className="w-2.5 h-2.5" />
@@ -134,7 +134,7 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
                 </div>
 
                 {item.caption && (
-                  <p className="p-2 text-[11px] font-mono text-gray-400 bg-[#060912] border-t border-gray-800/80">
+                  <p className="p-2 text-[11px] font-mono text-gray-400 bg-cipher-panel border-t border-gray-800/80">
                     {item.caption}
                   </p>
                 )}
@@ -146,11 +146,11 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
             return (
               <div 
                 key={item.id || idx} 
-                className="relative rounded-xl overflow-hidden border border-cyan-500/40 bg-black/90 shadow-lg"
+                className="relative rounded-xl overflow-hidden border border-cipher-accent/40 bg-black/90 shadow-lg"
               >
-                <div className="flex items-center justify-between px-3 py-1.5 bg-[#090D18] border-b border-gray-800 text-[10px] font-mono text-cyan-400">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-cipher-surface border-b border-gray-800 text-[10px] font-mono text-cipher-accent">
                   <span className="flex items-center gap-1.5 font-bold">
-                    <Film className="w-3 h-3 text-cyan-400" />
+                    <Film className="w-3 h-3 text-cipher-accent" />
                     <span>RECORDED CLIP / TELEMETRY</span>
                   </span>
                 </div>
@@ -165,7 +165,7 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
                 </div>
 
                 {item.caption && (
-                  <p className="p-2 text-[11px] font-mono text-gray-400 bg-[#060912] border-t border-gray-800/80">
+                  <p className="p-2 text-[11px] font-mono text-gray-400 bg-cipher-panel border-t border-gray-800/80">
                     {item.caption}
                   </p>
                 )}
@@ -177,7 +177,7 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
           return (
             <div 
               key={item.id || idx} 
-              className="group relative rounded-xl overflow-hidden border border-gray-800 hover:border-cyan-500/50 bg-[#060912] shadow-md transition-all cursor-pointer"
+              className="group relative rounded-xl overflow-hidden border border-gray-800 hover:border-cipher-accent/50 bg-cipher-panel shadow-md transition-all cursor-pointer"
               onClick={() => {
                 if (allowZoom) {
                   sound.click();
@@ -195,22 +195,22 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
                 />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
-                  <span className="text-[10px] font-mono text-cyan-300 font-bold flex items-center gap-1">
+                  <span className="text-[10px] font-mono text-cipher-accent-hover font-bold flex items-center gap-1">
                     <ImageIcon className="w-3 h-3" />
                     <span>CLICK TO ENLARGE EXHIBIT</span>
                   </span>
-                  <div className="p-1.5 rounded-lg bg-black/70 border border-cyan-500/40 text-cyan-400">
+                  <div className="p-1.5 rounded-lg bg-black/70 border border-cipher-accent/40 text-cipher-accent">
                     <Maximize2 className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 border border-cyan-500/30 text-[9px] font-mono font-bold text-cyan-400 backdrop-blur-sm">
+                <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 border border-cipher-accent/30 text-[9px] font-mono font-bold text-cipher-accent backdrop-blur-sm">
                   EXHIBIT #{idx + 1}
                 </div>
               </div>
 
               {item.caption && (
-                <div className="p-2.5 bg-[#090D18] border-t border-gray-800 text-[11px] font-mono text-gray-300 line-clamp-2">
+                <div className="p-2.5 bg-cipher-surface border-t border-gray-800 text-[11px] font-mono text-gray-300 line-clamp-2">
                   {item.caption}
                 </div>
               )}
@@ -226,13 +226,13 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
           onClick={() => setSelectedLightboxMedia(null)}
         >
           <div 
-            className="relative max-w-4xl w-full max-h-[90vh] flex flex-col rounded-2xl border border-cyan-500/50 bg-[#080B14] overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.2)]"
+            className="relative max-w-4xl w-full max-h-[90vh] flex flex-col rounded-2xl border border-cipher-accent/50 bg-cipher-surface overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.2)]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Lightbox Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[#04060C] border-b border-cyan-500/30">
-              <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 font-bold">
-                <ShieldAlert className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center justify-between px-4 py-3 bg-cipher-base border-b border-cipher-accent/30">
+              <div className="flex items-center gap-2 text-xs font-mono text-cipher-accent font-bold">
+                <ShieldAlert className="w-4 h-4 text-cipher-accent" />
                 <span>PRIMARY EVIDENCE HIGH-RESOLUTION INSPECTION</span>
               </div>
               <button
@@ -255,8 +255,8 @@ export const MediaAttachmentViewer: React.FC<Props> = ({
 
             {/* Lightbox Footer */}
             {selectedLightboxMedia.caption && (
-              <div className="p-3.5 bg-[#070A14] border-t border-gray-800 text-xs font-mono text-gray-300">
-                <span className="text-cyan-400 font-bold mr-2">FORENSIC CAPTION:</span>
+              <div className="p-3.5 bg-cipher-panel border-t border-gray-800 text-xs font-mono text-gray-300">
+                <span className="text-cipher-accent font-bold mr-2">FORENSIC CAPTION:</span>
                 <span>{selectedLightboxMedia.caption}</span>
               </div>
             )}

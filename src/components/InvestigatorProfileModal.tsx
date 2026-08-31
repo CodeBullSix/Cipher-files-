@@ -30,9 +30,10 @@ import {
   Zap,
   Radio, Activity,
   FileText
-} from 'lucide-react';
+, AlertTriangle } from 'lucide-react';
 import { sound } from '../utils/audio';
 import { ApiService } from '../services/apiService';
+import { ReportModal } from './ReportModal';
 import { calculateLevel, LevelInfo } from '../lib/levels';
 
 interface Props {
@@ -58,9 +59,11 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
 }) => {
   // Use either currentUser or fallback profile
   const activeProfile = profile;
+  const [isBanned, setIsBanned] = useState<boolean>(!!activeProfile.deletedAt);
   const isOwnProfile = currentUser?.uid === profile.uid;
 
   // Active View Tab
+  const [reportingTarget, setReportingTarget] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dossier' | 'contributions' | 'customize' | 'followers' | 'following'>('dossier');
   const [contributions, setContributions] = useState<any[]>([]);
   const [contributionFilter, setContributionFilter] = useState<string>('ALL');
@@ -335,11 +338,11 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
   // Theme Accent styles mapping
   const accentColors = {
     cyan: {
-      border: 'border-cyan-500/50',
-      bg: 'bg-cyan-500/20',
-      text: 'text-cyan-300',
+      border: 'border-cipher-accent/50',
+      bg: 'bg-cipher-accent/20',
+      text: 'text-cipher-accent-hover',
       glow: 'shadow-[0_0_15px_rgba(6,182,212,0.3)]',
-      gradient: 'from-cyan-500 to-teal-400'
+      gradient: 'from-cipher-accent to-teal-400'
     },
     emerald: {
       border: 'border-emerald-500/50',
@@ -382,11 +385,18 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
-      <div className={`relative w-full max-w-4xl my-auto rounded-2xl border ${currentTheme.border} bg-[#0a0d16] shadow-2xl p-5 sm:p-7 flex flex-col max-h-[92vh] overflow-y-auto transition-all`}>
+      <div className={`relative w-full max-w-4xl my-auto rounded-2xl border ${currentTheme.border} bg-cipher-surface shadow-2xl p-5 sm:p-7 flex flex-col max-h-[92vh] overflow-y-auto transition-all`}>
         
         {/* Top Control Bar with Tab Navigation */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-800">
           <div className="flex items-center gap-3">
+
+            {isBanned && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-900/80 border border-red-500/50 text-red-200 px-3 py-1 rounded font-mono text-xs font-bold flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                ACCOUNT SUSPENDED
+              </div>
+            )}
             {/* User Avatar Display */}
             <div className={`w-12 h-12 rounded-xl border ${currentTheme.border} overflow-hidden bg-slate-900 flex items-center justify-center relative group`}>
               {avatarUrl ? (
@@ -401,7 +411,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                   {selectedPresetObj.icon}
                 </div>
               ) : (
-                <div className="text-sm font-mono font-black text-cyan-400">
+                <div className="text-sm font-mono font-black text-cipher-accent">
                   {displayName.substring(0, 2).toUpperCase() || 'OP'}
                 </div>
               )}
@@ -413,7 +423,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                   {activeProfile.displayName}
                 </h3>
                 {activeProfile.username && (
-                  <span className="text-xs font-mono text-cyan-400/90">
+                  <span className="text-xs font-mono text-cipher-accent/90">
                     @{activeProfile.username}
                   </span>
                 )}
@@ -428,8 +438,8 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               
               </p>
               <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-slate-400">
-                <span><strong className="text-cyan-400">{followersCount}</strong> Followers</span>
-                <span><strong className="text-cyan-400">{followingCount}</strong> Following</span>
+                <span><strong className="text-cipher-accent">{followersCount}</strong> Followers</span>
+                <span><strong className="text-cipher-accent">{followingCount}</strong> Following</span>
               </div>
             </div>
 
@@ -438,13 +448,39 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
           
           {/* Mode Switcher Buttons */}
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+            {!isOwnProfile && (currentUser?.role === 'MODERATOR' || currentUser?.role === 'ADMIN') && (
+              <button
+                onClick={async () => {
+                  try {
+                    const action = isBanned ? 'UNBAN' : 'BAN';
+                    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+                    await ApiService.moderateContent('USER', activeProfile.uid, action);
+                    setIsBanned(action === 'BAN');
+                  } catch (e) {
+                    console.error('Failed to moderate user', e);
+                    alert('Failed to moderate user');
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all border ${
+                  isBanned 
+                     ? 'bg-emerald-900/30 border-emerald-900/50 text-emerald-400 hover:text-emerald-300' 
+                     : 'bg-red-900/30 border-red-900/50 text-red-400 hover:text-red-300'
+                }`}
+              >
+                {isBanned ? (
+                  <span>Unban</span>
+                ) : (
+                  <span>Ban</span>
+                )}
+              </button>
+            )}
             {!isOwnProfile && currentUser && (
               <button
                 onClick={handleToggleFollow}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all border ${
                   isFollowing 
                     ? 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:border-slate-500' 
-                    : 'bg-cyan-500 hover:bg-cyan-400 border-cyan-400 text-black shadow-[0_0_12px_rgba(34,211,238,0.3)]'
+                    : 'bg-cipher-accent hover:bg-cipher-accent-hover border-cyan-400 text-black shadow-[0_0_12px_rgba(34,211,238,0.3)]'
                 }`}
               >
                 {isFollowing ? (
@@ -460,6 +496,16 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 )}
               </button>
             )}
+            {!isOwnProfile && currentUser && (
+              <button
+                onClick={() => setReportingTarget(activeProfile.uid)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all border bg-slate-900 border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/50"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Report</span>
+              </button>
+            )}
+
 
             <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl">
               <button
@@ -502,27 +548,27 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               onClick={() => { setActiveTab('followers'); sound.click(); }}
               className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
                 activeTab === 'followers' 
-                  ? 'bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.15)] text-cyan-300' 
-                  : 'bg-[#0A0E1A] border-gray-800 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/30'
+                  ? 'bg-cyan-950/40 border-cipher-accent/50 shadow-[0_0_15px_rgba(34,211,238,0.15)] text-cipher-accent-hover' 
+                  : 'bg-cipher-surface border-gray-800 text-gray-500 hover:text-cipher-accent hover:border-cipher-accent/30'
               }`}
             >
-              <Users className={`w-5 h-5 ${activeTab === 'followers' ? 'text-cyan-400' : ''}`} />
+              <Users className={`w-5 h-5 ${activeTab === 'followers' ? 'text-cipher-accent' : ''}`} />
               <span className="text-[10px] font-mono font-bold tracking-wider">Followers</span>
             </button>
             <button
               onClick={() => { setActiveTab('following'); sound.click(); }}
               className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
                 activeTab === 'following' 
-                  ? 'bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.15)] text-cyan-300' 
-                  : 'bg-[#0A0E1A] border-gray-800 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/30'
+                  ? 'bg-cyan-950/40 border-cipher-accent/50 shadow-[0_0_15px_rgba(34,211,238,0.15)] text-cipher-accent-hover' 
+                  : 'bg-cipher-surface border-gray-800 text-gray-500 hover:text-cipher-accent hover:border-cipher-accent/30'
               }`}
             >
-              <Users className={`w-5 h-5 ${activeTab === 'following' ? 'text-cyan-400' : ''}`} />
+              <Users className={`w-5 h-5 ${activeTab === 'following' ? 'text-cipher-accent' : ''}`} />
               <span className="text-[10px] font-mono font-bold tracking-wider">Following</span>
             </button>
             </div>
 
-            <button onClick={onClose} className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800">
+            <button aria-label="Close" onClick={onClose} className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -557,13 +603,13 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                   ACCESSING DECLASSIFIED ARCHIVES...
                 </div>
               ) : contributions.length === 0 ? (
-                <div className="py-12 text-center text-xs font-mono text-slate-500 flex flex-col items-center bg-[#05070e] rounded-xl border border-slate-800">
+                <div className="py-12 text-center text-xs font-mono text-slate-500 flex flex-col items-center bg-cipher-base rounded-xl border border-slate-800">
                   <History className="w-8 h-8 mb-3 opacity-30" />
                   NO CONTRIBUTIONS IN THIS CATEGORY
                 </div>
               ) : (
                 contributions.map((c: any) => (
-                  <div key={c.id} className="p-3 rounded-lg border border-slate-800/80 bg-[#080b12] hover:bg-[#0a0e17] transition-colors group flex items-start justify-between">
+                  <div key={c.id} className="p-3 rounded-lg border border-slate-800/80 bg-cipher-surface hover:bg-cipher-surface transition-colors group flex items-start justify-between">
                     <div className="space-y-2 max-w-[80%]">
                       <div className="flex items-center gap-2">
                         <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 ${currentTheme.text}`}>
@@ -641,7 +687,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
           <div className="space-y-6 animate-in fade-in duration-200">
             
             {/* Live Profile Header Preview */}
-            <div className={`p-4 rounded-xl border ${currentTheme.border} bg-[#080c16] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}>
+            <div className={`p-4 rounded-xl border ${currentTheme.border} bg-cipher-surface flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}>
               <div className="flex items-center gap-4">
                 <div className={`w-16 h-16 rounded-2xl border-2 ${currentTheme.border} bg-slate-900 overflow-hidden flex items-center justify-center ${currentTheme.glow}`}>
                   {avatarUrl ? (
@@ -667,7 +713,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     <span className="text-lg font-mono font-black text-white">
                       {displayName || 'Operative Name'}
                     </span>
-                    <span className="text-xs font-mono text-cyan-400 font-bold">
+                    <span className="text-xs font-mono text-cipher-accent font-bold">
                       @{username || 'handle'}
                     </span>
                   </div>
@@ -688,9 +734,9 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             </div>
 
             {/* Section 1: Avatar & Tactical Emblem Customization */}
-            <div className="p-4 sm:p-5 rounded-xl border border-slate-800 bg-[#07090f] space-y-4">
+            <div className="p-4 sm:p-5 rounded-xl border border-slate-800 bg-cipher-panel space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-cipher-accent uppercase">
                   <Camera className="w-4 h-4" />
                   <span>1. PROFILE PHOTO & TACTICAL EMBLEM</span>
                 </div>
@@ -720,7 +766,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                   className={`p-4 rounded-xl border-2 border-dashed cursor-pointer flex flex-col items-center justify-center text-center transition-all ${
                     isDraggingOver 
                       ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200' 
-                      : 'border-slate-800 hover:border-cyan-500/50 bg-[#0a0e1a] text-slate-400'
+                      : 'border-slate-800 hover:border-cipher-accent/50 bg-cipher-surface text-slate-400'
                   }`}
                 >
                   <input 
@@ -730,7 +776,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     accept="image/*" 
                     className="hidden" 
                   />
-                  <Upload className="w-6 h-6 mb-2 text-cyan-400" />
+                  <Upload className="w-6 h-6 mb-2 text-cipher-accent" />
                   <span className="text-xs font-mono font-bold text-white mb-1">
                     Upload Custom Profile Photo
                   </span>
@@ -740,10 +786,10 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 </div>
 
                 {/* Direct Image URL input */}
-                <div className="p-4 rounded-xl border border-slate-800 bg-[#0a0e1a] flex flex-col justify-between">
+                <div className="p-4 rounded-xl border border-slate-800 bg-cipher-surface flex flex-col justify-between">
                   <div>
                     <label className="text-xs font-mono font-bold text-white flex items-center gap-1.5 mb-1.5">
-                      <Link className="w-3.5 h-3.5 text-cyan-400" />
+                      <Link className="w-3.5 h-3.5 text-cipher-accent" />
                       <span>Or Paste Direct Image URL:</span>
                     </label>
                     <div className="flex gap-2">
@@ -752,11 +798,11 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                         value={imageUrlInput}
                         onChange={(e) => setImageUrlInput(e.target.value)}
                         placeholder="https://example.com/avatar.png"
-                        className="flex-1 px-3 py-1.5 rounded-lg bg-[#060810] border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-cipher-panel border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cipher-accent"
                       />
                       <button
                         onClick={handleApplyImageUrl}
-                        className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-bold"
+                        className="px-3 py-1.5 rounded-lg bg-cipher-accent/20 hover:bg-cipher-accent-hover/30 border border-cipher-accent/50 text-cipher-accent-hover text-xs font-mono font-bold"
                       >
                         Apply
                       </button>
@@ -784,7 +830,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                         className={`p-2.5 rounded-xl border text-left flex flex-col items-center text-center transition-all ${
                           isSelected
                             ? `${preset.border} bg-slate-900 shadow-md ring-1 ring-cyan-400 scale-[1.02]`
-                            : 'border-slate-800/80 bg-[#090d18] hover:border-slate-700 text-slate-400'
+                            : 'border-slate-800/80 bg-cipher-surface hover:border-slate-700 text-slate-400'
                         }`}
                       >
                         <span className="text-2xl mb-1">{preset.icon}</span>
@@ -802,8 +848,8 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             </div>
 
             {/* Section 2: Identity & Callsign Inputs */}
-            <div className="p-4 sm:p-5 rounded-xl border border-slate-800 bg-[#07090f] space-y-4">
-              <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase">
+            <div className="p-4 sm:p-5 rounded-xl border border-slate-800 bg-cipher-panel space-y-4">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-cipher-accent uppercase">
                 <User className="w-4 h-4" />
                 <span>2. INVESTIGATOR IDENTITY & CALLSIGN</span>
               </div>
@@ -819,7 +865,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="e.g. Special Agent Vance"
-                    className="w-full px-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-lg bg-cipher-surface border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cipher-accent"
                   />
                   <span className="text-[10px] font-mono text-slate-500 mt-1 block">
                     Public identity on published files.
@@ -829,7 +875,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 {/* Custom Username */}
                 <div>
                   <label className="text-xs font-mono font-bold text-slate-300 block mb-1 flex items-center gap-1">
-                    <AtSign className="w-3 h-3 text-cyan-400" />
+                    <AtSign className="w-3 h-3 text-cipher-accent" />
                     <span>Username / Handle</span>
                   </label>
                   <div className="relative">
@@ -839,7 +885,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="shadow_analyst"
-                      className="w-full pl-7 pr-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 font-bold"
+                      className="w-full pl-7 pr-3 py-2 rounded-lg bg-cipher-surface border border-slate-800 text-xs font-mono text-cipher-accent-hover focus:outline-none focus:border-cipher-accent font-bold"
                     />
                   </div>
                   <span className="text-[10px] font-mono text-slate-500 mt-1 block">
@@ -858,7 +904,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     value={callsign}
                     onChange={(e) => setCallsign(e.target.value.toUpperCase())}
                     placeholder="NIGHTSHADE-09"
-                    className="w-full px-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500 font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-cipher-surface border border-slate-800 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500 font-bold"
                   />
                   <span className="text-[10px] font-mono text-slate-500 mt-1 block">
                     Radio & classified secure tag.
@@ -868,8 +914,8 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             </div>
 
             {/* Section 3: Specialization, Station & Theme Accent */}
-            <div className="p-4 sm:p-5 rounded-xl border border-slate-800 bg-[#07090f] space-y-4">
-              <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase">
+            <div className="p-4 sm:p-5 rounded-xl border border-slate-800 bg-cipher-panel space-y-4">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-cipher-accent uppercase">
                 <Briefcase className="w-4 h-4" />
                 <span>3. SPECIALIZATION & FIELD BRIEF</span>
               </div>
@@ -890,7 +936,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                         setSpecialization(e.target.value);
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-lg bg-cipher-surface border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cipher-accent"
                   >
                     {SPECIALIZATION_OPTIONS.map((opt, i) => (
                       <option key={i} value={opt}>{opt}</option>
@@ -904,7 +950,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                       value={customSpecialization}
                       onChange={(e) => setCustomSpecialization(e.target.value)}
                       placeholder="Type custom specialty..."
-                      className="w-full mt-2 px-3 py-1.5 rounded-lg bg-[#080c16] border border-cyan-500/50 text-xs font-mono text-cyan-300 focus:outline-none"
+                      className="w-full mt-2 px-3 py-1.5 rounded-lg bg-cipher-surface border border-cipher-accent/50 text-xs font-mono text-cipher-accent-hover focus:outline-none"
                     />
                   )}
                 </div>
@@ -920,7 +966,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     value={stationLocation}
                     onChange={(e) => setStationLocation(e.target.value)}
                     placeholder="e.g. Station 04 - Groom Lake, NV"
-                    className="w-full px-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-lg bg-cipher-surface border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cipher-accent"
                   />
                   <span className="text-[10px] font-mono text-slate-500 mt-1 block">
                     Assigned post or archive detachment.
@@ -938,14 +984,14 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Summarize your investigative focus, background, and research methodology..."
-                  className="w-full px-3 py-2 rounded-lg bg-[#0a0e1a] border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 rounded-lg bg-cipher-surface border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-cipher-accent"
                 />
               </div>
 
               {/* Tactical Theme Accent */}
               <div>
                 <label className="text-xs font-mono font-bold text-slate-300 block mb-2 flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-cyan-400" />
+                  <Palette className="w-3.5 h-3.5 text-cipher-accent" />
                   <span>Tactical Accent Theme</span>
                 </label>
                 <div className="flex flex-wrap gap-2.5">
@@ -960,7 +1006,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                         className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold capitalize flex items-center gap-2 border transition-all ${
                           isSelected 
                             ? `${c.border} ${c.bg} ${c.text} ring-1 ring-cyan-400 shadow-sm` 
-                            : 'border-slate-800 bg-[#0a0e1a] text-slate-400 hover:text-white'
+                            : 'border-slate-800 bg-cipher-surface text-slate-400 hover:text-white'
                         }`}
                       >
                         <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${c.gradient}`}></span>
@@ -1010,7 +1056,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
         {activeTab === 'followers' && (
           <div className="space-y-4 animate-in fade-in duration-200">
             {loadingFollows ? (
-              <div className="p-10 flex justify-center"><Zap className="w-6 h-6 text-cyan-500 animate-spin" /></div>
+              <div className="p-10 flex justify-center"><Zap className="w-6 h-6 text-cipher-accent animate-spin" /></div>
             ) : followers.length === 0 ? (
               <div className="p-10 border border-dashed border-gray-800 rounded-xl text-center flex flex-col items-center">
                 <Users className="w-8 h-8 text-gray-700 mb-3" />
@@ -1020,17 +1066,17 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {followers.map(f => (
-                  <div key={f.uid} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800 bg-[#0A0E1A] hover:border-cyan-500/50 cursor-pointer transition-colors" onClick={() => onOpenEntity && onOpenEntity('profile', f.uid)}>
+                  <div key={f.uid} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800 bg-cipher-surface hover:border-cipher-accent/50 cursor-pointer transition-colors" onClick={() => onOpenEntity && onOpenEntity('profile', f.uid)}>
                     {f.avatar ? (
                       <img src={f.avatar} className="w-10 h-10 rounded-lg object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sm font-bold text-cyan-400">
+                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sm font-bold text-cipher-accent">
                         {f.displayName?.[0] || 'U'}
                       </div>
                     )}
                     <div>
                       <div className="text-sm font-bold text-white leading-tight">{f.displayName}</div>
-                      <div className="text-[10px] font-mono text-cyan-400">Level {f.level || 1} • {f.reputation || 0} REP</div>
+                      <div className="text-[10px] font-mono text-cipher-accent">Level {f.level || 1} • {f.reputation || 0} REP</div>
                     </div>
                   </div>
                 ))}
@@ -1043,7 +1089,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
         {activeTab === 'following' && (
           <div className="space-y-4 animate-in fade-in duration-200">
             {loadingFollows ? (
-              <div className="p-10 flex justify-center"><Zap className="w-6 h-6 text-cyan-500 animate-spin" /></div>
+              <div className="p-10 flex justify-center"><Zap className="w-6 h-6 text-cipher-accent animate-spin" /></div>
             ) : following.length === 0 ? (
               <div className="p-10 border border-dashed border-gray-800 rounded-xl text-center flex flex-col items-center">
                 <Users className="w-8 h-8 text-gray-700 mb-3" />
@@ -1053,17 +1099,17 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {following.map(f => (
-                  <div key={f.uid} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800 bg-[#0A0E1A] hover:border-cyan-500/50 cursor-pointer transition-colors" onClick={() => onOpenEntity && onOpenEntity('profile', f.uid)}>
+                  <div key={f.uid} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800 bg-cipher-surface hover:border-cipher-accent/50 cursor-pointer transition-colors" onClick={() => onOpenEntity && onOpenEntity('profile', f.uid)}>
                     {f.avatar ? (
                       <img src={f.avatar} className="w-10 h-10 rounded-lg object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sm font-bold text-cyan-400">
+                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sm font-bold text-cipher-accent">
                         {f.displayName?.[0] || 'U'}
                       </div>
                     )}
                     <div>
                       <div className="text-sm font-bold text-white leading-tight">{f.displayName}</div>
-                      <div className="text-[10px] font-mono text-cyan-400">Level {f.level || 1} • {f.reputation || 0} REP</div>
+                      <div className="text-[10px] font-mono text-cipher-accent">Level {f.level || 1} • {f.reputation || 0} REP</div>
                     </div>
                   </div>
                 ))}
@@ -1077,7 +1123,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
           <div className="space-y-6 animate-in fade-in duration-200">
             
             {/* Bio Briefing Card */}
-            <div className={`p-5 rounded-xl border ${currentTheme.border} bg-[#080b12] space-y-3`}>
+            <div className={`p-5 rounded-xl border ${currentTheme.border} bg-cipher-surface space-y-3`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield className={`w-4 h-4 ${currentTheme.text}`} />
@@ -1094,31 +1140,31 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 </button>
               </div>
 
-              <p className="text-xs font-mono text-slate-300 leading-relaxed bg-[#05070e] p-3 rounded-lg border border-slate-800/80">
+              <p className="text-xs font-mono text-slate-300 leading-relaxed bg-cipher-base p-3 rounded-lg border border-slate-800/80">
                 "{activeProfile.bio || 'Operative actively declassifying historical anomalies, government black projects, and verified research.'}"
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-[11px] font-mono">
-                <div className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800">
+                <div className="p-2.5 rounded-lg bg-cipher-surface border border-slate-800">
                   <span className="text-slate-500 block text-[9px] uppercase">Specialty Focus</span>
                   <span className="text-white font-bold">{activeProfile.specialization || SPECIALIZATION_OPTIONS[0]}</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800">
+                <div className="p-2.5 rounded-lg bg-cipher-surface border border-slate-800">
                   <span className="text-slate-500 block text-[9px] uppercase">Station / Post</span>
                   <span className="text-emerald-400 font-bold">{activeProfile.stationLocation || 'Field Station Alpha'}</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800">
+                <div className="p-2.5 rounded-lg bg-cipher-surface border border-slate-800">
                   <span className="text-slate-500 block text-[9px] uppercase">Access Clearance</span>
-                  <span className="text-cyan-400 font-bold">{activeProfile.clearanceLevel || 'LEVEL 2 // CLASSIFIED FIELD'}</span>
+                  <span className="text-cipher-accent font-bold">{activeProfile.clearanceLevel || 'LEVEL 2 // CLASSIFIED FIELD'}</span>
                 </div>
               </div>
             </div>
 
             {/* Investigator Level Card */}
-            <div className="p-5 rounded-xl border border-cyan-500/30 bg-[#080b12]">
+            <div className="p-5 rounded-xl border border-cipher-accent/30 bg-cipher-surface">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-cyan-400" />
+                  <Award className="w-4 h-4 text-cipher-accent" />
                   <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
                     INVESTIGATOR LEVEL
                   </span>
@@ -1130,7 +1176,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               
               <div className="flex items-end justify-between mb-2">
                 <div>
-                  <div className="text-2xl font-bold text-cyan-400 uppercase tracking-wide">
+                  <div className="text-2xl font-bold text-cipher-accent uppercase tracking-wide">
                     LEVEL {levelInfo.level}
                   </div>
                   <div className="text-xs font-mono text-white mt-1 uppercase">
@@ -1139,7 +1185,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 </div>
                 {levelInfo.maxRep !== null && (
                   <div className="text-right">
-                    <div className="text-xs font-mono text-cyan-400 font-bold">
+                    <div className="text-xs font-mono text-cipher-accent font-bold">
                       {totalReputation} / {levelInfo.maxRep + 1} REP
                     </div>
                     <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase">
@@ -1163,8 +1209,13 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               )}
             </div>
 
+            {/* Epistemic Clarity Note */}
+            <div className="mb-6 p-4 rounded-xl border border-gray-800 bg-cipher-panel text-xs font-mono text-gray-400">
+              <strong className="text-white">Note:</strong> REP represents community contribution reputation. LEVEL represents community participation progression. Neither represents factual authority, moderator authority, or evidence verification authority.
+            </div>
+
             {/* Community Reputation Card */}
-            <div className="p-5 rounded-xl border border-emerald-500/30 bg-[#080b12]">
+            <div className="p-5 rounded-xl border border-emerald-500/30 bg-cipher-surface">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-emerald-400" />
@@ -1177,7 +1228,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 </div>
               </div>
               
-              <div className="flex items-center justify-between bg-[#0a0e17] p-3 rounded-lg border border-slate-800 mb-4">
+              <div className="flex items-center justify-between bg-cipher-surface p-3 rounded-lg border border-slate-800 mb-4">
                 <span className="text-xs font-mono text-slate-400 uppercase">Total Lifetime Reputation</span>
                 <span className="text-emerald-400 font-bold text-lg">{loadingReputation ? '...' : totalReputation}</span>
               </div>
@@ -1189,7 +1240,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                    </div>
                 ) : reputationEvents.length > 0 ? (
                   reputationEvents.map((ev, i) => (
-                    <div key={ev.id || i} className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800/80 flex items-start gap-3">
+                    <div key={ev.id || i} className="p-2.5 rounded-lg bg-cipher-surface border border-slate-800/80 flex items-start gap-3">
                       <div className="text-emerald-400 font-bold text-xs mt-0.5">{ev.points > 0 ? `+${ev.points}` : ev.points}</div>
                       <div className="flex-1">
                         <div className="text-[11px] font-mono font-bold text-slate-300">
@@ -1214,7 +1265,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
             {/* 3-Column Info Matrix: Badges, Saved Binders, Investigative Trail */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Achievements */}
-              <div className="rounded-xl border border-slate-800 bg-[#07090f] p-4">
+              <div className="rounded-xl border border-slate-800 bg-cipher-panel p-4">
                 <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 mb-3 uppercase">
                   <Award className="w-4 h-4" />
                   <span>ACHIEVEMENTS ({achievements.length})</span>
@@ -1226,7 +1277,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                     </div>
                   ) : achievements.length > 0 ? (
                     achievements.map((a: any) => (
-                      <div key={a.id} className="p-2.5 rounded-lg bg-[#0a0e17] border border-amber-900/30 flex items-start gap-2.5 relative overflow-hidden">
+                      <div key={a.id} className="p-2.5 rounded-lg bg-cipher-surface border border-amber-900/30 flex items-start gap-2.5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-8 h-8 bg-amber-500/10 blur-xl rounded-full"></div>
                         <span className="text-xl relative z-10">{a.definition?.icon || '🏆'}</span>
                         <div className="relative z-10">
@@ -1245,8 +1296,8 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               </div>
 
               {/* Saved Classified Dossiers */}
-              <div className="rounded-xl border border-slate-800 bg-[#07090f] p-4">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 mb-3 uppercase">
+              <div className="rounded-xl border border-slate-800 bg-cipher-panel p-4">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-cipher-accent mb-3 uppercase">
                   <Bookmark className="w-4 h-4" />
                   <span>SAVED BINDER ({savedCases.length})</span>
                 </div>
@@ -1260,13 +1311,13 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                       <div
                         key={c.id}
                         onClick={() => { onOpenCase(c.id); sound.playClick(700); }}
-                        className="p-2.5 rounded-lg bg-[#0a0e17] border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all flex items-center justify-between"
+                        className="p-2.5 rounded-lg bg-cipher-surface border border-slate-800 hover:border-cipher-accent/40 cursor-pointer transition-all flex items-center justify-between"
                       >
                         <div>
-                          <span className="text-[9px] font-mono text-cyan-400 font-bold block">{c.caseNumber}</span>
+                          <span className="text-[9px] font-mono text-cipher-accent font-bold block">{c.caseNumber}</span>
                           <span className="text-xs font-mono text-white line-clamp-1">{c.title}</span>
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <ArrowRight className="w-3.5 h-3.5 text-cipher-accent shrink-0" />
                       </div>
                     ))}
                   </div>
@@ -1274,7 +1325,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
               </div>
 
               {/* Activity / Rabbit Hole Trail */}
-              <div className="rounded-xl border border-slate-800 bg-[#07090f] p-4">
+              <div className="rounded-xl border border-slate-800 bg-cipher-panel p-4">
                 <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-400 mb-3 uppercase">
                   <Compass className="w-4 h-4" />
                   <span>RECENT TRAIL ({trail.length})</span>
@@ -1286,7 +1337,7 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
                 ) : (
                   <div className="space-y-2 max-h-56 overflow-y-auto">
                     {trail.map((t, i) => (
-                      <div key={i} className="p-2 rounded bg-[#0a0e17] border border-slate-800/80 text-[11px] font-mono flex items-center justify-between">
+                      <div key={i} className="p-2 rounded bg-cipher-surface border border-slate-800/80 text-[11px] font-mono flex items-center justify-between">
                         <span className="text-white line-clamp-1">{t.name}</span>
                         <span className="text-[9px] text-slate-400 shrink-0 ml-1">{t.time}</span>
                       </div>
@@ -1319,6 +1370,14 @@ export const InvestigatorProfileModal: React.FC<Props> = ({
         )}
 
       </div>
+
+      {reportingTarget && (
+        <ReportModal
+          targetType="USER"
+          targetId={reportingTarget}
+          onClose={() => setReportingTarget(null)}
+        />
+      )}
     </div>
   );
 };

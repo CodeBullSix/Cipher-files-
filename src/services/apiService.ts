@@ -26,6 +26,30 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 }
 
 export const ApiService = {
+  // Community Submissions
+  
+  async createSubmission(payload: { title: string, summary?: string, type: 'CASE' | 'EVIDENCE' | 'ENTITY' | 'RELATIONSHIP' | 'EVENT' | 'OTHER', content: any }) {
+    return fetchWithAuth('/api/submissions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  
+  async getModerationSubmissions() {
+    return fetchWithAuth('/api/submissions');
+  },
+
+  
+  
+  async updateSubmissionStatus(id: string, status: 'PENDING_REVIEW' | 'IN_REVIEW' | 'RETURNED' | 'APPROVED' | 'REJECTED', reviewNotes?: string, approvedComponents?: Record<string, boolean>) {
+    return fetchWithAuth(`/api/submissions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, reviewNotes, approvedComponents }),
+    });
+  },
+
+
   // WORKSPACES
   getWorkspaces: () => fetchWithAuth('/api/workspaces'),
   getWorkspace: (id: string) => fetchWithAuth(`/api/workspaces/${id}`),
@@ -133,6 +157,11 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
   getFollowStatus: (id: string) => fetchWithAuth(`/api/users/${id}/follow-status`),
   getFollowCounts: (id: string) => fetchWithAuth(`/api/users/${id}/follow-counts`),
   getUsers: () => fetchWithAuth('/api/users'),
+  submitReport: (targetType: string, targetId: string, reason: string, description?: string) => 
+    fetchWithAuth('/api/reports', { method: 'POST', body: JSON.stringify({ targetType, targetId, reason, description }) }),
+  getReports: () => fetchWithAuth('/api/reports'),
+  updateReportStatus: (id: string, status: string) => 
+    fetchWithAuth(`/api/reports/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
       getNotifications: (limit?: number) => {
     return fetchWithAuth(`/api/notifications${limit ? '?limit=' + limit : ''}`);
   },
@@ -152,7 +181,7 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
     return fetchWithAuth(`/api/users/${id}/contributions?${params.toString()}`);
   },
   getUserReputation: (id: string) => fetchWithAuth(`/api/users/${id}/reputation`),
-  rewardManualReputation: (amount: number, reason: string) => fetchWithAuth('/api/users/me/reputation/reward', { method: 'POST', body: JSON.stringify({ amount, reason }) }),
+  rewardManualReputation: (amount: number, reason: string) => Promise.resolve({ success: true, amount, reason }), // Disabled for Phase 5.6 to prevent reputation abuse.
 
   updateProfile: (data: any) => fetchWithAuth('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
   setUserRole: (userId: string, role: string) => fetchWithAuth('/api/users/' + userId + '/role', { method: 'PUT', body: JSON.stringify({ role }) }),
@@ -178,6 +207,12 @@ getEvidence: (params: { caseFileId?: string, query?: string, status?: string, pa
   unlockDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/unlock`, { method: 'POST' }),
   deleteDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}`, { method: 'DELETE' }),
   moderateContent: (targetType: string, targetId: string, action: string, reason?: string) => fetchWithAuth('/api/moderation/action', { method: 'POST', body: JSON.stringify({ targetType, targetId, action, reason }) }),
+  
+  // Appeals
+  submitAppeal: (targetType: string, targetId: string, reason: string) => fetchWithAuth('/api/appeals', { method: 'POST', body: JSON.stringify({ targetType, targetId, reason }) }),
+  getMyAppeals: () => fetchWithAuth('/api/appeals/me'),
+  getAppealsQueue: () => fetchWithAuth('/api/appeals/queue'),
+  resolveAppeal: (appealId: string, status: string, resolutionReason?: string) => fetchWithAuth(`/api/appeals/${appealId}/status`, { method: 'PUT', body: JSON.stringify({ status, resolutionReason }) }),
   restoreDiscussion: (discussionId: string) => fetchWithAuth(`/api/discussions/${discussionId}/restore`, { method: 'POST' }),
 
   // Relationships

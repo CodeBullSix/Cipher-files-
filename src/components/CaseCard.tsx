@@ -39,7 +39,7 @@ export const CaseCard: React.FC<Props> = ({
   return (
     <div 
       onClick={() => { onOpen(caseFile.id); sound.click(); }}
-      className="group relative flex flex-col justify-between border border-gray-800 bg-[#090C16] hover:border-cyan-500/60 hover:bg-[#0D1220] transition-all duration-150 cursor-pointer shadow-lg rounded-xl overflow-hidden border-l-2 border-l-[#00E5FF]/40 hover:border-l-[#00E5FF]"
+      className="group relative flex flex-col justify-between border border-gray-800 bg-cipher-surface hover:border-cyan-500/60 hover:bg-cipher-elevated transition-all duration-150 cursor-pointer shadow-lg rounded-xl overflow-hidden border-l-2 border-l-cipher-accent/40 hover:border-l-cipher-accent"
     >
       {/* Optional Cover Image Banner */}
       {caseFile.coverImage && (
@@ -49,7 +49,7 @@ export const CaseCard: React.FC<Props> = ({
             alt={caseFile.title} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-80 group-hover:opacity-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#090C16] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-cipher-surface via-transparent to-black/30" />
           
           {caseFile.isVipExclusive && (
             <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-amber-500 text-black text-[9px] font-mono font-extrabold flex items-center space-x-1 uppercase tracking-wider">
@@ -65,7 +65,7 @@ export const CaseCard: React.FC<Props> = ({
           {/* Header Metadata */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-xs text-[#00E5FF] bg-[#00E5FF]/10 px-2 py-0.5 rounded border border-[#00E5FF]/30">
+              <span className="font-mono font-bold text-xs text-cipher-accent bg-cipher-accent/10 px-2 py-0.5 rounded border border-cipher-accent/30">
                 {caseFile.caseNumber}
               </span>
               <span className="text-[9px] font-mono uppercase tracking-widest text-gray-400">
@@ -80,7 +80,7 @@ export const CaseCard: React.FC<Props> = ({
                 title={isBookmarked ? 'Remove from Saved Binder' : 'Save Dossier'}
                 className={`p-1.5 rounded transition-colors ${
                   isBookmarked 
-                    ? 'text-[#00E5FF] bg-[#00E5FF]/15 border border-[#00E5FF]/40' 
+                    ? 'text-cipher-accent bg-cipher-accent/15 border border-cipher-accent/40' 
                     : 'text-gray-400 hover:text-white hover:bg-gray-800'
                 }`}
               >
@@ -90,7 +90,7 @@ export const CaseCard: React.FC<Props> = ({
           </div>
 
           {/* Case Title */}
-          <h3 className="text-sm sm:text-base font-bold font-mono text-white group-hover:text-[#00E5FF] transition-colors mb-1 tracking-tight leading-snug">
+          <h3 className="text-sm sm:text-base font-bold font-mono text-white group-hover:text-cipher-accent transition-colors mb-1 tracking-tight leading-snug">
             {caseFile.title}
           </h3>
 
@@ -99,8 +99,8 @@ export const CaseCard: React.FC<Props> = ({
           </p>
 
           {/* The Claim */}
-          <div className="bg-[#05070E] border border-gray-800/80 rounded-lg p-2.5 mb-3">
-            <div className="text-[9px] font-mono text-[#00E5FF] font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5">
+          <div className="bg-cipher-panel border border-gray-800/80 rounded-lg p-2.5 mb-3">
+            <div className="text-[9px] font-mono text-cipher-accent font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5">
               <span>CORE HYPOTHESIS</span>
             </div>
             <p className="text-xs text-gray-300 line-clamp-2 leading-relaxed font-mono">
@@ -115,11 +115,11 @@ export const CaseCard: React.FC<Props> = ({
                 <Flame className="w-3 h-3 text-amber-400" />
                 <span>Community Conviction</span>
               </span>
-              <span className="font-bold text-cyan-300">{beliefScore}%</span>
+              <span className="font-bold text-cipher-accent-hover">{beliefScore}%</span>
             </div>
             <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-cyan-500 to-amber-400 rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-cipher-accent to-amber-400 rounded-full transition-all duration-300"
                 style={{ width: `${beliefScore}%` }}
               />
             </div>
@@ -129,8 +129,8 @@ export const CaseCard: React.FC<Props> = ({
         {/* Card Footer */}
         <div className="pt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px] font-mono text-gray-400">
           <div className="flex items-center space-x-3">
-            <span className="flex items-center space-x-1 hover:text-cyan-400 transition-colors">
-              <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="flex items-center space-x-1 hover:text-cipher-accent transition-colors">
+              <MessageSquare className="w-3.5 h-3.5 text-cipher-accent" />
               <span>{caseFile.commentCount || 0}</span>
             </span>
             <span className="flex items-center space-x-1">
@@ -138,13 +138,13 @@ export const CaseCard: React.FC<Props> = ({
               <span>{caseFile.views || 1}</span>
             </span>
             {caseFile.authorCallsign && (
-              <span className="text-[10px] text-cyan-400 truncate max-w-[100px] hidden sm:inline">
+              <span className="text-[10px] text-cipher-accent truncate max-w-[100px] hidden sm:inline">
                 by {caseFile.authorCallsign}
               </span>
             )}
           </div>
 
-          <span className="text-[#00E5FF] flex items-center gap-1 group-hover:translate-x-1 transition-transform font-bold">
+          <span className="text-cipher-accent flex items-center gap-1 group-hover:translate-x-1 transition-transform font-bold">
             <span>EXAMINE</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </span>

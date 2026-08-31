@@ -15,7 +15,7 @@ export const TACTICAL_AVATAR_PRESETS: AvatarPreset[] = [
     category: 'Institutional',
     icon: '🏛️',
     gradient: 'from-slate-900 via-slate-950 to-blue-950/60',
-    border: 'border-cyan-500/60 text-cyan-300',
+    border: 'border-cyan-500/60 text-cipher-accent-hover',
     description: 'Documentary preservation and historical declassification authority.'
   },
   {

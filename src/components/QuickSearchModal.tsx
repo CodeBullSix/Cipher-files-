@@ -48,10 +48,7 @@ export const QuickSearchModal: React.FC<Props> = ({
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (!query.trim() && selectedTypes.length === 0) {
-        setResults([]);
-        return;
-      }
+      // Allow empty query to fetch recent items for discovery
       setLoading(true);
       setError('');
       try {
@@ -81,7 +78,7 @@ export const QuickSearchModal: React.FC<Props> = ({
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'CASE': return <FileText className="w-3.5 h-3.5 text-blue-400" />;
-      case 'PERSON': return <Users className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'PERSON': return <Users className="w-3.5 h-3.5 text-cipher-accent" />;
       case 'ORGANISATION': return <Building2 className="w-3.5 h-3.5 text-amber-400" />;
       case 'LOCATION': return <MapPin className="w-3.5 h-3.5 text-emerald-400" />;
       case 'EVENT': return <Sparkles className="w-3.5 h-3.5 text-purple-400" />;
@@ -107,16 +104,17 @@ export const QuickSearchModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 sm:pt-20 p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-3xl rounded-xl border border-cyan-500/40 bg-[#0D0D0D] shadow-[0_0_50px_rgba(0,240,255,0.15)] flex flex-col max-h-[85vh]">
+      <div className="relative w-full max-w-3xl rounded-xl border border-cipher-accent/40 bg-cipher-elevated shadow-[0_0_50px_rgba(0,240,255,0.15)] flex flex-col max-h-[85vh]">
         
         {/* Search Input */}
-        <div className="flex flex-col bg-cyan-950/20 px-4 py-2 border-b border-cyan-500/20"><span className="text-[10px] text-cyan-400 font-mono tracking-widest font-bold mb-1">CIPHER FILES MASTER DATABASE</span></div><div className="flex items-center px-4 py-4 border-b border-white/10 shrink-0 gap-3">
-          <Search className="w-5 h-5 text-cyan-400" />
+        <div className="flex flex-col bg-cyan-950/20 px-4 py-2 border-b border-cipher-accent/20"><span className="text-[10px] text-cipher-accent font-mono tracking-widest font-bold mb-1">CIPHER FILES MASTER DATABASE</span></div><div className="flex items-center px-4 py-4 border-b border-white/10 shrink-0 gap-3">
+          <Search className="w-5 h-5 text-cipher-accent" />
           <input
             type="text"
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Global Database Search"
             placeholder="GLOBAL DATABASE SEARCH (Cases, People, Evidence...)"
             className="w-full bg-transparent font-mono text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none"
           />
@@ -130,13 +128,13 @@ export const QuickSearchModal: React.FC<Props> = ({
           <div className="px-4 py-2 border-b border-white/5 shrink-0 bg-cyan-950/10">
             <button
               onClick={() => { onClose(); onRandomRabbitHole(); sound.playWarp(); }}
-              className="w-full flex items-center justify-between p-2 rounded bg-gradient-to-r from-cyan-950/40 to-purple-950/40 border border-cyan-500/30 hover:border-cyan-400/80 transition-all group"
+              className="w-full flex items-center justify-between p-2 rounded bg-gradient-to-r from-cyan-950/40 to-purple-950/40 border border-cipher-accent/30 hover:border-cyan-400/80 transition-all group"
             >
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
-                <span className="text-xs font-mono font-bold text-cyan-300">RANDOM RABBIT HOLE (SURPRISE ME)</span>
+                <Sparkles className="w-4 h-4 text-cipher-accent group-hover:rotate-12 transition-transform" />
+                <span className="text-xs font-mono font-bold text-cipher-accent-hover">RANDOM RABBIT HOLE (SURPRISE ME)</span>
               </div>
-              <span className="text-[9px] font-mono text-cyan-500 border border-cyan-500/30 px-1.5 py-0.5 rounded bg-black/50">
+              <span className="text-[9px] font-mono text-cipher-accent border border-cipher-accent/30 px-1.5 py-0.5 rounded bg-black/50">
                 +25 REP
               </span>
             </button>
@@ -153,7 +151,7 @@ export const QuickSearchModal: React.FC<Props> = ({
               onClick={() => toggleType(t)}
               className={`px-2 py-1 rounded text-[10px] font-mono font-bold whitespace-nowrap transition-colors border ${
                 selectedTypes.includes(t) 
-                  ? 'bg-cyan-900/50 border-cyan-500/50 text-cyan-400' 
+                  ? 'bg-cyan-900/50 border-cipher-accent/50 text-cipher-accent' 
                   : 'bg-black border-white/10 text-gray-500 hover:border-gray-500'
               }`}
             >
@@ -166,7 +164,7 @@ export const QuickSearchModal: React.FC<Props> = ({
         <div className="flex-1 overflow-y-auto p-2">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader className="w-6 h-6 text-cyan-400 animate-spin" />
+              <Loader className="w-6 h-6 text-cipher-accent animate-spin" />
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 text-rose-400">
@@ -181,11 +179,16 @@ export const QuickSearchModal: React.FC<Props> = ({
           ) : results.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500">
               <Search className="w-8 h-8 mb-4 opacity-20" />
-              <p className="font-mono text-sm">No intelligence matches found.</p>
+              <p className="font-mono text-sm">NO MATCHING RECORDS</p>
               <p className="font-mono text-[10px] opacity-50 mt-1">Try adjusting keywords or filters.</p>
             </div>
           ) : (
             <div className="space-y-1">
+              {!query.trim() && selectedTypes.length === 0 && (
+                <div className="px-3 py-2 text-[10px] font-mono text-cipher-accent/70 font-bold tracking-widest border-b border-white/5 mb-2">
+                  RECENT INTELLIGENCE
+                </div>
+              )}
               {results.map(r => (
                 <div
                   key={`${r.resultType}-${r.id}`}
@@ -197,7 +200,7 @@ export const QuickSearchModal: React.FC<Props> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2">
-                      <div className="font-bold text-white text-sm truncate group-hover:text-cyan-300 transition-colors">
+                      <div className="font-bold text-white text-sm truncate group-hover:text-cipher-accent-hover transition-colors">
                         {r.title}
                       </div>
                       <div className="text-[9px] font-mono text-gray-500 border border-gray-800 px-1.5 py-0.5 rounded shrink-0">

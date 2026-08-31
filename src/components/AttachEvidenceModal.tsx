@@ -68,7 +68,7 @@ export function AttachEvidenceModal({ isOpen, onClose, eventId, onSuccess, curre
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-800">
           <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-            <Scale className="w-5 h-5 text-cyan-500" />
+            <Scale className="w-5 h-5 text-cipher-accent" />
             Attach Evidence
           </h2>
           <button onClick={() => { onClose(); sound.click(); }} className="text-gray-400 hover:text-white transition-colors">
@@ -81,10 +81,10 @@ export function AttachEvidenceModal({ isOpen, onClose, eventId, onSuccess, curre
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Search evidence..."
+              placeholder="Search evidence..." aria-label="Search evidence..."
               value={query}
               onChange={e => setQuery(e.target.value)}
-              className="w-full bg-black border border-gray-800 rounded px-9 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+              className="w-full bg-black border border-gray-800 rounded px-9 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
             />
           </div>
         </div>
@@ -102,7 +102,7 @@ export function AttachEvidenceModal({ isOpen, onClose, eventId, onSuccess, curre
                     <span className="text-sm text-gray-200 font-medium truncate">{e.title || 'Untitled Evidence'}</span>
                     <span className="text-xs text-gray-500 font-mono truncate">{e.id}</span>
                   </div>
-                  <button onClick={() => handleAttach(e.id)} className="ml-3 p-1.5 bg-cyan-950/40 text-cyan-400 hover:bg-cyan-900/60 rounded transition-colors shrink-0">
+                  <button onClick={() => handleAttach(e.id)} className="ml-3 p-1.5 bg-cyan-950/40 text-cipher-accent hover:bg-cyan-900/60 rounded transition-colors shrink-0">
                     <LinkIcon className="w-4 h-4" />
                   </button>
                 </div>

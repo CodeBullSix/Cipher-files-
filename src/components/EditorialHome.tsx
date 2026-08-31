@@ -25,6 +25,7 @@ import {
 import { Category, EvidenceRating, CaseFile, OFFICIAL_STATUS_DEFINITIONS, CIPHER_FILES_PHILOSOPHY } from '../types';
 import { StatusBadge, normalizeStatus } from './StatusBadge';
 import { CaseCard } from './CaseCard';
+import { EmptyState } from './EmptyState';
 import { sound } from '../utils/audio';
 
 interface Props {
@@ -84,31 +85,21 @@ export const EditorialHome: React.FC<Props> = ({
     sound.click();
   };
 
-  const trendingCases = cases.filter(c => 
-    c.id === 'jfk-assassination' || 
-    c.id === 'project-mkultra' || 
-    c.id === 'roswell-incident' || 
-    c.id === 'operation-gladio'
-  ).slice(0, 3);
-
-  const recentlyUpdatedCases = cases.filter(c => 
-    c.id === 'aatip-pentagon-uap' || 
-    c.id === 'nsa-tao-surveillance' || 
-    c.id === 'dyatlov-pass'
-  ).slice(0, 3);
 
   const filteredCases = cases.filter(c => {
-    if (selectedCategory !== 'ALL' && c.category !== selectedCategory) return false;
-    if (selectedStatus !== 'ALL') {
-      const norm = normalizeStatus(c.status);
-      if (norm !== selectedStatus) return false;
-    }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!c.title.toLowerCase().includes(q) && !c.summary.toLowerCase().includes(q)) return false;
-    }
-    return true;
+    const matchSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (c.caseNumber && c.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchCat = selectedCategory === 'ALL' || c.category === selectedCategory;
+    const matchStatus = selectedStatus === 'ALL' || c.status === selectedStatus;
+    return matchSearch && matchCat && matchStatus;
   });
+
+  const featuredCases = cases.filter(c => c.featured).sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+  
+  // Collections
+  const collections = Array.from(new Set(cases.filter(c => c.editorialCollection).map(c => c.editorialCollection as string)));
+  
+  const recentlyUpdated = [...cases].sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()).slice(0, 4);
 
   const dailyCase = cases.find(c => c.id === 'project-blue-book');
   const dailyDocCase = cases.find(c => c.id === 'jfk-assassination');
@@ -129,23 +120,23 @@ export const EditorialHome: React.FC<Props> = ({
   ];
 
   return (
-    <div className="w-full bg-[#05070E] text-gray-200">
+    <div className="w-full bg-cipher-panel text-gray-200">
       
       {/* 1. CINEMATIC EDITORIAL HERO */}
-      <section className="relative w-full min-h-[58vh] sm:min-h-[64vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 py-16 sm:py-20 border-b border-cyan-500/20 bg-gradient-to-b from-[#03050B] via-[#070B16] to-[#05070E] overflow-hidden">
+      <section className="relative w-full min-h-[58vh] sm:min-h-[64vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 py-16 sm:py-20 border-b border-cipher-accent/20 bg-gradient-to-b from-cipher-base via-cipher-panel to-cipher-panel overflow-hidden">
         
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#00E5FF_1px,transparent_1px)] [background-size:28px_28px]"></div>
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] sm:w-[600px] h-[250px] bg-cyan-500/10 blur-[100px] pointer-events-none rounded-full"></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] sm:w-[600px] h-[250px] bg-cipher-accent/10 blur-[100px] pointer-events-none rounded-full"></div>
 
         <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
           
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono tracking-[0.25em] uppercase mb-5 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cipher-accent/30 text-cipher-accent-hover text-[11px] font-mono tracking-[0.25em] uppercase mb-5 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-cipher-accent animate-ping"></span>
             <span>CIPHER FILES // DECLASSIFIED ARCHIVE</span>
           </div>
 
           <h1 className="font-mono text-3xl sm:text-5xl md:text-6xl font-black tracking-[0.18em] text-white uppercase mb-4 leading-tight">
-            NOTHING IS <span className="text-cyan-400 cyan-glow">EVERYTHING.</span>
+            NOTHING IS <span className="text-cipher-accent cyan-glow">EVERYTHING.</span>
           </h1>
 
           <p className="text-sm sm:text-lg text-gray-300 font-sans max-w-2xl mx-auto leading-relaxed mb-8">
@@ -153,8 +144,8 @@ export const EditorialHome: React.FC<Props> = ({
           </p>
 
           {/* New Investigator Orientation */}
-          <div className="w-full max-w-3xl mx-auto mb-10 bg-[#090D1A] border border-cyan-500/30 rounded-xl p-5 text-left shadow-lg">
-            <h3 className="text-cyan-400 font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 border-b border-cyan-500/20 pb-2 mb-4">
+          <div className="w-full max-w-3xl mx-auto mb-10 bg-cipher-surface border border-cipher-accent/30 rounded-xl p-5 text-left shadow-lg">
+            <h3 className="text-cipher-accent font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 border-b border-cipher-accent/20 pb-2 mb-4">
               <ShieldCheck className="w-4 h-4" />
               NEW INVESTIGATOR ORIENTATION
             </h3>
@@ -181,7 +172,7 @@ export const EditorialHome: React.FC<Props> = ({
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Lock className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+                <Lock className="w-4 h-4 text-cipher-accent mt-0.5 shrink-0" />
                 <div>
                   <span className="font-mono text-[11px] text-white font-bold block mb-0.5">PRIVATE WORKSPACE</span>
                   <span className="text-gray-400 text-[10px] sm:text-[11px] font-sans leading-tight block">Your personal area to collect evidence and build your own theories.</span>
@@ -192,7 +183,7 @@ export const EditorialHome: React.FC<Props> = ({
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full max-w-md justify-center">
             <button
               onClick={handleScrollToExplore}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono text-xs sm:text-sm font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(0,229,255,0.3)] hover:scale-[1.02]"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-cipher-accent hover:bg-cyan-300 text-black font-mono text-xs sm:text-sm font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(0,229,255,0.3)] hover:scale-[1.02]"
             >
               <FolderArchive className="w-4 h-4 text-black" />
               <span>EXPLORE FILES</span>
@@ -201,9 +192,9 @@ export const EditorialHome: React.FC<Props> = ({
 
             <button
               onClick={() => { onRandomRabbitHole(); sound.playWarp(); }}
-              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-[#090D1A] hover:bg-[#0E1528] border border-cyan-500/40 text-cyan-300 font-mono text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-cipher-surface hover:bg-cipher-elevated border border-cipher-accent/40 text-cipher-accent-hover font-mono text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors"
             >
-              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <Sparkles className="w-4 h-4 text-cipher-accent" />
               <span>RANDOM RABBIT HOLE</span>
             </button>
           </div>
@@ -232,18 +223,18 @@ export const EditorialHome: React.FC<Props> = ({
             {/* Daily Case (Trending Conspiracy) */}
             {dailyCase && (
               <div 
-                className="group rounded-2xl bg-[#0A0E18] border border-cyan-900/50 hover:border-cyan-500/50 p-5 flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden"
+                className="group rounded-2xl bg-cipher-surface border border-cyan-900/50 hover:border-cipher-accent/50 p-5 flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden"
                 onClick={() => { onOpenCase(dailyCase.id); sound.click(); }}
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-[50px] -mr-10 -mt-10 rounded-full pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cipher-accent/10 blur-[50px] -mr-10 -mt-10 rounded-full pointer-events-none"></div>
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 font-mono text-[10px] font-bold border border-cyan-800">
+                    <span className="px-2 py-0.5 rounded bg-cyan-950 text-cipher-accent font-mono text-[10px] font-bold border border-cyan-800">
                       TRENDING INVESTIGATION
                     </span>
                     <span className="text-gray-500 font-mono text-[10px]">{dailyCase.caseNumber}</span>
                   </div>
-                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
+                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-cipher-accent transition-colors">
                     {dailyCase.title}
                   </h3>
                   <p className="text-xs text-gray-400 font-sans line-clamp-3 mb-4 leading-relaxed">
@@ -254,7 +245,7 @@ export const EditorialHome: React.FC<Props> = ({
                   <div className="flex items-center gap-3">
                     <StatusBadge status={dailyCase.status} size="sm" />
                   </div>
-                  <div className="flex items-center gap-1 text-cyan-400 text-xs font-mono font-bold group-hover:translate-x-1 transition-transform">
+                  <div className="flex items-center gap-1 text-cipher-accent text-xs font-mono font-bold group-hover:translate-x-1 transition-transform">
                     <span>REVIEW DOSSIER</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
@@ -265,7 +256,7 @@ export const EditorialHome: React.FC<Props> = ({
             {/* Daily Document (Newly Added) */}
             {dailyDocItem && (
               <div 
-                className="group rounded-2xl bg-[#0A0E18] border border-rose-900/40 hover:border-rose-500/50 p-5 flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden"
+                className="group rounded-2xl bg-cipher-surface border border-rose-900/40 hover:border-rose-500/50 p-5 flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden"
                 onClick={() => { onOpenCase(dailyDocCase?.id || ""); sound.click(); }}
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[50px] -mr-10 -mt-10 rounded-full pointer-events-none"></div>
@@ -299,27 +290,27 @@ export const EditorialHome: React.FC<Props> = ({
         </section>
       )}
 
-      {/* 2. SECTION: TRENDING INVESTIGATIONS */}
+      {/* 2. SECTION: FEATURED INVESTIGATIONS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 border-b border-gray-800/80">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
             <h2 className="font-mono text-base sm:text-lg font-bold text-white tracking-[0.15em] uppercase">
-              TRENDING INVESTIGATIONS
+              FEATURED INVESTIGATIONS
             </h2>
           </div>
           <span className="text-[11px] font-mono text-gray-500 hidden sm:inline uppercase">
-            Top Forensics & Documented Leaks
+            Editorially Curated Cases
           </span>
         </div>
 
         {/* Three Prominent Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {trendingCases.map((c) => (
+          {featuredCases.map((c) => (
             <div
               key={c.id}
               onClick={() => { onOpenCase(c.id); sound.click(); }}
-              className="group relative rounded-2xl border border-gray-800 bg-[#080B14] hover:border-cyan-500/60 hover:bg-[#0D1220] transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between shadow-xl"
+              className="group relative rounded-2xl border border-gray-800 bg-cipher-surface hover:border-cyan-500/60 hover:bg-cipher-elevated transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between shadow-xl"
             >
               {/* Cover Image Banner */}
               {c.coverImage && (
@@ -329,11 +320,11 @@ export const EditorialHome: React.FC<Props> = ({
                     alt={c.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#080B14] via-transparent to-black/40"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-cipher-surface via-transparent to-black/40"></div>
                   
                   {/* Top Badge */}
                   <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-black/80 text-cyan-400 font-mono text-[10px] font-bold border border-cyan-500/40">
+                    <span className="px-2 py-0.5 rounded bg-black/80 text-cipher-accent font-mono text-[10px] font-bold border border-cipher-accent/40">
                       {c.caseNumber}
                     </span>
                     <StatusBadge status={c.status} size="sm" />
@@ -347,7 +338,7 @@ export const EditorialHome: React.FC<Props> = ({
                     {c.category.replace(/_/g, ' ')}
                   </span>
                   
-                  <h3 className="font-mono text-base font-bold text-white group-hover:text-cyan-400 transition-colors mb-2 line-clamp-1">
+                  <h3 className="font-mono text-base font-bold text-white group-hover:text-cipher-accent transition-colors mb-2 line-clamp-1">
                     {c.title}
                   </h3>
 
@@ -357,8 +348,8 @@ export const EditorialHome: React.FC<Props> = ({
                 </div>
 
                 <div className="pt-3 border-t border-gray-800 flex items-center justify-between text-xs font-mono text-gray-400">
-                  <span className="text-cyan-400 font-bold">{c.evidenceList?.length || 0} PRIMARY EXHIBITS</span>
-                  <div className="flex items-center gap-1 text-cyan-300 font-bold group-hover:translate-x-1 transition-transform">
+                  <span className="text-cipher-accent font-bold">{c.evidenceList?.length || 0} PRIMARY EXHIBITS</span>
+                  <div className="flex items-center gap-1 text-cipher-accent-hover font-bold group-hover:translate-x-1 transition-transform">
                     <span>INVESTIGATE</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
@@ -373,7 +364,7 @@ export const EditorialHome: React.FC<Props> = ({
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 border-b border-gray-800/80">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-cipher-accent animate-pulse"></div>
             <h2 className="font-mono text-base sm:text-lg font-bold text-white tracking-[0.15em] uppercase">
               RECENTLY UPDATED DOSSIERS
             </h2>
@@ -385,7 +376,7 @@ export const EditorialHome: React.FC<Props> = ({
 
         {/* Three Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {recentlyUpdatedCases.map((c) => (
+          {recentlyUpdated.map((c) => (
             <CaseCard
               key={c.id}
               caseFile={c}
@@ -398,9 +389,42 @@ export const EditorialHome: React.FC<Props> = ({
         </div>
       </section>
 
+      
+      {/* 3.5. SECTION: CURATED COLLECTIONS */}
+      {collections.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 border-b border-gray-800/80 bg-cipher-base/50">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse"></div>
+              <h2 className="font-mono text-base sm:text-lg font-bold text-white tracking-[0.15em] uppercase">
+                CURATED COLLECTIONS
+              </h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {collections.map(col => {
+               const colCases = cases.filter(c => c.editorialCollection === col);
+               return (
+                 <div key={col} className="p-5 rounded-2xl border border-gray-800 bg-cipher-surface flex flex-col hover:border-purple-500/50 transition-colors">
+                   <h3 className="font-mono text-lg font-bold text-white mb-2 uppercase tracking-wider">{col}</h3>
+                   <p className="text-xs text-gray-400 mb-4">{colCases.length} Documented Investigations</p>
+                   <div className="space-y-2 mt-auto">
+                     {colCases.slice(0,3).map(c => (
+                       <div key={c.id} onClick={() => { onOpenCase(c.id); sound.click(); }} className="text-xs font-mono text-cyan-400 hover:text-cyan-300 cursor-pointer truncate">
+                         → {c.title}
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* 4. SECTION: THE RABBIT HOLE (One Visually Distinctive Section) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 border-b border-gray-800/80">
-        <div className="relative rounded-3xl border border-cyan-500/40 bg-gradient-to-r from-[#070C1B] via-[#0A1024] to-[#070C1B] p-6 sm:p-10 shadow-2xl overflow-hidden">
+        <div className="relative rounded-3xl border border-cipher-accent/40 bg-gradient-to-r from-cipher-panel via-cipher-surface to-cipher-panel p-6 sm:p-10 shadow-2xl overflow-hidden">
           
           {/* Subtle radar / circular network rings in background */}
           <div className="absolute -right-16 -top-16 w-80 h-80 rounded-full border border-cyan-500/10 pointer-events-none"></div>
@@ -409,7 +433,7 @@ export const EditorialHome: React.FC<Props> = ({
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-400 text-[11px] font-mono font-bold tracking-widest uppercase mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cipher-accent/40 text-cipher-accent text-[11px] font-mono font-bold tracking-widest uppercase mb-3">
                 <Share2 className="w-3.5 h-3.5" />
                 <span>INTERACTIVE KNOWLEDGE GRAPH</span>
               </div>
@@ -428,9 +452,9 @@ export const EditorialHome: React.FC<Props> = ({
                   <button
                     key={i}
                     onClick={() => onLaunchGraph(node.label)}
-                    className="px-3 py-1.5 rounded-lg bg-[#0E1528] border border-cyan-500/30 text-cyan-300 text-xs font-mono hover:border-cyan-400 hover:bg-cyan-950/60 transition-colors flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-cipher-elevated border border-cipher-accent/30 text-cipher-accent-hover text-xs font-mono hover:border-cyan-400 hover:bg-cyan-950/60 transition-colors flex items-center gap-1.5"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-cipher-accent"></span>
                     <span>{node.label}</span>
                   </button>
                 ))}
@@ -438,7 +462,7 @@ export const EditorialHome: React.FC<Props> = ({
 
               <button
                 onClick={() => { onLaunchGraph(); sound.playWarp(); }}
-                className="px-6 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono text-xs sm:text-sm font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(0,229,255,0.25)]"
+                className="px-6 py-3 rounded-xl bg-cipher-accent hover:bg-cyan-300 text-black font-mono text-xs sm:text-sm font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(0,229,255,0.25)]"
               >
                 <Share2 className="w-4 h-4 text-black" />
                 <span>LAUNCH INTERACTIVE KNOWLEDGE GRAPH</span>
@@ -448,11 +472,11 @@ export const EditorialHome: React.FC<Props> = ({
 
             {/* Visual Radar / Network graphic */}
             <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-cyan-500/30 bg-[#050811] flex items-center justify-center p-4 shadow-[0_0_40px_rgba(0,229,255,0.15)]">
-                <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-ping opacity-25"></div>
-                <div className="w-48 h-48 rounded-full border border-cyan-500/30 flex items-center justify-center">
+              <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-cipher-accent/30 bg-cipher-panel flex items-center justify-center p-4 shadow-[0_0_40px_rgba(0,229,255,0.15)]">
+                <div className="absolute inset-0 rounded-full border border-cipher-accent/20 animate-ping opacity-25"></div>
+                <div className="w-48 h-48 rounded-full border border-cipher-accent/30 flex items-center justify-center">
                   <div className="w-32 h-32 rounded-full border border-dashed border-cyan-400/40 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-mono text-[10px] font-bold text-center">
+                    <div className="w-16 h-16 rounded-full bg-cipher-accent/20 border border-cyan-400 flex items-center justify-center text-cipher-accent font-mono text-[10px] font-bold text-center">
                       CIPHER CORE
                     </div>
                   </div>
@@ -462,7 +486,7 @@ export const EditorialHome: React.FC<Props> = ({
                 <div className="absolute top-4 right-8 px-2 py-0.5 rounded bg-black/80 border border-amber-500/50 text-[10px] font-mono text-amber-300">
                   MKULTRA
                 </div>
-                <div className="absolute bottom-6 left-6 px-2 py-0.5 rounded bg-black/80 border border-cyan-500/50 text-[10px] font-mono text-cyan-300">
+                <div className="absolute bottom-6 left-6 px-2 py-0.5 rounded bg-black/80 border border-cipher-accent/50 text-[10px] font-mono text-cipher-accent-hover">
                   STARGATE
                 </div>
                 <div className="absolute top-12 left-6 px-2 py-0.5 rounded bg-black/80 border border-purple-500/50 text-[10px] font-mono text-purple-300">
@@ -483,13 +507,13 @@ export const EditorialHome: React.FC<Props> = ({
       <section ref={exploreRef} id="all-dossiers" className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
         
         {/* Epistemic Credibility Philosophy Banner */}
-        <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#060810] via-[#090D1A] to-[#060810] border border-cyan-500/30 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-cipher-panel via-cipher-surface to-cipher-panel border border-cipher-accent/30 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-cipher-accent/5 rounded-full blur-3xl pointer-events-none"></div>
           
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-cyan-950/80 border border-cyan-500/40 text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-widest mb-2.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-cyan-950/80 border border-cipher-accent/40 text-[10px] font-mono font-bold text-cipher-accent-hover uppercase tracking-widest mb-2.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-cipher-accent" />
                 <span>EPISTEMIC CHARTER & PRIMARY EVIDENCE PRINCIPLE</span>
               </div>
 
@@ -538,7 +562,7 @@ export const EditorialHome: React.FC<Props> = ({
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-bold uppercase mb-1">
+              <div className="flex items-center gap-2 text-cipher-accent font-mono text-xs font-bold uppercase mb-1">
                 <FolderArchive className="w-4 h-4" />
                 <span>COMPLETE DOSSIER VAULT</span>
               </div>
@@ -549,13 +573,13 @@ export const EditorialHome: React.FC<Props> = ({
 
             {/* Quick Search Input */}
             <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400/70" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cipher-accent/70" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Search cases, figures, operations..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#090D1A] border border-cyan-500/30 text-xs sm:text-sm text-cyan-300 placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors font-mono"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-cipher-surface border border-cipher-accent/30 text-xs sm:text-sm text-cipher-accent-hover placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors font-mono"
               />
               {searchQuery && (
                 <button
@@ -581,8 +605,8 @@ export const EditorialHome: React.FC<Props> = ({
                   }}
                   className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all shrink-0 border ${
                     isSelected
-                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 font-bold shadow-[0_0_10px_rgba(0,229,255,0.15)]'
-                      : 'bg-[#090D1A] text-gray-400 border-gray-800 hover:border-gray-700 hover:text-white'
+                      ? 'bg-cipher-accent/20 text-cipher-accent-hover border-cyan-400 font-bold shadow-[0_0_10px_rgba(0,229,255,0.15)]'
+                      : 'bg-cipher-surface text-gray-400 border-gray-800 hover:border-gray-700 hover:text-white'
                   }`}
                 >
                   <span>{cat.icon}</span>
@@ -608,7 +632,7 @@ export const EditorialHome: React.FC<Props> = ({
                   }}
                   className={`px-2.5 py-1 rounded text-[11px] font-mono transition-colors shrink-0 ${
                     isSelected
-                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-500 font-bold'
+                      ? 'bg-cyan-950 text-cipher-accent-hover border border-cyan-500 font-bold'
                       : 'bg-transparent text-gray-500 hover:text-gray-300'
                   }`}
                 >
@@ -621,23 +645,23 @@ export const EditorialHome: React.FC<Props> = ({
 
         {/* Dossiers Grid */}
         {filteredCases.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-[#090D1A] border border-gray-800">
-            <FolderArchive className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-            <h3 className="font-mono text-base font-bold text-white mb-1">NO MATCHING DOSSIERS FOUND</h3>
-            <p className="text-xs text-gray-400 font-mono mb-4">
-              Try adjusting your search criteria or switching category filters.
-            </p>
-            <button
-              onClick={() => {
-                onSearchChange('');
-                onSelectCategory('ALL');
-                onSelectStatus('ALL');
-              }}
-              className="px-4 py-2 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold"
-            >
-              Reset Filters
-            </button>
-          </div>
+          <EmptyState
+            icon={FolderArchive}
+            title="NO MATCHING DOSSIERS FOUND"
+            message="Try adjusting your search criteria or switching category filters."
+            action={
+              <button
+                onClick={() => {
+                  onSearchChange('');
+                  onSelectCategory('ALL');
+                  onSelectStatus('ALL');
+                }}
+                className="px-4 py-2 rounded-lg bg-cyan-950 text-cipher-accent-hover border border-cipher-accent/40 text-xs font-mono font-bold"
+              >
+                RESET FILTERS
+              </button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCases.map((c) => (
@@ -656,11 +680,11 @@ export const EditorialHome: React.FC<Props> = ({
       </section>
 
       {/* 6. SECTION: ARCHIVE STATISTICS (Small, Unobtrusive Footer Section) */}
-      <footer className="w-full border-t border-gray-800 bg-[#03050A] px-4 sm:px-6 py-8">
+      <footer className="w-full border-t border-gray-800 bg-cipher-base px-4 sm:px-6 py-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           
           <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-            <div className="font-mono text-sm font-bold text-cyan-400 tracking-wider">
+            <div className="font-mono text-sm font-bold text-cipher-accent tracking-wider">
               CIPHER FILES ARCHIVE
             </div>
             <span className="hidden sm:inline text-gray-700">|</span>
@@ -677,7 +701,7 @@ export const EditorialHome: React.FC<Props> = ({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-500">PRIMARY EXHIBITS:</span>
-              <strong className="text-cyan-400">120+</strong>
+              <strong className="text-cipher-accent">120+</strong>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-500">ANALYSTS:</span>

@@ -85,7 +85,7 @@ export const WorkspaceEditor: React.FC<Props> = ({ workspaceId, onBack, onOpenEn
   if (loading || !ws) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[600px]">
-        <Loader className="w-6 h-6 text-cyan-400 animate-spin" />
+        <Loader className="w-6 h-6 text-cipher-accent animate-spin" />
       </div>
     );
   }
@@ -100,11 +100,11 @@ export const WorkspaceEditor: React.FC<Props> = ({ workspaceId, onBack, onOpenEn
           {isEditingDetails ? (
             <div className="flex items-center gap-2">
               <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className="bg-[#111] border border-white/10 text-white px-2 py-1 rounded text-lg font-bold" />
-              <button onClick={handleSaveDetails} className="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded hover:bg-cyan-500/30 text-xs uppercase tracking-wider">Save</button>
+              <button onClick={handleSaveDetails} className="px-3 py-1 bg-cipher-accent/20 text-cipher-accent rounded hover:bg-cipher-accent-hover/30 text-xs uppercase tracking-wider">Save</button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-white cursor-pointer hover:text-cyan-400 transition-colors" onClick={() => setIsEditingDetails(true)}>{ws.title}</h2>
+              <h2 className="text-xl font-bold text-white cursor-pointer hover:text-cipher-accent transition-colors" onClick={() => setIsEditingDetails(true)}>{ws.title}</h2>
               <span className="text-[10px] font-mono tracking-widest text-rose-400 uppercase border border-rose-500/30 px-2 py-0.5 rounded-full bg-rose-500/10">Private Workspace</span>
             </div>
           )}
@@ -114,13 +114,13 @@ export const WorkspaceEditor: React.FC<Props> = ({ workspaceId, onBack, onOpenEn
       <div className="flex gap-4 border-b border-white/10 mb-4 shrink-0">
         <button 
           onClick={() => setActiveTab('NOTEBOOK')}
-          className={`px-4 py-2 border-b-2 font-medium text-sm tracking-wider uppercase transition-colors ${activeTab === 'NOTEBOOK' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-gray-400 hover:text-white'}`}
+          className={`px-4 py-2 border-b-2 font-medium text-sm tracking-wider uppercase transition-colors ${activeTab === 'NOTEBOOK' ? 'border-cyan-400 text-cipher-accent' : 'border-transparent text-gray-400 hover:text-white'}`}
         >
           Notebook
         </button>
         <button 
           onClick={() => setActiveTab('BOARD')}
-          className={`px-4 py-2 border-b-2 font-medium text-sm tracking-wider uppercase transition-colors ${activeTab === 'BOARD' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-gray-400 hover:text-white'}`}
+          className={`px-4 py-2 border-b-2 font-medium text-sm tracking-wider uppercase transition-colors ${activeTab === 'BOARD' ? 'border-cyan-400 text-cipher-accent' : 'border-transparent text-gray-400 hover:text-white'}`}
         >
           Theory Board
         </button>
@@ -132,7 +132,7 @@ export const WorkspaceEditor: React.FC<Props> = ({ workspaceId, onBack, onOpenEn
             <div className="flex items-center justify-between p-3 border-b border-white/10 bg-white/[0.02]">
               <div className="text-xs text-gray-400 uppercase tracking-widest font-mono">Investigator Notes</div>
               <div className="flex items-center gap-2">
-                {isSaving && <span className="text-xs text-cyan-400 animate-pulse">Saving...</span>}
+                {isSaving && <span className="text-xs text-cipher-accent animate-pulse">Saving...</span>}
               </div>
             </div>
             <textarea
@@ -220,7 +220,7 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
       <div className="w-full sm:w-1/3 flex flex-col bg-[#111] border border-white/10 rounded-xl overflow-hidden">
          <div className="p-3 border-b border-white/10 bg-white/[0.02] flex items-center justify-between">
            <span className="text-xs text-gray-400 uppercase tracking-widest font-mono">References</span>
-           <button onClick={() => setSearchOpen(true)} className="text-cyan-400 hover:text-cyan-300 text-xs font-medium uppercase tracking-wider flex items-center gap-1">
+           <button onClick={() => setSearchOpen(true)} className="text-cipher-accent hover:text-cipher-accent-hover text-xs font-medium uppercase tracking-wider flex items-center gap-1">
              <Search className="w-3 h-3" /> Add
            </button>
            
@@ -256,7 +256,7 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
                       <span className="font-mono">{r.entityType}</span>
                     </div>
                     <div 
-                      className="text-sm font-medium text-white line-clamp-2 cursor-pointer hover:text-cyan-400 transition-colors"
+                      className="text-sm font-medium text-white line-clamp-2 cursor-pointer hover:text-cipher-accent transition-colors"
                       onClick={() => {
                         if (r.entityType === 'CASE') onOpenCase(r.entityId);
                         else if (r.entityType === 'EVIDENCE') onOpenEvidence(r.entityId);
@@ -277,16 +277,16 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
       <div className="w-full sm:w-2/3 flex flex-col bg-[#111] border border-white/10 rounded-xl overflow-hidden">
         <div className="p-3 border-b border-white/10 bg-white/[0.02] flex items-center justify-between">
            <span className="text-xs text-amber-400 uppercase tracking-widest font-mono">YOUR PROPOSED CONNECTIONS</span>
-           <button onClick={() => setAddingConnection(!addingConnection)} className="text-cyan-400 hover:text-cyan-300 text-xs font-medium uppercase tracking-wider flex items-center gap-1">
+           <button onClick={() => setAddingConnection(!addingConnection)} className="text-cipher-accent hover:text-cipher-accent-hover text-xs font-medium uppercase tracking-wider flex items-center gap-1">
              <Plus className="w-3 h-3" /> New Path
            </button>
          </div>
          <div className="flex-1 overflow-y-auto p-4">
          {addingConnection && (
-            <div className="mb-6 p-4 border border-cyan-500/30 rounded-xl bg-cyan-950/10">
+            <div className="mb-6 p-4 border border-cipher-accent/30 rounded-xl bg-cyan-950/10">
               <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Define Working Theory Connection</h4>
               <div className="flex flex-col gap-3">
-                <select value={sourceId} onChange={e => setSourceId(e.target.value)} className="bg-black/50 border border-white/10 text-white text-sm rounded p-2 focus:border-cyan-500">
+                <select value={sourceId} onChange={e => setSourceId(e.target.value)} className="bg-black/50 border border-white/10 text-white text-sm rounded p-2 focus:border-cipher-accent">
                   <option value="">Select Source Reference...</option>
                   {ws.references?.map(r => (
                     <option key={r.id} value={r.id}>{(r as any).resolvedData?.title || r.entityId}</option>
@@ -298,10 +298,10 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
                   value={linkLabel} 
                   onChange={e => setLinkLabel(e.target.value)} 
                   placeholder="Connection Label (e.g. 'Possible meeting location')"
-                  className="bg-black/50 border border-white/10 text-white text-sm rounded p-2 focus:border-cyan-500 placeholder:text-gray-600"
+                  className="bg-black/50 border border-white/10 text-white text-sm rounded p-2 focus:border-cipher-accent placeholder:text-gray-600"
                 />
                 
-                <select value={targetId} onChange={e => setTargetId(e.target.value)} className="bg-black/50 border border-white/10 text-white text-sm rounded p-2 focus:border-cyan-500">
+                <select value={targetId} onChange={e => setTargetId(e.target.value)} className="bg-black/50 border border-white/10 text-white text-sm rounded p-2 focus:border-cipher-accent">
                   <option value="">Select Target Reference...</option>
                   {ws.references?.map(r => (
                     <option key={r.id} value={r.id}>{(r as any).resolvedData?.title || r.entityId}</option>
@@ -310,7 +310,7 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
                 
                 <div className="flex justify-end gap-2 mt-2">
                   <button onClick={() => setAddingConnection(false)} className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white uppercase tracking-wider">Cancel</button>
-                  <button onClick={handleCreateConnection} disabled={!sourceId || !targetId || !linkLabel} className="px-3 py-1.5 text-xs font-medium bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 rounded uppercase tracking-wider disabled:opacity-50">Save Connection</button>
+                  <button onClick={handleCreateConnection} disabled={!sourceId || !targetId || !linkLabel} className="px-3 py-1.5 text-xs font-medium bg-cipher-accent/20 text-cipher-accent hover:bg-cipher-accent-hover/30 rounded uppercase tracking-wider disabled:opacity-50">Save Connection</button>
                 </div>
               </div>
             </div>
@@ -324,7 +324,7 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
             ) : (
               <div className="flex flex-col gap-4">
                 {ws.connections?.map(c => (
-                  <div key={c.id} className="group relative p-4 border border-cyan-500/20 hover:border-cyan-500/40 rounded-xl bg-cyan-950/5 transition-colors">
+                  <div key={c.id} className="group relative p-4 border border-cipher-accent/20 hover:border-cipher-accent/40 rounded-xl bg-cyan-950/5 transition-colors">
                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleDeleteConnection(c.id)} className="p-1 text-gray-500 hover:text-rose-400"><Trash2 className="w-3 h-3" /></button>
                      </div>
@@ -333,9 +333,9 @@ const WorkspaceBoard = ({ ws, reload, onOpenEntity, onOpenCase, onOpenEvidence, 
                           {getRefDisplay(c.sourceRefId)}
                         </div>
                         <div className="px-4 text-center shrink-0">
-                          <span className="block text-[10px] font-mono text-cyan-400/80 uppercase mb-1">User Proposed</span>
-                          <div className="h-0.5 w-12 sm:w-16 bg-cyan-500/30 mx-auto relative">
-                             <div className="absolute -right-1 -top-1 w-2 h-2 border-t border-r border-cyan-500/50 rotate-45"></div>
+                          <span className="block text-[10px] font-mono text-cipher-accent/80 uppercase mb-1">User Proposed</span>
+                          <div className="h-0.5 w-12 sm:w-16 bg-cipher-accent/30 mx-auto relative">
+                             <div className="absolute -right-1 -top-1 w-2 h-2 border-t border-r border-cipher-accent/50 rotate-45"></div>
                           </div>
                           <span className="block mt-1 text-xs text-white font-bold">{c.label}</span>
                         </div>

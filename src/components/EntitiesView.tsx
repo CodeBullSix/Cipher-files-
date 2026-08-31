@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/apiService';
 import { User, Building, MapPin, Search, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
@@ -43,7 +44,7 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
   };
 
   const getIcon = () => {
-    if (type === 'people') return <User className="w-5 h-5 text-cyan-400" />;
+    if (type === 'people') return <User className="w-5 h-5 text-cipher-accent" />;
     if (type === 'organisations') return <Building className="w-5 h-5 text-amber-400" />;
     return <MapPin className="w-5 h-5 text-emerald-400" />;
   };
@@ -68,7 +69,7 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="bg-[#090D1A] border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
+      <div className="bg-cipher-surface border border-gray-800 rounded-xl p-5 sm:p-6 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-800">
           <h3 className="text-lg font-bold text-white font-mono flex items-center gap-2">
             {getIcon()}
@@ -80,17 +81,17 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
               <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search..." aria-label="Search..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full sm:w-64 pl-9 pr-4 py-2 bg-black border border-gray-800 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                className="w-full sm:w-64 pl-9 pr-4 py-2 bg-black border border-gray-800 rounded-lg text-sm text-white focus:outline-none focus:border-cipher-accent/50"
               />
             </div>
             
             {currentUser && (
               <button
                 onClick={handleAddNew}
-                className="px-4 py-2 bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-900/60 rounded-lg flex items-center gap-2 font-mono text-xs uppercase tracking-wider transition-colors shrink-0"
+                className="px-4 py-2 bg-cyan-950/40 text-cipher-accent border border-cipher-accent/30 hover:bg-cyan-900/60 rounded-lg flex items-center gap-2 font-mono text-xs uppercase tracking-wider transition-colors shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Add New</span>
@@ -104,12 +105,11 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
             <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : entities.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-gray-800 rounded-lg">
-            <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center mx-auto mb-3">
-              {getIcon()}
-            </div>
-            <p className="text-gray-400 font-mono text-sm">No {type} found for this case.</p>
-          </div>
+          <EmptyState
+            icon={getIcon().type}
+            title={`NO ${type.toUpperCase()} FOUND`}
+            message={`No ${type} found for this case.`}
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {entities.map(entity => (
@@ -127,7 +127,7 @@ export const EntitiesView: React.FC<Props> = ({ caseFileId, type, currentUser })
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-200 truncate group-hover:text-cyan-400 transition-colors">{entity.name}</h4>
+                    <h4 className="font-bold text-gray-200 truncate group-hover:text-cipher-accent transition-colors">{entity.name}</h4>
                     {(entity.aliases || entity.locationType || entity.type) && (
                       <p className="text-xs text-gray-500 truncate mt-0.5">
                         {entity.aliases || entity.locationType || entity.type}

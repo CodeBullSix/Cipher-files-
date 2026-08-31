@@ -79,7 +79,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-800">
           <h2 className="text-lg font-bold text-white font-mono flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-cyan-500" />
+            <Calendar className="w-5 h-5 text-cipher-accent" />
             {existingEvent ? 'Edit Event' : 'Log New Event'}
           </h2>
           <button onClick={() => { onClose(); sound.click(); }} className="text-gray-400 hover:text-white transition-colors">
@@ -104,7 +104,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                   required
                   value={formData.title}
                   onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                   placeholder="e.g. MKUltra Program Initiated"
                 />
               </div>
@@ -114,7 +114,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                 <select
                   value={formData.type}
                   onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                 >
                   {['MEETING', 'PUBLICATION', 'EMPLOYMENT', 'FOUNDING', 'INVESTIGATION', 'INCIDENT', 'MOVEMENT', 'COMMUNICATION', 'LEGAL', 'POLITICAL', 'OTHER'].map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -128,7 +128,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                   type="text"
                   value={formData.location}
                   onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                   placeholder="e.g. Langley, Virginia"
                 />
               </div>
@@ -144,7 +144,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                   required
                   value={formData.dateString}
                   onChange={e => setFormData(prev => ({ ...prev, dateString: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                   placeholder="e.g. March 1963, Late 60s"
                 />
               </div>
@@ -154,7 +154,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                 <select
                   value={formData.datePrecision}
                   onChange={e => setFormData(prev => ({ ...prev, datePrecision: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                 >
                   {['EXACT', 'DAY', 'MONTH', 'YEAR', 'APPROXIMATE', 'RANGE', 'UNKNOWN'].map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -168,7 +168,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                   type="date"
                   value={formData.startDate}
                   onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-gray-300 font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-gray-300 font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                 />
               </div>
 
@@ -178,7 +178,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                   type="date"
                   value={formData.endDate}
                   onChange={e => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-gray-300 font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-gray-300 font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                 />
               </div>
 
@@ -188,7 +188,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                   value={formData.description}
                   onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={4}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors custom-scrollbar"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors custom-scrollbar"
                   placeholder="Detailed description of the event..."
                 />
               </div>
@@ -198,7 +198,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
                 <select
                   value={formData.verificationStatus}
                   onChange={e => setFormData(prev => ({ ...prev, verificationStatus: e.target.value }))}
-                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full bg-black border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm focus:border-cipher-accent focus:outline-none transition-colors"
                 >
                   <option value="UNVERIFIED">Unverified</option>
                   <option value="VERIFIED">Verified</option>
@@ -221,7 +221,7 @@ export function EventModal({ isOpen, onClose, entityType, entityId, onSuccess, e
             type="submit"
             form="event-form"
             disabled={loading}
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-mono text-sm transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-cyan-600 hover:bg-cipher-accent-hover text-white rounded font-mono text-sm transition-colors disabled:opacity-50"
           >
             {loading ? 'Saving...' : existingEvent ? 'Save Changes' : 'Log Event'}
           </button>

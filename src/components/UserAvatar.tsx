@@ -55,7 +55,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
   return (
     <div className={`relative inline-flex shrink-0 ${sizeClasses[size]} ${className}`}>
-      <div className="w-full h-full rounded-lg overflow-hidden border border-cyan-500/30 bg-[#0B0F19] flex items-center justify-center font-mono text-cyan-300 shadow-sm select-none">
+      <div className="w-full h-full rounded-lg overflow-hidden border border-cipher-accent/30 bg-cipher-elevated flex items-center justify-center font-mono text-cipher-accent-hover shadow-sm select-none">
         {url && !imgError ? (
           <img
             src={url}
@@ -77,11 +77,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
       {showBadge && role && (
         <span
-          className={`absolute rounded-full border-2 border-[#04060C] ${
+          className={`absolute rounded-full border-2 border-cipher-base ${
             role === 'admin'
               ? 'bg-amber-400'
               : role === 'moderator'
-              ? 'bg-cyan-400'
+              ? 'bg-cipher-accent'
               : role === 'archivist'
               ? 'bg-emerald-400'
               : 'bg-blue-400'

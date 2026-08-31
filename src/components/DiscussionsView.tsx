@@ -1,7 +1,10 @@
+import { EmptyState } from "./EmptyState";
 import React, { useState, useEffect, useRef } from 'react';
 import { DiscussionThread, CaseFile, Comment, UserProfile, MediaAttachment } from '../types';
 import { ArchiveEvidence } from '../types';
 import { EvidenceDetailModal } from './EvidenceDetailModal';
+import { ReportModal } from './ReportModal';
+import { AppealModal } from './AppealModal';
 import { Database, Trash2 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { FirestoreService } from '../services/firestoreService';
@@ -13,7 +16,8 @@ import {
   MessageSquare, 
   Search, 
   PlusCircle, 
-  ThumbsUp, 
+  ThumbsUp,
+  AlertTriangle, 
   ThumbsDown,
   Eye, 
   Tag, 
@@ -64,6 +68,8 @@ export const DiscussionsView: React.FC<Props> = ({
   initialThreadId = null
 }) => {
   const [discussions, setDiscussions] = useState<DiscussionThread[]>(StorageService.getDiscussions());
+  const [reportingTarget, setReportingTarget] = useState<{type: 'DISCUSSION' | 'REPLY', id: string} | null>(null);
+  const [appealingTarget, setAppealingTarget] = useState<{id: string, type: string, title: string} | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSourceId, setSearchSourceId] = useState<string>('ALL');
   const [searchTheoryType, setSearchTheoryType] = useState<string>('ALL');
@@ -446,11 +452,11 @@ export const DiscussionsView: React.FC<Props> = ({
           <div className="absolute top-8 -left-[2px] w-4 h-px bg-gray-800/80" />
         )}
         
-        <div className="p-4 sm:p-5 rounded-xl border border-gray-800/90 bg-[#070A12] hover:border-gray-700 transition-colors space-y-3">
+        <div className="p-4 sm:p-5 rounded-xl border border-gray-800/90 bg-cipher-panel hover:border-gray-700 transition-colors space-y-3">
           {/* Replying-to context callout */}
           {comment.replyToAuthorName && depth === 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-cyan-400/80 bg-cyan-950/30 px-2.5 py-1 rounded border border-cyan-500/20">
-              <CornerDownRight className="w-3 h-3 text-cyan-400" />
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-cipher-accent/80 bg-cyan-950/30 px-2.5 py-1 rounded border border-cipher-accent/20">
+              <CornerDownRight className="w-3 h-3 text-cipher-accent" />
               <span>Replying to <strong>@{comment.replyToAuthorName}</strong></span>
             </div>
           )}
@@ -469,7 +475,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   {comment.authorName}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-cyan-400/80">
+                  <span className="text-[10px] font-mono text-cipher-accent/80">
                     [{comment.authorCallsign || 'RESEARCHER'}]
                   </span>
                   <span className="text-[10px] font-mono text-gray-400">
@@ -492,15 +498,23 @@ export const DiscussionsView: React.FC<Props> = ({
           {/* Cited Evidence Reference Callout */}
           {comment.citedEvidenceId && (
             <div className="px-3 py-1.5 rounded bg-black/60 border border-gray-800/80 flex items-center gap-2 text-xs font-mono text-gray-300">
-              <Quote className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <Quote className="w-3.5 h-3.5 text-cipher-accent shrink-0" />
               <span className="text-gray-400 hidden sm:inline">CITED ARCHIVAL PROVENANCE:</span>
-              <span className="text-cyan-300 font-semibold truncate">{comment.citedEvidenceId}</span>
+              <span className="text-cipher-accent-hover font-semibold truncate">{comment.citedEvidenceId}</span>
             </div>
           )}
 
           {/* Content */}
           <p className={`text-xs sm:text-sm font-sans leading-relaxed whitespace-pre-wrap ${comment.deletedAt ? 'text-gray-500 italic' : 'text-gray-200'}`}>
             {comment.deletedAt ? '[This comment was removed by moderation]' : comment.content}
+            {comment.deletedAt && currentUser?.uid === comment.authorUid && (
+                <button
+                  onClick={() => setAppealingTarget({ id: comment.id, type: 'REPLY', title: 'Reply to: ' + activeThread!.title })}
+                  className="ml-4 px-2 py-1 bg-red-950/50 border border-red-500/30 text-red-400 hover:bg-red-900/80 rounded text-[10px] font-bold font-mono tracking-widest uppercase transition-colors inline-flex"
+                >
+                  Appeal Decision
+                </button>
+            )}
           </p>
 
           {/* Comment Media Attachments (Photos / Videos) */}
@@ -522,7 +536,7 @@ export const DiscussionsView: React.FC<Props> = ({
                 setReplyingToComment({ id: comment.id, authorName: comment.authorName });
                 sound.click();
               }}
-              className="flex items-center gap-1.5 text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800"
+              className="flex items-center gap-1.5 text-gray-400 hover:text-cipher-accent-hover transition-colors cursor-pointer bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800"
             >
               <Reply className="w-3.5 h-3.5" />
               <span>Reply to @{comment.authorName}</span>
@@ -574,7 +588,7 @@ export const DiscussionsView: React.FC<Props> = ({
             <div className="flex items-center gap-4 bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800">
               <button
                 onClick={() => handleVoteReply(comment.id, 'up')}
-                className={`flex items-center gap-1.5 transition-colors cursor-pointer ${comment.userVote === 'up' ? 'text-cyan-300 font-bold' : 'text-gray-400 hover:text-cyan-300'}`}
+                className={`flex items-center gap-1.5 transition-colors cursor-pointer ${comment.userVote === 'up' ? 'text-cipher-accent-hover font-bold' : 'text-gray-400 hover:text-cipher-accent-hover'}`}
               >
                 <ThumbsUp className="w-3.5 h-3.5" />
                 <span>{comment.upvotes || 0}</span>
@@ -612,7 +626,7 @@ export const DiscussionsView: React.FC<Props> = ({
           <div className="flex items-center justify-between gap-4 pb-4 border-b border-gray-800">
             <button
               onClick={() => { setActiveThreadId(null); sound.click(); }}
-              className="px-3 py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#121929] border border-gray-800 text-cyan-400 font-mono text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-cipher-elevated hover:bg-cipher-elevated border border-gray-800 text-cipher-accent font-mono text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>RETURN TO ALL FORUM INQUIRIES</span>
@@ -621,7 +635,7 @@ export const DiscussionsView: React.FC<Props> = ({
             {activeLinkedCase && (
               <button
                 onClick={() => onOpenCase(activeLinkedCase.id)}
-                className="px-3 py-1.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 font-mono text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cipher-accent/40 text-cipher-accent-hover font-mono text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Examine Dossier: {activeLinkedCase.caseNumber}</span>
@@ -631,7 +645,7 @@ export const DiscussionsView: React.FC<Props> = ({
           </div>
 
           {/* Main Original Inquiry Post */}
-          <article className="rounded-xl border border-gray-800 bg-[#090D18] p-6 sm:p-7 shadow-xl space-y-5">
+          <article className="rounded-xl border border-gray-800 bg-cipher-surface p-6 sm:p-7 shadow-xl space-y-5">
             
             {/* Header / Author info */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-800/80">
@@ -648,7 +662,7 @@ export const DiscussionsView: React.FC<Props> = ({
                       {activeThread.authorName}
                     </span>
                     {activeThread.authorRole && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-mono font-semibold uppercase">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cipher-accent/40 text-cipher-accent-hover font-mono font-semibold uppercase">
                         {activeThread.authorRole}
                       </span>
                     )}
@@ -676,7 +690,7 @@ export const DiscussionsView: React.FC<Props> = ({
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 {activeLinkedCase && (
-                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 font-mono text-xs">
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-cyan-950/60 border border-cipher-accent/30 text-cipher-accent-hover font-mono text-xs">
                     <span>REFERENCED DOSSIER:</span>
                     <strong className="text-white">{activeLinkedCase.title}</strong>
                   </div>
@@ -708,15 +722,23 @@ export const DiscussionsView: React.FC<Props> = ({
             </div>
 
             {/* Opening Argument Content */}
-            <div className={`p-4 rounded-lg bg-[#05070D] border border-gray-800 text-sm font-sans leading-relaxed whitespace-pre-wrap ${activeThread.deletedAt ? 'text-gray-500 italic' : 'text-gray-200'}`}>
+            <div className={`p-4 rounded-lg bg-cipher-base border border-gray-800 text-sm font-sans leading-relaxed whitespace-pre-wrap ${activeThread.deletedAt ? 'text-gray-500 italic' : 'text-gray-200'}`}>
               {activeThread.deletedAt ? '[This thread was removed by moderation]' : activeThread.initialComment}
+              {activeThread.deletedAt && currentUser?.uid === activeThread.authorUid && (
+                <button
+                  onClick={() => setAppealingTarget({ id: activeThread.id, type: 'DISCUSSION', title: activeThread.title })}
+                  className="ml-4 px-2 py-1 bg-red-950/50 border border-red-500/30 text-red-400 hover:bg-red-900/80 rounded text-[10px] font-bold font-mono tracking-widest uppercase transition-colors inline-flex"
+                >
+                  Appeal Decision
+                </button>
+              )}
             </div>
 
             
             {/* PHASE 2 REFERENCED EVIDENCE */}
             {threadEvidence.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-800">
-                <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <h4 className="text-xs font-mono font-bold text-cipher-accent uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Database className="w-3.5 h-3.5" />
                   <span>REFERENCED EVIDENCE</span>
                 </h4>
@@ -725,7 +747,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     <div 
                       key={ev.id} 
                       onClick={() => setSelectedArchiveEvidence(ev)}
-                      className="p-3 bg-[#090D1A] border border-gray-800 rounded-lg hover:border-cyan-500/50 cursor-pointer transition-colors"
+                      className="p-3 bg-cipher-surface border border-gray-800 rounded-lg hover:border-cipher-accent/50 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${
@@ -734,7 +756,7 @@ export const DiscussionsView: React.FC<Props> = ({
                         }`}>
                           {ev.status}
                         </span>
-                        <span className="text-[10px] text-cyan-500 font-bold">{ev.stance}</span>
+                        <span className="text-[10px] text-cipher-accent font-bold">{ev.stance}</span>
                       </div>
                       <h5 className="text-sm font-bold text-white mb-1 leading-tight line-clamp-1">{ev.title}</h5>
                       <p className="text-xs text-gray-400 line-clamp-1">{ev.description}</p>
@@ -747,8 +769,8 @@ export const DiscussionsView: React.FC<Props> = ({
             {/* ATTACHED PHOTOS & VIDEOS FORUM EXHIBITS */}
             {(activeThread.imageUrl || activeThread.videoUrl || (activeThread.attachments && activeThread.attachments.length > 0)) && (
               <div className="pt-2">
-                <h4 className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-cyan-400" />
+                <h4 className="text-xs font-mono font-bold text-cipher-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-cipher-accent" />
                   <span>PRIMARY EVIDENCE EXHIBITS & RECORDED FOOTAGE</span>
                 </h4>
                 <MediaAttachmentViewer
@@ -764,7 +786,7 @@ export const DiscussionsView: React.FC<Props> = ({
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-800/80">
               <div className="flex flex-wrap gap-1.5">
                 {(activeThread.tags || []).map(t => (
-                  <span key={t} className="text-[11px] font-mono px-2.5 py-1 rounded bg-black/50 border border-gray-800 text-cyan-400">
+                  <span key={t} className="text-[11px] font-mono px-2.5 py-1 rounded bg-black/50 border border-gray-800 text-cipher-accent">
                     #{t}
                   </span>
                 ))}
@@ -775,11 +797,11 @@ export const DiscussionsView: React.FC<Props> = ({
                   onClick={(e) => handleVoteThread(e, activeThread.id)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
                     activeThread.userVote === 'up'
-                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-[0_0_10px_rgba(0,229,255,0.2)]'
-                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-cyan-500/40 hover:text-cyan-300'
+                      ? 'bg-cipher-accent/20 text-cipher-accent-hover border-cyan-400 shadow-[0_0_10px_rgba(0,229,255,0.2)]'
+                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-cipher-accent/40 hover:text-cipher-accent-hover'
                   }`}
                 >
-                  <ThumbsUp className="w-3.5 h-3.5 text-cyan-400" />
+                  <ThumbsUp className="w-3.5 h-3.5 text-cipher-accent" />
                   <span>{activeThread.upvotes || 0} Endorsements</span>
                 </button>
                 {/* Moderation Controls */}
@@ -830,7 +852,7 @@ export const DiscussionsView: React.FC<Props> = ({
             {/* Replies Header and Stance Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-cyan-400" />
+                <MessageSquare className="w-4 h-4 text-cipher-accent" />
                 <h3 className="font-mono text-base font-bold text-white uppercase tracking-wider">
                   PEER EVALUATIONS & REVIEWS ({threadComments.length})
                 </h3>
@@ -843,7 +865,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     onClick={() => setReplyStanceFilter(stance)}
                     className={`px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer ${
                       replyStanceFilter === stance
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                        ? 'bg-cipher-accent/20 text-cipher-accent-hover border border-cipher-accent/40 font-bold'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -860,7 +882,7 @@ export const DiscussionsView: React.FC<Props> = ({
             {/* List of Replies */}
             <div className="space-y-3">
               {filteredComments.length === 0 ? (
-                <div className="p-8 rounded-xl border border-gray-800/80 bg-[#070A12] text-center text-gray-400 font-mono text-xs">
+                <div className="p-8 rounded-xl border border-gray-800/80 bg-cipher-panel text-center text-gray-400 font-mono text-xs">
                   No peer reviews matching the selected filter. Be the first to contribute an evidentiary analysis with photo/video exhibits!
                 </div>
               ) : (
@@ -869,7 +891,7 @@ export const DiscussionsView: React.FC<Props> = ({
             </div>
 
             {/* 3. POST A PEER REVIEW FORM WITH PHOTO/VIDEO UPLOAD */}
-            <div className="mt-6 rounded-xl border border-cyan-500/30 bg-[#070A14] p-5 sm:p-6 shadow-xl space-y-4">
+            <div className="mt-6 rounded-xl border border-cipher-accent/30 bg-cipher-panel p-5 sm:p-6 shadow-xl space-y-4">
               {activeThread.locked ? (
                 <div className="text-center py-6 text-yellow-400 font-mono text-sm bg-yellow-950/20 border border-yellow-500/20 rounded-lg">
                   <Lock className="w-5 h-5 mx-auto mb-2 text-yellow-500" />
@@ -888,12 +910,12 @@ export const DiscussionsView: React.FC<Props> = ({
                     <h4 className="font-mono text-xs font-bold text-white uppercase flex items-center gap-2">
                       <span>CONTRIBUTE TO INVESTIGATIVE INQUIRY</span>
                       {replyingToComment && (
-                        <span className="text-[10px] text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-500/30">
+                        <span className="text-[10px] text-cipher-accent bg-cyan-950 px-2 py-0.5 rounded border border-cipher-accent/30">
                           Replying to @{replyingToComment.authorName}
                         </span>
                       )}
                     </h4>
-                    <span className="text-[10px] font-mono text-cyan-400">
+                    <span className="text-[10px] font-mono text-cipher-accent">
                       Posting as {currentUser?.displayName || 'Registered Investigator'}
                     </span>
                   </div>
@@ -918,7 +940,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     <select
                       value={replyStance}
                       onChange={(e) => setReplyStance(e.target.value as any)}
-                      className="w-full bg-[#030509] border border-gray-700 rounded-lg p-2 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2 text-xs font-mono text-cipher-accent-hover focus:outline-none focus:border-cipher-accent"
                     >
                       <option value="SUPPORTING">Supporting (Corroborating Document)</option>
                       <option value="SKEPTICAL">Skeptical (Methodological Counter-Analysis)</option>
@@ -936,7 +958,7 @@ export const DiscussionsView: React.FC<Props> = ({
                       value={replyCitedSource}
                       onChange={(e) => setReplyCitedSource(e.target.value)}
                       placeholder="e.g. Church Committee Hearings Vol 7, p. 112"
-                      className="w-full bg-[#030509] border border-gray-700 rounded-lg p-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cipher-accent"
                     />
                   </div>
                 </div>
@@ -951,15 +973,15 @@ export const DiscussionsView: React.FC<Props> = ({
                     placeholder="Provide your reasoned evidentiary critique, citations, or corroboration..."
                     rows={4}
                     required
-                    className="w-full bg-[#030509] border border-gray-700 rounded-lg p-3 text-xs sm:text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 leading-relaxed"
+                    className="w-full bg-cipher-base border border-gray-700 rounded-lg p-3 text-xs sm:text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cipher-accent leading-relaxed"
                   />
                 </div>
 
                 {/* MEDIA ATTACHMENTS BAR FOR REPLY */}
-                <div className="p-3 rounded-lg bg-[#04060C] border border-gray-800 space-y-3">
+                <div className="p-3 rounded-lg bg-cipher-base border border-gray-800 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] font-mono text-gray-400 font-semibold flex items-center gap-1.5">
-                      <Film className="w-3.5 h-3.5 text-cyan-400" />
+                      <Film className="w-3.5 h-3.5 text-cipher-accent" />
                       <span>ATTACH PRIMARY SCAN OR VIDEO EXHIBIT (OPTIONAL)</span>
                     </span>
 
@@ -983,9 +1005,9 @@ export const DiscussionsView: React.FC<Props> = ({
                         type="button"
                         onClick={() => replyImageInputRef.current?.click()}
                         disabled={isUploadingReplyMedia}
-                        className="px-2.5 py-1 rounded bg-[#090D18] hover:bg-[#121929] border border-gray-700 text-gray-300 hover:text-cyan-300 text-xs font-mono flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-cipher-surface hover:bg-cipher-elevated border border-gray-700 text-gray-300 hover:text-cipher-accent-hover text-xs font-mono flex items-center gap-1 cursor-pointer"
                       >
-                        <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
+                        <ImageIcon className="w-3.5 h-3.5 text-cipher-accent" />
                         <span>Upload Photo/Scan</span>
                       </button>
 
@@ -993,7 +1015,7 @@ export const DiscussionsView: React.FC<Props> = ({
                         type="button"
                         onClick={() => replyVideoInputRef.current?.click()}
                         disabled={isUploadingReplyMedia}
-                        className="px-2.5 py-1 rounded bg-[#090D18] hover:bg-[#121929] border border-gray-700 text-gray-300 hover:text-rose-300 text-xs font-mono flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-cipher-surface hover:bg-cipher-elevated border border-gray-700 text-gray-300 hover:text-rose-300 text-xs font-mono flex items-center gap-1 cursor-pointer"
                       >
                         <Video className="w-3.5 h-3.5 text-rose-400" />
                         <span>Upload Video</span>
@@ -1002,7 +1024,7 @@ export const DiscussionsView: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setShowReplyMediaInput(!showReplyMediaInput)}
-                        className="px-2.5 py-1 rounded bg-[#090D18] hover:bg-[#121929] border border-gray-700 text-cyan-400 text-xs font-mono flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded bg-cipher-surface hover:bg-cipher-elevated border border-gray-700 text-cipher-accent text-xs font-mono flex items-center gap-1 cursor-pointer"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>Paste URL / YouTube</span>
@@ -1017,15 +1039,15 @@ export const DiscussionsView: React.FC<Props> = ({
                         value={replyMediaUrl}
                         onChange={(e) => setReplyMediaUrl(e.target.value)}
                         placeholder="Paste image URL, YouTube video link (e.g. https://youtu.be/...), or MP4 link..."
-                        className="w-full bg-[#020408] border border-gray-700 rounded-lg p-2 text-xs font-mono text-cyan-300 placeholder-gray-600 focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2 text-xs font-mono text-cipher-accent-hover placeholder-gray-600 focus:outline-none focus:border-cipher-accent"
                       />
                     </div>
                   )}
 
                   {/* Reply Media Live Preview */}
                   {(replyUploadedImage || replyUploadedVideo || replyMediaUrl.trim()) && (
-                    <div className="relative mt-2 p-2 rounded-lg bg-[#020408] border border-cyan-500/40">
-                      <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-800 text-[10px] font-mono text-cyan-400 font-bold">
+                    <div className="relative mt-2 p-2 rounded-lg bg-cipher-base border border-cipher-accent/40">
+                      <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-800 text-[10px] font-mono text-cipher-accent font-bold">
                         <span>ATTACHMENT LIVE PREVIEW:</span>
                         <button
                           type="button"
@@ -1052,7 +1074,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   <button
                     type="submit"
                     disabled={isSubmittingReply || !replyContent.trim()}
-                    className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all cursor-pointer"
+                    className="px-5 py-2 rounded-lg bg-cipher-accent hover:bg-cipher-accent-hover disabled:opacity-50 text-black text-xs font-mono font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>PUBLISH PEER REVIEW (+2 REP)</span>
@@ -1074,8 +1096,8 @@ export const DiscussionsView: React.FC<Props> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-800">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00E5FF]"></span>
-                <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-cipher-accent shadow-[0_0_8px_#00E5FF]"></span>
+                <span className="text-[10px] font-mono text-cipher-accent font-bold uppercase tracking-wider">
                   PRIMARY INVESTIGATIVE DEBATE & AUDIT FLOOR
                 </span>
               </div>
@@ -1085,7 +1107,7 @@ export const DiscussionsView: React.FC<Props> = ({
 
             <button
               onClick={() => { setShowCreateModal(true); sound.click(); }}
-              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-mono font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all self-start sm:self-auto cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-cipher-accent hover:bg-cipher-accent-hover text-black text-xs font-mono font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all self-start sm:self-auto cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>INITIATE RESEARCH INQUIRY</span>
@@ -1098,7 +1120,7 @@ export const DiscussionsView: React.FC<Props> = ({
               onClick={() => setSelectedCategory('ALL')}
               className={`px-4 py-2.5 text-xs font-mono font-bold whitespace-nowrap transition-colors border-b-2 cursor-pointer ${
                 selectedCategory === 'ALL'
-                  ? 'border-cyan-400 text-cyan-400'
+                  ? 'border-cyan-400 text-cipher-accent'
                   : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-700'
               }`}
             >
@@ -1137,11 +1159,11 @@ export const DiscussionsView: React.FC<Props> = ({
           </div>
 
           {/* Filter, Search, and Sort Bar */}
-          <div className="flex flex-col gap-3 bg-[#0A0E18] p-4 rounded-xl border border-gray-800 shadow-inner">
+          <div className="flex flex-col gap-3 bg-cipher-surface p-4 rounded-xl border border-gray-800 shadow-inner">
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
               {/* Keyword Search */}
-              <div className="flex items-center gap-2 flex-1 px-3 py-2 rounded-lg bg-[#05070D] border border-gray-700">
-                <Search className="w-4 h-4 text-cyan-400/80" />
+              <div className="flex items-center gap-2 flex-1 px-3 py-2 rounded-lg bg-cipher-base border border-gray-700">
+                <Search className="w-4 h-4 text-cipher-accent/80" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -1157,7 +1179,7 @@ export const DiscussionsView: React.FC<Props> = ({
               </div>
               
               {/* Document Source Select */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#05070D] border border-gray-700">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cipher-base border border-gray-700">
                 <FileText className="w-4 h-4 text-purple-400/80" />
                 <select
                   value={searchSourceId}
@@ -1172,7 +1194,7 @@ export const DiscussionsView: React.FC<Props> = ({
               </div>
 
               {/* Theory Type Select */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#05070D] border border-gray-700">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cipher-base border border-gray-700">
                 <Tag className="w-4 h-4 text-emerald-400/80" />
                 <select
                   value={searchTheoryType}
@@ -1196,18 +1218,18 @@ export const DiscussionsView: React.FC<Props> = ({
 
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-3 border-t border-gray-800/50">
               {/* Media Filter Tabs */}
-              <div className="flex items-center gap-1 bg-[#05070D] p-1 rounded-lg border border-gray-700 text-xs font-mono w-max">
+              <div className="flex items-center gap-1 bg-cipher-base p-1 rounded-lg border border-gray-700 text-xs font-mono w-max">
                 <button
                   onClick={() => setMediaFilter('ALL')}
-                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${mediaFilter === 'ALL' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40' : 'text-gray-400 hover:text-white'}`}
+                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${mediaFilter === 'ALL' ? 'bg-cipher-accent/20 text-cipher-accent-hover font-bold border border-cipher-accent/40' : 'text-gray-400 hover:text-white'}`}
                 >
                   All Posts
                 </button>
                 <button
                   onClick={() => setMediaFilter('PHOTOS')}
-                  className={`px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer ${mediaFilter === 'PHOTOS' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40' : 'text-gray-400 hover:text-white'}`}
+                  className={`px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer ${mediaFilter === 'PHOTOS' ? 'bg-cipher-accent/20 text-cipher-accent-hover font-bold border border-cipher-accent/40' : 'text-gray-400 hover:text-white'}`}
                 >
-                  <ImageIcon className="w-3 h-3 text-cyan-400" />
+                  <ImageIcon className="w-3 h-3 text-cipher-accent" />
                   <span>Photos</span>
                 </button>
                 <button
@@ -1221,16 +1243,16 @@ export const DiscussionsView: React.FC<Props> = ({
 
               {/* Sort Dropdown */}
               <div className="flex items-center gap-2 shrink-0">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#05070D] border border-gray-700 text-xs font-mono text-gray-300">
-                  <Filter className="w-3.5 h-3.5 text-cyan-400" />
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cipher-base border border-gray-700 text-xs font-mono text-gray-300">
+                  <Filter className="w-3.5 h-3.5 text-cipher-accent" />
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent text-xs font-mono text-cyan-300 focus:outline-none cursor-pointer"
+                  className="bg-transparent text-xs font-mono text-cipher-accent-hover focus:outline-none cursor-pointer"
                 >
-                  <option value="recent" className="bg-[#0A0E18] text-white">Latest Activity</option>
-                  <option value="active" className="bg-[#0A0E18] text-white">Most Peer Reviews</option>
-                  <option value="upvotes" className="bg-[#0A0E18] text-white">Most Endorsed</option>
+                  <option value="recent" className="bg-cipher-surface text-white">Latest Activity</option>
+                  <option value="active" className="bg-cipher-surface text-white">Most Peer Reviews</option>
+                  <option value="upvotes" className="bg-cipher-surface text-white">Most Endorsed</option>
                 </select>
               </div>
             </div>
@@ -1243,7 +1265,7 @@ export const DiscussionsView: React.FC<Props> = ({
               onClick={() => setSelectedTag('ALL')}
               className={`px-3 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-colors cursor-pointer ${
                 selectedTag === 'ALL' 
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold' 
+                  ? 'bg-cipher-accent/20 text-cipher-accent-hover border border-cipher-accent/50 font-bold' 
                   : 'bg-black/30 border border-gray-800 text-gray-400 hover:text-white'
               }`}
             >
@@ -1255,7 +1277,7 @@ export const DiscussionsView: React.FC<Props> = ({
                 onClick={() => setSelectedTag(tag)}
                 className={`px-3 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-colors cursor-pointer ${
                   selectedTag === tag 
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold' 
+                    ? 'bg-cipher-accent/20 text-cipher-accent-hover border border-cipher-accent/50 font-bold' 
                     : 'bg-black/30 border border-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
@@ -1268,9 +1290,11 @@ export const DiscussionsView: React.FC<Props> = ({
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-3 grid grid-cols-1 gap-3.5">
             {filteredDiscussions.length === 0 ? (
-              <div className="p-12 text-center rounded-xl border border-gray-800 bg-[#070A12] text-gray-400 font-mono text-xs">
-                No research inquiries match the current search criteria.
-              </div>
+              <EmptyState
+                icon={Search}
+                title="NO MATCHING DISCUSSIONS"
+                message="No research inquiries match the current search criteria."
+              />
             ) : (
               filteredDiscussions.map((disc) => {
                 const linkedCase = cases.find(c => c.id === disc.caseId);
@@ -1284,7 +1308,7 @@ export const DiscussionsView: React.FC<Props> = ({
                       setActiveThreadId(disc.id);
                       sound.click();
                     }}
-                    className="cursor-pointer group rounded-xl border border-gray-800 bg-[#090D18] hover:border-cyan-500/50 hover:bg-[#0B1020] p-5 transition-all shadow-md flex flex-col justify-between gap-4"
+                    className="cursor-pointer group rounded-xl border border-gray-800 bg-cipher-surface hover:border-cipher-accent/50 hover:bg-cipher-elevated p-5 transition-all shadow-md flex flex-col justify-between gap-4"
                   >
                     <div>
                       {/* Top Row: Case badge, Pin, Author, Date, Media Badges */}
@@ -1304,7 +1328,7 @@ export const DiscussionsView: React.FC<Props> = ({
                           </span>
 
                           {linkedCase && (
-                            <span className="hidden sm:inline-block text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                            <span className="hidden sm:inline-block text-[10px] font-mono font-bold text-cipher-accent bg-cyan-950/80 px-2 py-0.5 rounded border border-cipher-accent/30">
                               {linkedCase.caseNumber}: {linkedCase.title.slice(0, 24)}...
                             </span>
                           )}
@@ -1333,7 +1357,7 @@ export const DiscussionsView: React.FC<Props> = ({
                             </span>
                           )}
                           {hasPhoto && !hasVideo && (
-                            <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold flex items-center gap-1">
+                            <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cipher-accent/40 text-cipher-accent-hover font-bold flex items-center gap-1">
                               <ImageIcon className="w-2.5 h-2.5" /> SCAN EXHIBIT
                             </span>
                           )}
@@ -1347,7 +1371,7 @@ export const DiscussionsView: React.FC<Props> = ({
                       </div>
 
                       {/* Thread Title */}
-                      <h3 className="text-base sm:text-lg font-mono font-bold text-white group-hover:text-cyan-300 transition-colors leading-snug mb-2">
+                      <h3 className="text-base sm:text-lg font-mono font-bold text-white group-hover:text-cipher-accent-hover transition-colors leading-snug mb-2">
                         {disc.title}
                       </h3>
 
@@ -1378,7 +1402,7 @@ export const DiscussionsView: React.FC<Props> = ({
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1.5">
                         {(disc.tags || []).map(t => (
-                          <span key={t} className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/50 border border-gray-800 text-gray-400 group-hover:text-cyan-400/90 transition-colors">
+                          <span key={t} className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/50 border border-gray-800 text-gray-400 group-hover:text-cipher-accent/90 transition-colors">
                             #{t}
                           </span>
                         ))}
@@ -1388,7 +1412,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     {/* Bottom Metrics Bar */}
                     <div className="pt-3 border-t border-gray-800/80 flex items-center justify-between text-xs font-mono text-gray-400">
                       <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                        <span className="flex items-center gap-1.5 text-cipher-accent font-semibold">
                           <ThumbsUp className="w-3.5 h-3.5" />
                           <span>{disc.upvotes || 0} Endorsements</span>
                         </span>
@@ -1402,7 +1426,7 @@ export const DiscussionsView: React.FC<Props> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1 text-cyan-400 group-hover:translate-x-1 transition-transform font-bold text-xs">
+                      <div className="flex items-center gap-1 text-cipher-accent group-hover:translate-x-1 transition-transform font-bold text-xs">
                         <span>OPEN INQUIRY</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </div>
@@ -1415,9 +1439,9 @@ export const DiscussionsView: React.FC<Props> = ({
 
             {/* Trending Topics Sidebar */}
             <div className="lg:col-span-1 space-y-4">
-              <div className="bg-[#090D18] rounded-xl border border-gray-800 p-4 sticky top-6">
+              <div className="bg-cipher-surface rounded-xl border border-gray-800 p-4 sticky top-6">
                 <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-800">
-                  <TrendingUp className="w-4 h-4 text-cyan-400" />
+                  <TrendingUp className="w-4 h-4 text-cipher-accent" />
                   <h3 className="text-sm font-mono font-bold text-white tracking-wider">TRENDING DEBATES</h3>
                 </div>
                 <div className="space-y-4">
@@ -1430,11 +1454,11 @@ export const DiscussionsView: React.FC<Props> = ({
                       onClick={() => { setActiveThreadId(disc.id); sound.click(); }}
                       className="cursor-pointer group flex items-start gap-3"
                     >
-                      <span className="text-xl font-black font-mono text-gray-800 group-hover:text-cyan-500/30 transition-colors">
+                      <span className="text-xl font-black font-mono text-gray-800 group-hover:text-cipher-accent/30 transition-colors">
                         0{idx + 1}
                       </span>
                       <div>
-                        <h4 className="text-xs font-mono font-bold text-gray-300 group-hover:text-cyan-300 line-clamp-2 transition-colors">
+                        <h4 className="text-xs font-mono font-bold text-gray-300 group-hover:text-cipher-accent-hover line-clamp-2 transition-colors">
                           {disc.title}
                         </h4>
                         <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-gray-500">
@@ -1454,11 +1478,11 @@ export const DiscussionsView: React.FC<Props> = ({
       {/* 3. NEW RESEARCH INQUIRY MODAL WITH PHOTO & VIDEO ATTACHMENTS */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
-          <div className="relative w-full max-w-2xl my-auto rounded-2xl border border-cyan-500/40 bg-[#090D18] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-2xl my-auto rounded-2xl border border-cipher-accent/40 bg-cipher-surface p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between pb-3 border-b border-gray-800">
               <h3 className="text-base font-mono font-bold text-white flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-cyan-400" />
+                <PlusCircle className="w-4 h-4 text-cipher-accent" />
                 <span>INITIATE RESEARCH INQUIRY / DEBATE FLOOR</span>
               </h3>
               <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white cursor-pointer">
@@ -1475,7 +1499,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   <select
                     value={newCaseId}
                     onChange={(e) => setNewCaseId(e.target.value)}
-                    className="w-full bg-[#05070D] border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-cipher-accent-hover focus:outline-none focus:border-cipher-accent"
                   >
                     {cases.map(c => (
                       <option key={c.id} value={c.id}>
@@ -1491,7 +1515,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as any)}
-                    className="w-full bg-[#05070D] border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-cipher-accent-hover focus:outline-none focus:border-cipher-accent"
                   >
                     <option value="THEORY_DEBATES">Theory Debates</option>
                     <option value="NEW_EVIDENCE">New Evidence</option>
@@ -1510,7 +1534,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g., Analysis of Dallas Police Radio Dictabelt Acoustic Artifacts"
                   required
-                  className="w-full bg-[#05070D] border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-cipher-accent"
                 />
               </div>
 
@@ -1524,15 +1548,15 @@ export const DiscussionsView: React.FC<Props> = ({
                   placeholder="Provide your initial investigative rationale, citations, and questions for peer researchers..."
                   rows={4}
                   required
-                  className="w-full bg-[#05070D] border border-gray-700 rounded-lg p-3 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 leading-relaxed"
+                  className="w-full bg-cipher-base border border-gray-700 rounded-lg p-3 text-xs font-mono text-white placeholder-gray-500 focus:outline-none focus:border-cipher-accent leading-relaxed"
                 />
               </div>
 
               {/* MEDIA ATTACHMENT SECTION (PHOTO / VIDEO) */}
-              <div className="p-3.5 rounded-xl bg-[#04060C] border border-gray-800 space-y-3">
+              <div className="p-3.5 rounded-xl bg-cipher-base border border-gray-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-cyan-400 flex items-center gap-1.5 uppercase">
-                    <Film className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-mono font-bold text-cipher-accent flex items-center gap-1.5 uppercase">
+                    <Film className="w-4 h-4 text-cipher-accent" />
                     <span>Attach Primary Photo Scan or Video Footage</span>
                   </span>
                   <span className="text-[10px] font-mono text-gray-500">OPTIONAL</span>
@@ -1558,9 +1582,9 @@ export const DiscussionsView: React.FC<Props> = ({
                     type="button"
                     onClick={() => threadImageInputRef.current?.click()}
                     disabled={isUploadingNewMedia}
-                    className="p-3 rounded-lg border border-dashed border-gray-700 hover:border-cyan-500/60 bg-[#080B14] flex items-center justify-center gap-2 text-xs font-mono text-gray-300 hover:text-cyan-300 cursor-pointer transition-colors"
+                    className="p-3 rounded-lg border border-dashed border-gray-700 hover:border-cyan-500/60 bg-cipher-surface flex items-center justify-center gap-2 text-xs font-mono text-gray-300 hover:text-cipher-accent-hover cursor-pointer transition-colors"
                   >
-                    <ImageIcon className="w-4 h-4 text-cyan-400" />
+                    <ImageIcon className="w-4 h-4 text-cipher-accent" />
                     <span>Upload Image Scan</span>
                   </button>
 
@@ -1568,7 +1592,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     type="button"
                     onClick={() => threadVideoInputRef.current?.click()}
                     disabled={isUploadingNewMedia}
-                    className="p-3 rounded-lg border border-dashed border-gray-700 hover:border-rose-500/60 bg-[#080B14] flex items-center justify-center gap-2 text-xs font-mono text-gray-300 hover:text-rose-300 cursor-pointer transition-colors"
+                    className="p-3 rounded-lg border border-dashed border-gray-700 hover:border-rose-500/60 bg-cipher-surface flex items-center justify-center gap-2 text-xs font-mono text-gray-300 hover:text-rose-300 cursor-pointer transition-colors"
                   >
                     <Video className="w-4 h-4 text-rose-400" />
                     <span>Upload Video Clip</span>
@@ -1585,7 +1609,7 @@ export const DiscussionsView: React.FC<Props> = ({
                     value={newMediaUrl}
                     onChange={(e) => setNewMediaUrl(e.target.value)}
                     placeholder="https://youtube.com/watch?v=... or https://example.com/scan.jpg"
-                    className="w-full bg-[#070A14] border border-gray-700 rounded-lg p-2 text-xs font-mono text-cyan-300 placeholder-gray-600 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-cipher-panel border border-gray-700 rounded-lg p-2 text-xs font-mono text-cipher-accent-hover placeholder-gray-600 focus:outline-none focus:border-cipher-accent"
                   />
                 </div>
 
@@ -1599,14 +1623,14 @@ export const DiscussionsView: React.FC<Props> = ({
                     value={newMediaCaption}
                     onChange={(e) => setNewMediaCaption(e.target.value)}
                     placeholder="e.g. Frame 313 digital stabilization analysis"
-                    className="w-full bg-[#070A14] border border-gray-700 rounded-lg p-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-cipher-panel border border-gray-700 rounded-lg p-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cipher-accent"
                   />
                 </div>
 
                 {/* Live Preview of Attached Media */}
                 {(newUploadedImage || newUploadedVideo || newMediaUrl.trim()) && (
                   <div className="pt-2 border-t border-gray-800/80">
-                    <div className="flex items-center justify-between pb-1.5 mb-1.5 text-[10px] font-mono text-cyan-400 font-bold">
+                    <div className="flex items-center justify-between pb-1.5 mb-1.5 text-[10px] font-mono text-cipher-accent font-bold">
                       <span>LIVE ATTACHMENT PREVIEW:</span>
                       <button
                         type="button"
@@ -1638,7 +1662,7 @@ export const DiscussionsView: React.FC<Props> = ({
                   value={newTagsText}
                   onChange={(e) => setNewTagsText(e.target.value)}
                   placeholder="Forensics, Ballistics, Declassified Records"
-                  className="w-full bg-[#05070D] border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-cipher-base border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-cipher-accent-hover focus:outline-none focus:border-cipher-accent"
                 />
               </div>
 
@@ -1653,7 +1677,7 @@ export const DiscussionsView: React.FC<Props> = ({
                 <button
                   type="submit"
                   disabled={isUploadingNewMedia || !newTitle.trim() || !newInitialComment.trim()}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-mono font-bold shadow-[0_0_15px_rgba(0,229,255,0.3)] cursor-pointer"
+                  className="px-5 py-2 rounded-lg bg-cipher-accent hover:bg-cipher-accent-hover disabled:opacity-50 text-black text-xs font-mono font-bold shadow-[0_0_15px_rgba(0,229,255,0.3)] cursor-pointer"
                 >
                   Publish Inquiry (+10 REP)
                 </button>
@@ -1676,6 +1700,23 @@ export const DiscussionsView: React.FC<Props> = ({
         />
       )}
 
+
+      {appealingTarget && (
+        <AppealModal
+          targetType={appealingTarget.type}
+          targetId={appealingTarget.id}
+          targetTitle={appealingTarget.title}
+          onClose={() => setAppealingTarget(null)}
+        />
+      )}
+
+      {reportingTarget && (
+        <ReportModal
+          targetType={reportingTarget.type}
+          targetId={reportingTarget.id}
+          onClose={() => setReportingTarget(null)}
+        />
+      )}
     </div>
   );
 };

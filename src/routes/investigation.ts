@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getEvidenceForEntity, attachEvidenceToEntity, removeEvidenceFromEntity } from '../db/evidence.js';
 import { awardReputation } from '../db/reputation.js';
 import { requireAuth, requireModerator, AuthRequest } from '../middleware/auth.js';
+import { mutationLimiter } from '../middleware/rateLimiter.js';
 import {
   getPeople, getPersonById, createPerson, updatePerson,
   getOrganisations, getOrganisationById, createOrganisation, updateOrganisation,
@@ -32,7 +33,7 @@ router.get('/people/:id', async (req, res) => {
   }
 });
 
-router.post('/people', requireAuth, async (req: AuthRequest, res) => {
+router.post('/people', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const result = await createPerson(req.body, req.dbUser.uid);
     await awardReputation(req.dbUser.uid, 'FACT_CHECKED', 10, result.id, 'Documented a Person of Interest');
@@ -73,7 +74,7 @@ router.get('/organisations/:id', async (req, res) => {
   }
 });
 
-router.post('/organisations', requireAuth, async (req: AuthRequest, res) => {
+router.post('/organisations', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const result = await createOrganisation(req.body, req.dbUser.uid);
     await awardReputation(req.dbUser.uid, 'FACT_CHECKED', 10, result.id, 'Documented an Organisation');
@@ -114,7 +115,7 @@ router.get('/locations/:id', async (req, res) => {
   }
 });
 
-router.post('/locations', requireAuth, async (req: AuthRequest, res) => {
+router.post('/locations', requireAuth, mutationLimiter, async (req: AuthRequest, res) => {
   try {
     const result = await createLocation(req.body, req.dbUser.uid);
     await awardReputation(req.dbUser.uid, 'FACT_CHECKED', 10, result.id, 'Documented a Location');
