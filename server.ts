@@ -132,7 +132,6 @@ app.patch('/api/cases/:id/feature', requireAuth, requireModerator, async (req: A
       editorialCollection: editorialCollection !== undefined ? editorialCollection : null,
       editorialDescription: editorialDescription !== undefined ? editorialDescription : null
     });
-    // Log the audit
     
     const { db } = await import('./src/db/index.js');
     const { moderationLogs } = await import('./src/db/schema.js');
@@ -144,9 +143,9 @@ app.patch('/api/cases/:id/feature', requireAuth, requireModerator, async (req: A
       targetId: req.params.id,
       reason: `Set featured to ${featured}, order ${featuredOrder}, collection ${editorialCollection}`
     });
-
     res.json(updated);
   } catch (error: any) {
+
     console.error('Failed to feature case:', error);
     res.status(500).json({ error: 'Failed to feature case' });
   }

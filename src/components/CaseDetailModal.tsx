@@ -75,6 +75,7 @@ interface Props {
   onToggleBookmark: (caseId: string) => void;
   onReputationEarned: (amount: number, reason: string, persist?: boolean) => void;
   onJumpGraphEntity?: (entityName: string) => void;
+  onLaunchGraph?: (targetEntity?: string) => void;
   currentUser?: UserProfile | null;
   onOpenDirectMessageWithUser?: (authorUid: string, authorName: string, authorCallsign: string) => void;
   onRandomRabbitHole?: () => void;
@@ -91,6 +92,7 @@ export const CaseDetailModal: React.FC<Props> = ({
   onToggleBookmark,
   onReputationEarned,
   onJumpGraphEntity,
+  onLaunchGraph,
   currentUser,
   onOpenDirectMessageWithUser,
   onRandomRabbitHole,
@@ -285,6 +287,30 @@ export const CaseDetailModal: React.FC<Props> = ({
     }
   };
 
+  
+  const toggleFeatureStatus = async () => {
+    try {
+      const { ApiService } = await import('../services/apiService');
+      // Call custom fetch since ApiService doesn't have patch
+      const response = await fetch(`/api/cases/${currentCase.id}/feature`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await import('../services/firebase').then(m => m.auth.currentUser?.getIdToken())}`
+        },
+        body: JSON.stringify({
+        featured: !currentCase.featured
+      })});
+      if (!response.ok) throw new Error('Failed to feature');
+      const updated = await response.json();
+      setCurrentCase(prev => ({ ...prev, featured: !prev.featured }));
+      sound.blip();
+    } catch (error) {
+      console.error('Failed to toggle feature status', error);
+      
+    }
+  };
+
   const handleVoteComment = async (commId: string, dir: 'up' | 'down') => {
     sound.click();
     setComments(prev => prev.map(c => {
@@ -371,6 +397,22 @@ export const CaseDetailModal: React.FC<Props> = ({
               <Bookmark className="w-3.5 h-3.5" fill={isBookmarked ? 'currentColor' : 'none'} />
               <span className="hidden sm:inline">{isBookmarked ? 'Saved Dossier' : 'Save Dossier'}</span>
             </button>
+
+
+            {currentUser && (['MODERATOR', 'ADMIN', 'admin', 'moderator'].includes(currentUser.role)) && (
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleFeatureStatus(); }}
+                className={`p-1.5 border rounded transition-colors flex items-center gap-1 ${
+                  currentCase.featured
+                    ? 'border-purple-500/50 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'
+                    : 'border-white/10 hover:bg-white/[0.02] text-gray-400 hover:text-purple-400'
+                }`}
+                title={currentCase.featured ? "Unfeature Case" : "Feature Case"}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-[10px] font-mono hidden sm:inline">{currentCase.featured ? 'FEATURED' : 'FEATURE'}</span>
+              </button>
+            )}
 
             {currentUser && (
               <button
@@ -818,22 +860,34 @@ export const CaseDetailModal: React.FC<Props> = ({
             </div>
           </div>
         )}
+
         {/* TAB: RABBIT HOLE */}
         {activeTab === 'rabbithole' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="p-4 rounded-xl bg-cipher-surface border border-cipher-accent/30">
-              <h3 className="font-mono text-sm font-bold text-white uppercase mb-1">RABBIT HOLE CONNECTIONS</h3>
+            <div className="p-4 rounded-xl bg-cipher-surface border border-cipher-accent/30 text-center">
+              <h3 className="font-mono text-lg font-bold text-cipher-accent uppercase mb-2">EXPLORE CONNECTIONS IN THE NEXUS</h3>
+              <p className="text-sm text-gray-300">
+                Visualize all interconnected evidence, people, organisations, and locations for this case in the interactive Rabbit Hole Graph.
+              </p>
             </div>
-            <div className="flex justify-center mt-6">
-               <button
-                   onClick={() => { if (onRandomRabbitHole) onRandomRabbitHole(); }}
-                   className="px-6 py-3 bg-cyan-900/40 border border-cipher-accent/50 hover:bg-cyan-800/60 text-cipher-accent-hover font-mono font-bold transition-colors shadow-lg"
+            <div className="flex justify-center mt-6"> 
+               <button 
+                   onClick={() => { 
+                     if (onLaunchGraph) {
+                        onLaunchGraph(currentCase.title);
+                     } else if (onJumpGraphEntity) {
+                        onJumpGraphEntity(currentCase.title);
+                     }
+                   }} 
+                   className="px-8 py-4 bg-cipher-accent/10 border border-cipher-accent hover:bg-cipher-accent/20 text-cipher-accent hover:text-white font-mono font-bold text-lg transition-colors shadow-[0_0_15px_rgba(0,229,255,0.2)] flex items-center gap-3" 
                >
-                  ENTER THE NEXUS FOR THIS CASE
+                  <Share2 className="w-5 h-5" />
+                  ENTER RABBIT HOLE
                </button>
             </div>
           </div>
         )}
+
         {/* TAB 8: DISCUSSIONS */}
         {activeTab === 'discussions' && (
           <div className="space-y-6 animate-in fade-in duration-300">
